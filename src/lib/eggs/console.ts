@@ -2,6 +2,7 @@ import { audio, soundNames, type LoopName } from "@/lib/audio";
 import type { SoundPatch } from "@shared/effects/catalog";
 import { eggBus } from "./bus";
 import { discoFor, toggleDisco } from "./disco";
+import { SEASONS, isSeason } from "./seasons";
 import { toggleParty } from "./triggers";
 import { EGGS, menuText } from "./registry";
 import { useEggs } from "./store";
@@ -18,6 +19,7 @@ export interface EggApi {
   play: (name: string) => string;
   loop: (name: string | null) => string;
   rain: (glyph?: string, count?: number) => string;
+  season: (name?: string | null) => string;
   barrelRoll: () => string;
   crt: () => string;
   pet: (glyph?: string | null) => string;
@@ -97,6 +99,15 @@ export const eggApi: EggApi = {
       count: n,
     });
     return `raining ${n} × ${glyph}`;
+  },
+  season(name = null) {
+    if (name === null) {
+      useEggs.getState().set({ season: null });
+      return "season: whatever the calendar says";
+    }
+    if (!isSeason(name)) return `seasons: ${SEASONS.join(", ")}, null`;
+    useEggs.getState().set({ season: name });
+    return `season: ${name}`;
   },
   barrelRoll() {
     eggBus.emit({ kind: "roll" });

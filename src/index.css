@@ -381,3 +381,50 @@ textarea,
   stroke-opacity: 1;
   filter: drop-shadow(0 0 4px oklch(0.72 0.2 25));
 }
+/* Seasons */
+[data-egg-season="halloween"] [data-testid="shroud"] > path {
+  fill: oklch(0.62 0.19 45);
+}
+[data-egg-season="halloween"] [data-testid="shroud"] > text {
+  fill: oklch(0.25 0.05 45);
+}
+.egg-snow {
+  animation: egg-snow linear infinite;
+}
+@keyframes egg-snow {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(18px, 50vh) rotate(180deg);
+  }
+  100% {
+    transform: translate(-12px, 105vh) rotate(360deg);
+    opacity: 0.4;
+  }
+}
+.egg-ghost {
+  left: -3rem;
+  animation: egg-drift linear infinite;
+}
+@keyframes egg-drift {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(calc(25vw + 1.5rem), -14px);
+  }
+  50% {
+    transform: translate(calc(50vw + 3rem), 10px);
+  }
+  75% {
+    transform: translate(calc(75vw + 4.5rem), -10px);
+  }
+  100% {
+    transform: translate(calc(100vw + 6rem), 0);
+  }
+}

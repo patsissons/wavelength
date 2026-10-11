@@ -24,6 +24,7 @@ interface Window {
     play(name: string): string;
     loop(name: string | null): string;
     rain(glyph?: string, count?: number): string;
+    season(name?: string | null): string;
     barrelRoll(): string;
     crt(): string;
     pet(glyph?: string | null): string;

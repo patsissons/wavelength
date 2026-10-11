@@ -1,11 +1,15 @@
+import confetti from "canvas-confetti";
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router";
 import { burst } from "@/components/effects/burst";
 import { celebrationBus } from "@/lib/effect-bus";
 import { eggBus } from "@/lib/eggs/bus";
 import { fireClueEgg, matchClue } from "@/lib/eggs/clues";
 import { celebrateHatTrick, hatTrick } from "@/lib/eggs/round";
+import { useSeason } from "@/lib/eggs/seasons";
 import { useEggs } from "@/lib/eggs/store";
 import { installTriggers } from "@/lib/eggs/triggers";
+import { Ambient } from "./ambient";
 import { usePrefs } from "@/lib/prefs";
 import { useGameStore } from "@/lib/store";
 
@@ -21,6 +25,13 @@ export function EggsLayer() {
   const pet = useEggs((s) => s.pet);
   const party = useEggs((s) => s.party);
   const disco = useEggs((s) => s.disco);
+  const season = useSeason();
+  const phase = useGameStore((s) => s.game?.phase ?? null);
+  const inGame = useLocation().pathname.startsWith("/game/");
+  // Ambient dressing stays off the round itself.
+  const ambient =
+    season !== null &&
+    (!inGame || phase === "lobby" || phase === "gameover" || phase === null);
   const reduce = usePrefs((s) => s.reduceEffects);
   const [chip, setChip] = useState<{
     id: string;
@@ -42,6 +53,13 @@ export function EggsLayer() {
     document.documentElement.toggleAttribute("data-egg-disco", disco);
     return () => document.documentElement.removeAttribute("data-egg-disco");
   }, [disco]);
+
+  useEffect(() => {
+    if (season)
+      document.documentElement.setAttribute("data-egg-season", season);
+    else document.documentElement.removeAttribute("data-egg-season");
+    return () => document.documentElement.removeAttribute("data-egg-season");
+  }, [season]);
 
   // Lets the egg styles skip motion without each rule checking prefs.
   useEffect(() => {
@@ -69,11 +87,14 @@ export function EggsLayer() {
 
   useEffect(() => {
     return celebrationBus.subscribe((c) => {
-      if (c.kind !== "clue") return;
-      const egg = matchClue(c.clue);
-      if (egg) fireClueEgg(egg);
+      if (c.kind === "clue") {
+        const egg = matchClue(c.clue);
+        if (egg) fireClueEgg(egg);
+      } else if (c.kind === "gameover" && season === "newyear") {
+        fireworks(usePrefs.getState().reduceEffects);
+      }
     });
-  }, []);
+  }, [season]);
 
   useEffect(() => {
     return eggBus.subscribe((event) => {
@@ -128,6 +149,7 @@ export function EggsLayer() {
       aria-hidden
       data-testid="eggs-layer"
     >
+      {ambient && season && <Ambient season={season} />}
       {crt && (
         <div className="egg-crt absolute inset-0" data-testid="egg-crt" />
       )}
@@ -195,6 +217,28 @@ function Pet({ glyph }: { glyph: string }) {
       </span>
     </span>
   );
+}
+
+/** New Year at game over: three seconds of fireworks from the bottom corners. */
+function fireworks(reduce: boolean) {
+  eggBus.emit({ kind: "chip", id: "newyear", text: "🎆 Happy New Year!" });
+  if (reduce) return;
+  const end = Date.now() + 3000;
+  const tick = () => {
+    for (const x of [0.1, 0.9]) {
+      void confetti({
+        particleCount: 40,
+        angle: x < 0.5 ? 60 : 120,
+        spread: 70,
+        startVelocity: 60,
+        origin: { x, y: 1 },
+        zIndex: 60,
+        disableForReducedMotion: true,
+      });
+    }
+    if (Date.now() < end) setTimeout(tick, 350);
+  };
+  tick();
 }
 
 function barrelRoll() {

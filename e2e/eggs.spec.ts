@@ -169,3 +169,39 @@ test("a flat-out flick heats the wheel and a centred dial is very neutral", asyn
   await expect(cid.page.getByTestId("egg-chip")).toHaveText("🇨🇭 Very neutral.");
   await game.close();
 });
+
+test("a season dresses the home screen and the lounge, never the round", async ({
+  browser,
+}) => {
+  const game = await startTeamsGame(browser);
+  const { host } = game;
+  expect(
+    await host.page.evaluate(() => window.wavelength!.season("winter")),
+  ).toBe("season: winter");
+  await expect(host.page.locator("html")).toHaveAttribute(
+    "data-egg-season",
+    "winter",
+  );
+  // In a round the snow stays away.
+  await expect(host.page.getByTestId("egg-ambient")).toHaveCount(0);
+  await host.page.goto("/");
+  await expect(host.page.getByTestId("egg-ambient")).toHaveAttribute(
+    "data-season",
+    "winter",
+  );
+  await host.page.evaluate(() => window.wavelength!.season("fools"));
+  await expect(host.page.getByTestId("tagline")).toContainText(
+    "Results may vary",
+  );
+  expect(
+    await host.page.evaluate(() => window.wavelength!.season("summer")),
+  ).toContain("seasons:");
+  await host.page.evaluate(() => window.wavelength!.season(null));
+  await expect(host.page.locator("html")).not.toHaveAttribute(
+    "data-egg-season",
+  );
+  await expect(host.page.getByTestId("tagline")).toHaveText(
+    "Read your friends' minds.",
+  );
+  await game.close();
+});

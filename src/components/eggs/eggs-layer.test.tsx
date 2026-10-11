@@ -1,12 +1,22 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { celebrationBus } from "@/lib/effect-bus";
 import { eggBus } from "@/lib/eggs/bus";
 import { useEggs } from "@/lib/eggs/store";
 import { usePrefs } from "@/lib/prefs";
 import { useGameStore } from "@/lib/store";
 import { createGame } from "@shared/game/commands";
 import type { RoundResult } from "@shared/game/types";
-import { EggsLayer } from "./eggs-layer";
+import { MemoryRouter } from "react-router";
+import { EggsLayer as Layer } from "./eggs-layer";
+
+function EggsLayer() {
+  return (
+    <MemoryRouter>
+      <Layer />
+    </MemoryRouter>
+  );
+}
 
 describe("EggsLayer", () => {
   beforeEach(() => {
@@ -126,6 +136,41 @@ describe("EggsLayer", () => {
     expect(document.querySelectorAll("[data-effect=egg-hattrick]").length).toBe(
       16,
     );
+    useGameStore.getState().reset();
+  });
+
+  it("dresses the season on <html>, keeps ambience off the round and fires New Year fireworks", () => {
+    render(<EggsLayer />);
+    expect(document.documentElement.hasAttribute("data-egg-season")).toBe(
+      false,
+    );
+    act(() => useEggs.getState().set({ season: "winter" }));
+    expect(document.documentElement.getAttribute("data-egg-season")).toBe(
+      "winter",
+    );
+    expect(screen.getByTestId("egg-ambient")).toBeInTheDocument();
+
+    const game = createGame({
+      code: "BCDF",
+      hostId: "p1",
+      hostName: "Ann",
+      hostTokenHash: "h",
+      now: 0,
+    }).game;
+    // Off the /game route the phase does not matter; the ambience is for
+    // the home screen. (The in-game gating is covered end to end.)
+    act(() =>
+      useGameStore.getState().receive({
+        type: "snapshot",
+        state: { ...game, phase: "guessing" },
+        you: { playerId: "p1", target: null },
+      }),
+    );
+    expect(screen.getByTestId("egg-ambient")).toBeInTheDocument();
+
+    act(() => useEggs.getState().set({ season: "newyear" }));
+    act(() => celebrationBus.emit({ kind: "gameover" }));
+    expect(screen.getByTestId("egg-chip")).toHaveTextContent("Happy New Year");
     useGameStore.getState().reset();
   });
 

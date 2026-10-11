@@ -102,6 +102,13 @@ export const EGGS: ReadonlyArray<EggDef> = [
     api: 'wavelength.pet("🐈")',
   },
   {
+    id: "seasons",
+    name: "Seasons",
+    how: "play in Halloween week, over the winter holidays, on New Year's Eve or Day, or on April 1st",
+    what: "a pumpkin shroud and drifting ghosts; snow on the home screen and in the lounge; fireworks at game over; a tagline with a disclaimer",
+    api: 'wavelength.season("halloween" | "winter" | "newyear" | "fools" | null)',
+  },
+  {
     id: "reset",
     name: "Reset",
     how: "ask for it",

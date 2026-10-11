@@ -957,6 +957,36 @@ const PATCHES: Record<SoundPatch, Patch> = {
       });
     }
   },
+  ticktock: (ctx, out, v) => {
+    // Someone is taking too long: a clock ticking under a little waiting
+    // tune (original, so nobody's lawyers are on the wavelength).
+    const beat = 0.3;
+    for (let i = 0; i < 8; i++) {
+      const tock = i % 2 === 1;
+      noise(ctx, out, {
+        start: i * beat,
+        duration: 0.035,
+        gain: 0.16 * v,
+        filter: { type: "bandpass", from: tock ? 1400 : 2600 },
+      });
+    }
+    const C5 = 523.25;
+    const E5 = 659.25;
+    const G5 = 783.99;
+    const A5 = 880;
+    const B5 = 987.77;
+    const C6 = 1046.5;
+    const tune = [C5, E5, G5, E5, A5, G5, B5, C6];
+    tune.forEach((f, i) => {
+      tone(ctx, out, {
+        type: "triangle",
+        from: f,
+        start: i * beat + 0.02,
+        duration: beat * 0.8,
+        gain: 0.09 * v,
+      });
+    });
+  },
   crickets: (ctx, out, v) => {
     for (let i = 0; i < 6; i++) {
       tone(ctx, out, {

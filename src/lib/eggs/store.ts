@@ -1,6 +1,5 @@
 import { create } from "zustand";
-
-export type Season = "halloween" | "winter" | "newyear" | "fools";
+import { SEASONS, type Season } from "./seasons";
 
 export interface EggModes {
   /** Konami: rainbow wheel and accents. */
@@ -29,13 +28,6 @@ const DEFAULTS: EggModes = {
   pet: null,
   season: null,
 };
-
-const SEASONS: ReadonlyArray<Season> = [
-  "halloween",
-  "winter",
-  "newyear",
-  "fools",
-];
 
 /** Session-scoped: a reload keeps the vibe, a fresh tab starts clean. */
 function load(): EggModes {

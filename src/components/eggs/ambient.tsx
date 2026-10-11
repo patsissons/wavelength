@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { Season } from "@/lib/eggs/store";
+import type { Season } from "@/lib/eggs/seasons";
 import { usePrefs } from "@/lib/prefs";
 
 const FLAKES = 14;

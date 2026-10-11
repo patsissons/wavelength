@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError, api } from "@/lib/api";
 import { QUIPS, TapCounter } from "@/lib/eggs/charm";
-import { tagline, useSeason } from "@/lib/eggs/seasons";
+import { tagline } from "@/lib/eggs/seasons";
+import { useSeason } from "@/lib/eggs/use-season";
 import {
   lastAvatar,
   lastName,

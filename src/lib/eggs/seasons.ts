@@ -1,5 +1,9 @@
-import { useMemo } from "react";
-import { useEggs, type Season } from "./store";
+/**
+ * Seasonal dressing by the calendar. Pure: the store imports the list of
+ * seasons from here, so nothing in this file may import the store (the
+ * hook that reads the console override lives in `use-season.ts`).
+ */
+export type Season = "halloween" | "winter" | "newyear" | "fools";
 
 export const SEASONS: ReadonlyArray<Season> = [
   "halloween",
@@ -9,9 +13,9 @@ export const SEASONS: ReadonlyArray<Season> = [
 ];
 
 /**
- * Seasonal dressing by the calendar: Halloween week, the winter holidays,
- * New Year's Eve and Day (on top of winter: the fireworks win), and
- * April Fools'. The console override previews any of them.
+ * Halloween week, the winter holidays, New Year's Eve and Day (on top of
+ * winter: the fireworks win), and April Fools'. The console override
+ * previews any of them.
  */
 export function seasonFor(
   date: Date,
@@ -44,9 +48,4 @@ export function tagline(season: Season | null): string {
     default:
       return "Read your friends' minds.";
   }
-}
-
-export function useSeason(): Season | null {
-  const override = useEggs((s) => s.season);
-  return useMemo(() => seasonFor(new Date(), override), [override]);
 }

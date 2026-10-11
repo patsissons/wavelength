@@ -85,9 +85,10 @@ phone (same network) to play.
    setting). Tapping the shroud or its handle covers and uncovers the
    wheel. The spectrum bar at the top of everyone's screen carries both
    ends of the spectrum; on the psychic's screen it shows the scoring wedge
-   once the wheel lands (everyone else sees a plain gradient until the
-   reveal), and the clue panel repeats the wedge as a flat strip so it
-   stays in view with the keyboard up. Giving the clue (type it and say it
+   while they are peeking at the uncovered wheel (covered, it shows the
+   plain gradient everyone else sees until the reveal), and the clue panel
+   repeats the wedge as a flat strip so it stays in view with the keyboard
+   up. Giving the clue (type it and say it
    out loud) covers the wheel automatically.
 5. Guessers turn the dial. The shroud wears the same gradient as the
    spectrum bar, so the sides of the wheel map onto the ends of the

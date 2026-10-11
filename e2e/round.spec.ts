@@ -85,18 +85,26 @@ test("the psychic draws, spins (and re-spins), covers the wheel and gives a clue
     "data-open",
   );
 
-  // The flat wedge strip above the clue input mirrors the board's target,
-  // and so does the spectrum bar at the top; guessers get a plain gradient.
+  // The flat wedge strip above the clue input mirrors the board's target.
+  // The spectrum bar at the top does too, but only while the psychic is
+  // peeking: covered, it shows the same gradient the guessers see.
   const panelStrip = host.page.getByTestId("panel").getByTestId("wedge-strip");
   const topStrip = host.page.getByTestId("spectrum").getByTestId("wedge-strip");
-  for (const strip of [panelStrip, topStrip]) {
-    await expect(strip).toHaveAttribute("data-target", third.toFixed(4));
-    await expect(strip.getByTestId("strip-wedge-4")).toBeVisible();
-  }
+  await expect(panelStrip).toHaveAttribute("data-target", third.toFixed(4));
+  await expect(panelStrip.getByTestId("strip-wedge-4")).toBeVisible();
+  await expect(topStrip).toHaveAttribute("data-fill", "gradient");
+  await expect(host.page.getByTestId("spectrum")).not.toHaveAttribute(
+    "data-known",
+  );
+  await host.page.getByTestId("peek-toggle").click();
+  await expect(topStrip).toHaveAttribute("data-target", third.toFixed(4));
+  await expect(topStrip.getByTestId("strip-wedge-4")).toBeVisible();
   await expect(host.page.getByTestId("spectrum")).toHaveAttribute(
     "data-known",
     "true",
   );
+  await host.page.getByTestId("peek-toggle").click();
+  await expect(topStrip).toHaveAttribute("data-fill", "gradient");
   const bobStrip = bob.page.getByTestId("spectrum").getByTestId("wedge-strip");
   await expect(bobStrip).toHaveAttribute("data-fill", "gradient");
   await expect(bobStrip).not.toHaveAttribute("data-target");

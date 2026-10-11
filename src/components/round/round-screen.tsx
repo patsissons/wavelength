@@ -36,11 +36,13 @@ export function RoundScreen() {
   const arenaOpen = useArena((s) => s.open);
   // The latest spin has landed (the clue input and re-spins wait for it).
   const landed = spinDone || game.phase !== "clue" || round.spin === null;
-  // Only the psychic ever holds `you.target`; the reveal makes it public.
+  // Only the psychic ever holds `you.target`, and their bar shows it only
+  // while they are peeking (shroud open), like the board; the reveal makes
+  // it public.
   const knownTarget =
     game.phase === "reveal"
       ? (round.result?.target ?? null)
-      : landed
+      : landed && round.shroudOpen
         ? you.target
         : null;
 

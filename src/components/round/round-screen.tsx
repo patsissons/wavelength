@@ -29,65 +29,67 @@ export function RoundScreen() {
   const psychic = game.players[round.psychicId];
 
   return (
-    <main className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col gap-3 p-4">
-      <ScoreHeader game={game} />
-      <PresenceStrip game={game} playerId={you.playerId} />
-      {psychic?.away && game.phase !== "reveal" && (
-        <p
-          className="rounded-xl bg-destructive/15 px-3 py-2 text-center text-sm"
-          data-testid="psychic-away"
-        >
-          {psychic.name} seems to have left.
-          {game.hostId === you.playerId
-            ? " Use the host controls to skip this round."
-            : " The host can skip this round."}
-        </p>
-      )}
-      <SpectrumLabels spectrum={round.spectrum} />
-      <BoardStage
-        game={game}
-        playerId={you.playerId}
-        onSpinDone={() => setSpinDone(true)}
-      />
-      {round.clue && (
-        <p
-          className="rounded-2xl bg-primary/15 px-4 py-3 text-center text-xl font-bold"
-          data-testid="clue"
-        >
-          “{round.clue}”
-        </p>
-      )}
-      {game.phase === "reveal" && round.result ? (
-        <RevealPanel game={game} playerId={you.playerId} />
-      ) : role === "psychic" ? (
-        <PsychicPanel
-          game={game}
-          spinDone={spinDone || game.phase !== "clue" || round.spin === null}
-        />
-      ) : role === "guesser" &&
-        (game.phase === "guessing" || game.phase === "voting") ? (
-        <GuesserPanel
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
+      <main className="safe-x safe-top flex flex-1 flex-col gap-3 pb-3">
+        <ScoreHeader game={game} />
+        <PresenceStrip game={game} playerId={you.playerId} />
+        {psychic?.away && game.phase !== "reveal" && (
+          <p
+            className="rounded-xl bg-destructive/15 px-3 py-2 text-center text-sm"
+            data-testid="psychic-away"
+          >
+            {psychic.name} seems to have left.
+            {game.hostId === you.playerId
+              ? " Use the host controls to skip this round."
+              : " The host can skip this round."}
+          </p>
+        )}
+        <SpectrumLabels spectrum={round.spectrum} />
+        <BoardStage
           game={game}
           playerId={you.playerId}
-          dial={dialsFor(game, you.playerId)[0]!}
+          onSpinDone={() => setSpinDone(true)}
         />
-      ) : role === "opponent" &&
-        (game.phase === "guessing" || game.phase === "voting") ? (
-        <OpponentPanel game={game} playerId={you.playerId} />
-      ) : (
-        <Panel
-          title={statusLine(
-            game.phase,
-            psychic?.name ?? "The psychic",
-            round.shroudOpen,
-          )}
-        />
-      )}
-      <ShareStrip code={game.code} className="mt-auto" />
-      {/* Sticky toolbar: sound, effects, host. Nothing floats over content. */}
-      <div
-        className="sticky bottom-0 z-20 -mx-4 -mb-4 flex items-center gap-2 border-t border-border bg-background px-4 pt-2"
-        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1rem)" }}
+        {round.clue && (
+          <p
+            className="rounded-2xl bg-primary/15 px-4 py-3 text-center text-xl font-bold"
+            data-testid="clue"
+          >
+            “{round.clue}”
+          </p>
+        )}
+        {game.phase === "reveal" && round.result ? (
+          <RevealPanel game={game} playerId={you.playerId} />
+        ) : role === "psychic" ? (
+          <PsychicPanel
+            game={game}
+            spinDone={spinDone || game.phase !== "clue" || round.spin === null}
+          />
+        ) : role === "guesser" &&
+          (game.phase === "guessing" || game.phase === "voting") ? (
+          <GuesserPanel
+            game={game}
+            playerId={you.playerId}
+            dial={dialsFor(game, you.playerId)[0]!}
+          />
+        ) : role === "opponent" &&
+          (game.phase === "guessing" || game.phase === "voting") ? (
+          <OpponentPanel game={game} playerId={you.playerId} />
+        ) : (
+          <Panel
+            title={statusLine(
+              game.phase,
+              psychic?.name ?? "The psychic",
+              round.shroudOpen,
+            )}
+          />
+        )}
+        <ShareStrip code={game.code} className="mt-auto" />
+      </main>
+      {/* Sticky toolbar: sound, effects, host. It sits outside the padded
+          main so it can span the full width without ever overflowing it. */}
+      <footer
+        className="safe-x safe-bottom sticky bottom-0 z-20 flex items-center gap-2 border-t border-border bg-background pt-2"
         data-testid="toolbar"
       >
         <MuteToggle />
@@ -99,8 +101,8 @@ export function RoundScreen() {
         {game.hostId === you.playerId && (
           <HostControls game={game} playerId={you.playerId} />
         )}
-      </div>
-    </main>
+      </footer>
+    </div>
   );
 }
 

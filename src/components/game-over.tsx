@@ -34,7 +34,7 @@ export function GameOver() {
 
   return (
     <main
-      className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 p-6"
+      className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6"
       data-testid="game-over"
     >
       <header className="text-center">

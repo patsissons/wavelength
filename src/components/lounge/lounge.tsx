@@ -56,7 +56,7 @@ export function Lounge() {
   }
 
   return (
-    <main className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col gap-4 p-4 pb-28">
+    <main className="safe-x safe-top mx-auto flex min-h-dvh w-full max-w-md flex-col gap-4 pb-28">
       <ShareCard code={game.code} />
 
       <section className="flex items-center justify-between rounded-2xl bg-card px-4 py-3">
@@ -94,10 +94,7 @@ export function Lounge() {
         <PlayerList />
       </section>
 
-      <footer
-        className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-md bg-gradient-to-t from-background via-background to-transparent p-4"
-        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1rem)" }}
-      >
+      <footer className="safe-x safe-bottom fixed inset-x-0 bottom-0 mx-auto w-full max-w-md bg-gradient-to-t from-background via-background to-transparent pt-4">
         {isHost ? (
           <Button
             size="lg"

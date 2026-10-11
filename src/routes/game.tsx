@@ -37,7 +37,7 @@ function GameScreen() {
   }, []);
   if (phase === null) {
     return (
-      <main className="safe-area flex min-h-dvh items-center justify-center p-6 text-muted-foreground">
+      <main className="safe-area flex min-h-dvh items-center justify-center text-muted-foreground">
         Joining the room…
       </main>
     );

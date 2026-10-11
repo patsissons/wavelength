@@ -372,3 +372,12 @@ textarea,
     background-position: -120% 0;
   }
 }
+/* Hot wheel: the ticks glow for a moment after a flat-out flick */
+[data-testid="disc"] line {
+  transition: stroke 0.3s ease-out;
+}
+[data-egg-hot] [data-testid="disc"] line {
+  stroke: oklch(0.72 0.2 25);
+  stroke-opacity: 1;
+  filter: drop-shadow(0 0 4px oklch(0.72 0.2 25));
+}

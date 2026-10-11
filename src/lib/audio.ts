@@ -917,6 +917,25 @@ const PATCHES: Record<SoundPatch, Patch> = {
       filter: { type: "lowpass", from: 4000, to: 500 },
     });
   },
+  squeal: (ctx, out, v) => {
+    // Tyres on a hot wheel: a wavering high sawtooth over hissing noise.
+    for (let i = 0; i < 6; i++) {
+      tone(ctx, out, {
+        type: "sawtooth",
+        from: i % 2 ? 1900 : 2300,
+        to: i % 2 ? 2300 : 1900,
+        start: i * 0.07,
+        duration: 0.09,
+        gain: 0.05 * v,
+      });
+    }
+    noise(ctx, out, {
+      start: 0,
+      duration: 0.5,
+      gain: 0.1 * v,
+      filter: { type: "bandpass", from: 3000, to: 1200 },
+    });
+  },
   poke: (ctx, out, v) => {
     // A springy "boing": a fast pitch drop with a wobbling tail.
     tone(ctx, out, {

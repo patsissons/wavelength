@@ -3,9 +3,11 @@ import { burst } from "@/components/effects/burst";
 import { celebrationBus } from "@/lib/effect-bus";
 import { eggBus } from "@/lib/eggs/bus";
 import { fireClueEgg, matchClue } from "@/lib/eggs/clues";
+import { celebrateHatTrick, hatTrick } from "@/lib/eggs/round";
 import { useEggs } from "@/lib/eggs/store";
 import { installTriggers } from "@/lib/eggs/triggers";
 import { usePrefs } from "@/lib/prefs";
+import { useGameStore } from "@/lib/store";
 
 /**
  * Global overlay for easter eggs: one-shot moments from the egg bus (rain,
@@ -49,6 +51,22 @@ export function EggsLayer() {
 
   useEffect(() => installTriggers(), []);
 
+  // Three bullseyes in a row: watch the revealed history grow.
+  useEffect(() => {
+    let seen = useGameStore.getState().game?.history.length ?? 0;
+    return useGameStore.subscribe((state) => {
+      const game = state.game;
+      const length = game?.history.length ?? 0;
+      if (!game || length <= seen) {
+        seen = length;
+        return;
+      }
+      seen = length;
+      const who = hatTrick(game);
+      if (who) celebrateHatTrick(game, who);
+    });
+  }, []);
+
   useEffect(() => {
     return celebrationBus.subscribe((c) => {
       if (c.kind !== "clue") return;
@@ -67,7 +85,7 @@ export function EggsLayer() {
               glyphs: event.glyphs,
               count: reduce ? 3 : event.count,
               effect: `egg-${event.id}`,
-              direction: "fall",
+              direction: event.direction ?? "fall",
             });
           }
           return;
@@ -76,6 +94,12 @@ export function EggsLayer() {
           return;
         case "konami":
           return;
+        case "hot": {
+          const html = document.documentElement;
+          html.setAttribute("data-egg-hot", "");
+          setTimeout(() => html.removeAttribute("data-egg-hot"), 1500);
+          return;
+        }
         case "roll":
           if (reduce) {
             setChip({

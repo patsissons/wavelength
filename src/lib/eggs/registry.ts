@@ -42,6 +42,24 @@ export const EGGS: ReadonlyArray<EggDef> = [
     what: "every screen in the room reacts: a banana-peel slip, a POLO!, a towel day, a shimmer, a ten-second disco drop, a roll, or a very meta chip",
   },
   {
+    id: "hotwheel",
+    name: "Hot wheel",
+    how: "psychic: flick the wheel flat out (a tap never gets there)",
+    what: "smoke off the rim, the ticks glow red and the tyres squeal",
+  },
+  {
+    id: "hattrick",
+    name: "Hat trick",
+    how: "three bullseyes in a row: a team in Teams, the table in Co-op, your own dial in free-for-all",
+    what: "every screen gets a rain of top hats and a fanfare",
+  },
+  {
+    id: "neutral",
+    name: "Switzerland",
+    how: "drop your dial dead centre",
+    what: "a very neutral chip",
+  },
+  {
     id: "disco",
     name: "Disco",
     how: "ask for it (a number of seconds makes it a timed drop)",

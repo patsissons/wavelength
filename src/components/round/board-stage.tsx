@@ -5,6 +5,7 @@ import type { GameState } from "@shared/game/types";
 import { Board, type BoardDial } from "@/components/board/board";
 import { useSpinAnimation } from "@/components/board/use-spin";
 import { audio } from "@/lib/audio";
+import { hotWheel, neutralDrop } from "@/lib/eggs/round";
 import { vibrate } from "@/lib/haptics";
 import { useGameStore } from "@/lib/store";
 import { useCommand, useConnection } from "@/lib/use-game-connection";
@@ -176,6 +177,7 @@ export function BoardStage({
     async (position: number) => {
       if (!myDial) return;
       setLocalDial({ dialId: myDial.id, position });
+      neutralDrop(position);
       await send({ type: "dial.set", dialId: myDial.id, position });
       setLocalDial(null);
     },
@@ -184,6 +186,7 @@ export function BoardStage({
 
   const onFlick = useCallback(
     (velocity: number) => {
+      hotWheel(velocity);
       void send({ type: "spin.flick", velocity });
     },
     [send],

@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eggBus } from "@/lib/eggs/bus";
 import { useEggs } from "@/lib/eggs/store";
 import { usePrefs } from "@/lib/prefs";
+import { useGameStore } from "@/lib/store";
+import { createGame } from "@shared/game/commands";
+import type { RoundResult } from "@shared/game/types";
 import { EggsLayer } from "./eggs-layer";
 
 describe("EggsLayer", () => {
@@ -50,6 +53,80 @@ describe("EggsLayer", () => {
     });
     expect(document.querySelectorAll("[data-effect=egg-x]")).toHaveLength(3);
     expect(screen.getByTestId("egg-chip")).toHaveTextContent("rolled");
+  });
+
+  it("glows the wheel after a hot flick and rises the smoke", () => {
+    render(<EggsLayer />);
+    act(() => {
+      eggBus.emit({ kind: "hot" });
+      eggBus.emit({
+        kind: "rain",
+        id: "hot",
+        glyphs: ["💨"],
+        count: 2,
+        direction: "rise",
+      });
+    });
+    expect(document.documentElement.hasAttribute("data-egg-hot")).toBe(true);
+    const puff = document.querySelector("[data-effect=egg-hot]") as HTMLElement;
+    expect(puff.style.top).not.toBe("-60px");
+    act(() => {
+      vi.advanceTimersByTime(1600);
+    });
+    expect(document.documentElement.hasAttribute("data-egg-hot")).toBe(false);
+  });
+
+  it("spots a hat trick when the revealed history grows", () => {
+    const game = createGame({
+      code: "BCDF",
+      hostId: "p1",
+      hostName: "Ann",
+      hostTokenHash: "h",
+      now: 0,
+    }).game;
+    const four: RoundResult = {
+      roundIndex: 0,
+      psychicId: "p1",
+      psychicTeam: "left",
+      spectrum: { left: "a", right: "b" },
+      clue: "x",
+      target: 0.5,
+      dials: { shared: { position: 0.5, wedge: 4, owners: ["p2"] } },
+      vote: null,
+      deltas: {},
+      goAgain: false,
+      psychicBonus: 0,
+      gameOver: null,
+      stats: {
+        durationMs: 0,
+        drawMs: null,
+        pickMs: null,
+        clueMs: null,
+        guessMs: null,
+        spins: 1,
+        peeks: 0,
+        clueLength: 1,
+        players: {},
+      },
+    };
+    useGameStore.getState().reset();
+    render(<EggsLayer />);
+    const snapshot = (history: RoundResult[]) =>
+      useGameStore.getState().receive({
+        type: "snapshot",
+        state: { ...game, history },
+        you: { playerId: "p1", target: null },
+      });
+    act(() => snapshot([four, four]));
+    expect(screen.queryByTestId("egg-chip")).toBeNull();
+    act(() => snapshot([four, four, four]));
+    expect(screen.getByTestId("egg-chip")).toHaveTextContent(
+      "Hat trick, Left Brain!",
+    );
+    expect(document.querySelectorAll("[data-effect=egg-hattrick]").length).toBe(
+      16,
+    );
+    useGameStore.getState().reset();
   });
 
   it("reflects CRT on <html> and shows the pet", () => {

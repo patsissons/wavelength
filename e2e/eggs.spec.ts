@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
+  dragDial,
+  flickWheelHard,
   hostGame,
   joinGame,
   playerRow,
@@ -136,5 +138,34 @@ test("a magic clue reaches every screen in the room", async ({ browser }) => {
       page.locator("[data-testid=effect-burst][data-effect=egg-marco]").first(),
     ).toBeAttached();
   }
+  await game.close();
+});
+
+test("a flat-out flick heats the wheel and a centred dial is very neutral", async ({
+  browser,
+}) => {
+  const game = await startTeamsGame(browser);
+  const { host, cid } = game;
+  await host.page.getByTestId("draw-card").click();
+  await host.page.getByTestId("flip-card").click();
+  await host.page.getByTestId("pick-side-1").click();
+  await expect(host.page.getByTestId("panel")).toContainText("Spin the wheel");
+  await flickWheelHard(host.page);
+  await expect(host.page.locator("html")).toHaveAttribute("data-egg-hot", "");
+  await expect(
+    host.page
+      .locator("[data-testid=effect-burst][data-effect=egg-hot]")
+      .first(),
+  ).toBeAttached();
+  await expect(host.page.locator("html")).not.toHaveAttribute("data-egg-hot", {
+    timeout: 3000,
+  });
+  await expect(host.page.getByTestId("wedge-4")).toBeVisible();
+  await host.page.getByTestId("clue-input").fill("Middle");
+  await host.page.getByTestId("submit-clue").click();
+  await expect(cid.page.getByTestId("clue")).toContainText("Middle");
+
+  await dragDial(cid.page, 0.5);
+  await expect(cid.page.getByTestId("egg-chip")).toHaveText("🇨🇭 Very neutral.");
   await game.close();
 });

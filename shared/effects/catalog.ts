@@ -21,7 +21,8 @@ export type SoundPatch =
   | "poke"
   | "konami"
   | "squeak"
-  | "splash";
+  | "splash"
+  | "squeal";
 
 export type ScreenFx = "shake" | "flash" | "fog" | "spotlight";
 

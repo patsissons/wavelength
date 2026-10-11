@@ -1,6 +1,7 @@
 import { Navigate, useParams } from "react-router";
 import { ConnectionBanner } from "@/components/connection-banner";
 import { Lounge } from "@/components/lounge/lounge";
+import { RoundScreen } from "@/components/round/round-screen";
 import { loadIdentity } from "@/lib/identity";
 import { useGameStore } from "@/lib/store";
 import { ConnectionProvider } from "@/components/connection-provider";
@@ -29,9 +30,12 @@ function GameScreen() {
     );
   }
   if (phase === "lobby") return <Lounge />;
-  return (
-    <main className="safe-area flex min-h-dvh items-center justify-center p-6 text-muted-foreground">
-      Round in progress ({phase})
-    </main>
-  );
+  if (phase === "gameover") {
+    return (
+      <main className="safe-area flex min-h-dvh items-center justify-center p-6 text-muted-foreground">
+        Game over
+      </main>
+    );
+  }
+  return <RoundScreen />;
 }

@@ -8,8 +8,10 @@ import {
 } from "react";
 import {
   SEGMENT,
+  SPIN,
   TAU,
   angularVelocity,
+  clamp,
   clientToView,
   normalizeAngle,
   pointToFullAngle,
@@ -84,7 +86,11 @@ export function useSpinDrag(
   const finish = useCallback(() => {
     if (!dragging.current) return;
     dragging.current = false;
-    const velocity = angularVelocity(samples.current);
+    // Fast flicks (and synthetic ones) can exceed the server's range.
+    const raw = angularVelocity(samples.current);
+    const velocity = Number.isFinite(raw)
+      ? clamp(raw, -SPIN.maxVelocity, SPIN.maxVelocity)
+      : 0;
     options.onFlick(velocity);
   }, [options]);
 

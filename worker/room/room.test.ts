@@ -100,4 +100,38 @@ describe("nextAlarmAt", () => {
     };
     expect(nextAlarmAt(game, 1000, 3000)).toBe(5000);
   });
+
+  it("wakes for the dial timer only while guessing", () => {
+    const round = {
+      index: 0,
+      psychicId: "p1",
+      psychicTeam: null,
+      card: null,
+      side: null,
+      spectrum: null,
+      spin: null,
+      spins: 0,
+      shroudOpen: false,
+      peeks: 0,
+      clue: "x",
+      guessDeadline: 4000,
+      dials: {},
+      votes: {},
+      target: null,
+      result: null,
+      log: [],
+      catchUp: false,
+      startedAt: 0,
+    };
+    const guessing: GameState = {
+      ...base,
+      phase: "guessing",
+      round,
+      players: { p1: player("p1", 7000) },
+    };
+    expect(nextAlarmAt(guessing, 1000, 60_000)).toBe(4000);
+    expect(nextAlarmAt({ ...guessing, phase: "voting" }, 1000, 60_000)).toBe(
+      7000 + 60_000,
+    );
+  });
 });

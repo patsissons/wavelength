@@ -42,6 +42,7 @@ function round(
     shroudOpen: false,
     peeks: 1,
     clue,
+    guessDeadline: null,
     dials,
     votes: {},
     target: null,

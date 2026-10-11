@@ -10,6 +10,7 @@ describe("parseClientMessage", () => {
       { type: "dial.move", dialId: "shared", position: 0.25 },
       { type: "shroud.toggle", cmdId, open: true },
       { cmdId, type: "settings.update", patch: { mode: "coop", rounds: 5 } },
+      { cmdId, type: "settings.update", patch: { guessSeconds: 60 } },
       { cmdId, type: "team.join", team: "left" },
       { cmdId, type: "player.rename", name: "  Pat " },
       { cmdId, type: "player.setAvatar", avatar: "dancing-unicorn" },
@@ -62,6 +63,11 @@ describe("parseClientMessage", () => {
         cmdId,
         type: "settings.update",
         patch: { targetScore: 99 },
+      }),
+      JSON.stringify({
+        cmdId,
+        type: "settings.update",
+        patch: { guessSeconds: 301 },
       }),
     ];
     for (const raw of bad) {

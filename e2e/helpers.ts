@@ -53,6 +53,7 @@ export async function startTeamsGame(
   browser: Browser,
   extraNames: string[] = [],
   avatars: Record<string, string> = {},
+  guessSeconds = 0,
 ) {
   const host = await hostGame(browser, "Ann");
   const bob = await joinGame(browser, host.code, "Bob");
@@ -79,6 +80,7 @@ export async function startTeamsGame(
     "data-variant",
     "default",
   );
+  await setGuessSeconds(host.page, guessSeconds);
   await host.page.keyboard.press("Escape");
   await expect(host.page.getByTestId("start-game")).toBeEnabled();
   await host.page.getByTestId("start-game").click();
@@ -86,6 +88,16 @@ export async function startTeamsGame(
   const all = [host, bob, cid, dee, ...extras];
   const close = () => Promise.all(all.map((c) => c.context.close()));
   return { host, bob, cid, dee, extras, all, code: host.code, close };
+}
+
+/** In the open settings sheet, pick a dial timer (0 leaves it off). */
+async function setGuessSeconds(page: Page, seconds: number) {
+  if (seconds === 0) return;
+  await page.getByTestId(`guess-seconds-${seconds}`).click();
+  await expect(page.getByTestId(`guess-seconds-${seconds}`)).toHaveAttribute(
+    "data-variant",
+    "default",
+  );
 }
 
 /** Drive the psychic from drawing through to the clue. */
@@ -167,6 +179,7 @@ export async function startModeGame(
   mode: "coop" | "ffa",
   rounds: number,
   guestNames: string[],
+  guessSeconds = 0,
 ) {
   const host = await hostGame(browser, "Ann");
   const guests: Client[] = [];
@@ -197,10 +210,16 @@ export async function startModeGame(
       String(i + 1),
     );
   }
+  await setGuessSeconds(host.page, guessSeconds);
   await host.page.keyboard.press("Escape");
   await expect(host.page.getByTestId("mode-label")).toContainText(
     `${rounds} round`,
   );
+  if (guessSeconds > 0) {
+    await expect(host.page.getByTestId("mode-label")).toContainText(
+      `${guessSeconds}s dial timer`,
+    );
+  }
   await host.page.getByTestId("start-game").click();
   await expect(host.page.getByTestId("score-header")).toBeVisible();
   const all = [host, ...guests];

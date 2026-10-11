@@ -1,5 +1,6 @@
 import confetti from "canvas-confetti";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { effectById, type ScreenFx } from "@shared/effects/catalog";
 import { audio } from "@/lib/audio";
 import { celebrationBus, effectBus, type Celebration } from "@/lib/effect-bus";
@@ -128,6 +129,12 @@ function celebrate(c: Exclude<Celebration, { kind: "clue" }>, reduce: boolean) {
   const common = { disableForReducedMotion: true, zIndex: 60 } as const;
   if (c.kind === "newround") {
     audio.play("newround");
+    return;
+  }
+  if (c.kind === "timeup") {
+    toast("⏰ Time's up! Dials locked where they were.");
+    audio.play("buzz");
+    vibrate([80, 40, 80]);
     return;
   }
   if (c.kind === "gameover") {

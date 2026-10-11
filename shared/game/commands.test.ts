@@ -5,7 +5,8 @@ import {
   connectPlayer,
   createGame,
   disconnectPlayer,
-  expireGrace,
+  expireTimers,
+  guessDeadline,
   handleCommand,
   joinGame,
   type PrivateMessage,
@@ -141,6 +142,11 @@ function psychicTurn(
   expect(state.game.phase).toBe("guessing");
   expect(state.game.round!.shroudOpen).toBe(false);
   return { state, target };
+}
+
+/** The pending dial-timer deadline the room should wake for. */
+function nextAlarm(state: ServerState): number | null {
+  return guessDeadline(state.game);
 }
 
 /* ---------- lobby ---------- */
@@ -623,11 +629,11 @@ describe("presence", () => {
     expect(state.game.players.p2!.connected).toBe(false);
     expect(state.game.players.p2!.away).toBe(false);
 
-    const early = expireGrace(state, clock + 1000, 3000);
+    const early = expireTimers(state, clock + 1000, 3000);
     expect(early.events).toEqual([]);
     expect(early.nextDeadline).toBe(clock + 3000);
 
-    const late = expireGrace(state, clock + 3000, 3000);
+    const late = expireTimers(state, clock + 3000, 3000);
     state = { ...state, game: applyEvents(state.game, late.events) };
     expect(state.game.players.p2!.away).toBe(true);
     expect(state.game.players.p0!.away).toBe(true);
@@ -676,6 +682,64 @@ describe("presence", () => {
     state = run(state, "p0", cmd("host.endGame"));
     expect(state.game.phase).toBe("gameover");
     expect(state.game.gameOver!.winner).toBe("left"); // left started on 1
+  });
+});
+
+describe("dial timer", () => {
+  it("locks every dial where it is when the timer runs out", () => {
+    let { state } = setup("ffa", ["Ann", "Bob", "Cid"]);
+    state = run(
+      state,
+      "p0",
+      cmd("settings.update", { patch: { guessSeconds: 30 } }),
+    );
+    state = run(state, "p0", cmd("game.start"));
+    expect(state.game.round!.guessDeadline).toBeNull();
+    const before = clock;
+    ({ state } = psychicTurn(state));
+    const clueAt = before + 30; // three commands at 10 ms each
+    expect(state.game.round!.guessDeadline).toBe(clueAt + 30_000);
+    expect(nextAlarm(state)).toBe(clueAt + 30_000);
+
+    state = run(state, "p1", cmd("dial.set", { dialId: "p1", position: 0.3 }));
+    state = run(state, "p1", cmd("dial.accept", { dialId: "p1" }));
+    state = run(state, "p2", cmd("dial.set", { dialId: "p2", position: 0.7 }));
+    expect(state.game.phase).toBe("guessing");
+
+    const early = expireTimers(state, clueAt + 29_000, 60_000);
+    expect(early.events).toEqual([]);
+    expect(early.nextDeadline).toBe(clueAt + 30_000);
+
+    const late = expireTimers(state, clueAt + 30_000, 60_000);
+    expect(late.events.map((e) => e.type)).toEqual([
+      "guess.expired",
+      "dial.locked",
+      "round.revealed",
+    ]);
+    state = { ...state, game: applyEvents(state.game, late.events) };
+    expect(state.game.phase).toBe("reveal");
+    expect(state.game.round!.guessDeadline).toBeNull();
+    // Cid's unaccepted position still counts as the guess.
+    expect(state.game.round!.result!.dials.p2!.position).toBe(0.7);
+    expect(state.game.round!.log.some((e) => e.t === "timeout")).toBe(true);
+    expect(late.nextDeadline).toBeNull();
+    expect(nextAlarm(state)).toBeNull();
+  });
+
+  it("has no deadline without a timer and clears it once guessing ends", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    state = run(state, "p0", cmd("game.start"));
+    ({ state } = psychicTurn(state));
+    expect(state.game.round!.guessDeadline).toBeNull();
+    expect(nextAlarm(state)).toBeNull();
+    expect(expireTimers(state, clock + 60_000, 60_000).events).toEqual([]);
+    // The timer is a lobby setting: it cannot be switched on mid-round.
+    expectError(
+      state,
+      "p0",
+      cmd("settings.update", { patch: { guessSeconds: 15 } }),
+      "wrong_phase",
+    );
   });
 });
 

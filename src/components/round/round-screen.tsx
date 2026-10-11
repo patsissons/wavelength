@@ -7,6 +7,7 @@ import { EffectsBar, MuteToggle } from "@/components/effects/effects-bar";
 import { ShareStrip } from "@/components/lounge/share-card";
 import { BoardStage } from "./board-stage";
 import { GuesserPanel } from "./guesser-panel";
+import { GuessTimer } from "./guess-timer";
 import { HostControls } from "./host-controls";
 import { OpponentPanel } from "./opponent-panel";
 import { PresenceStrip } from "./presence-strip";
@@ -69,6 +70,12 @@ export function RoundScreen() {
               </span>
             )}
           </p>
+        )}
+        {game.phase === "guessing" && round.guessDeadline !== null && (
+          <GuessTimer
+            deadline={round.guessDeadline}
+            totalSeconds={game.settings.guessSeconds}
+          />
         )}
         {game.phase === "reveal" && round.result ? (
           <RevealPanel game={game} playerId={you.playerId} />

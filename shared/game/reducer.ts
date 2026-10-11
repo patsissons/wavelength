@@ -112,7 +112,14 @@ function reduce(state: GameState, event: GameEvent): GameState {
       return updateRound(state, {
         clue: event.clue,
         shroudOpen: false,
+        guessDeadline: event.deadline,
         log: logged(state, { t: "clue", at: event.at }),
+      });
+
+    case "guess.expired":
+      return updateRound(state, {
+        guessDeadline: null,
+        log: logged(state, { t: "timeout", at: event.at }),
       });
 
     case "dial.set": {

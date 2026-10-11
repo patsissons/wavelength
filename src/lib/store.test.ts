@@ -101,6 +101,7 @@ describe("store.receive", () => {
         shroudOpen: false,
         peeks: 0,
         clue: null,
+        guessDeadline: null,
         dials: {
           shared: {
             id: "shared",
@@ -175,6 +176,7 @@ describe("store.receive", () => {
         shroudOpen: false,
         peeks: 0,
         clue: "x",
+        guessDeadline: null,
         dials: { shared: dial },
         votes: {},
         target: null,
@@ -200,7 +202,7 @@ describe("store.receive", () => {
     s.receive({
       type: "event",
       version: 2,
-      event: { type: "clue.submitted", clue: "Banana", at: 2 },
+      event: { type: "clue.submitted", clue: "Banana", at: 2, deadline: null },
     });
     expect(seen).toHaveBeenLastCalledWith({ kind: "clue", clue: "Banana" });
 

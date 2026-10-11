@@ -3,7 +3,7 @@ import {
   connectPlayer,
   createGame,
   disconnectPlayer,
-  expireGrace,
+  expireTimers,
   handleCommand,
   joinGame,
   type PrivateMessage,
@@ -309,7 +309,7 @@ export class GameRoom extends Server<Env> {
       }
       return;
     }
-    const { events } = expireGrace(state, now, this.#graceMs());
+    const { events } = expireTimers(state, now, this.#graceMs());
     this.#applyAndBroadcast(events);
     await this.#persist();
     await this.#scheduleAlarm();

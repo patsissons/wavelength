@@ -30,6 +30,8 @@ export interface GameStore {
   error: GameError | null;
   /** The server runs a newer protocol than this bundle. */
   outdated: boolean;
+  /** Server time minus local time, measured when the clue arrives. */
+  clockSkew: number;
   /** Handle a server message; returns "gap" when a resync is required. */
   receive: (message: ServerMessage) => "gap" | undefined;
   setConn: (status: ConnStatus) => void;
@@ -57,6 +59,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   live: emptyLive(),
   error: null,
   outdated: false,
+  clockSkew: 0,
 
   receive(message) {
     switch (message.type) {
@@ -83,6 +86,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
           const dials = { ...get().live.dials };
           delete dials[message.event.dialId];
           set({ game: next, live: { ...get().live, dials } });
+          return;
+        }
+        if (message.event.type === "clue.submitted") {
+          // The dial deadline is server time; remember how far off we are.
+          set({ game: next, clockSkew: message.event.at - Date.now() });
           return;
         }
         if (ROUND_RESETS.has(message.event.type)) {
@@ -181,6 +189,8 @@ function celebrate(
     celebrationBus.emit({ kind: "gameover" });
   } else if (event.type === "clue.submitted") {
     celebrationBus.emit({ kind: "clue", clue: event.clue });
+  } else if (event.type === "guess.expired") {
+    celebrationBus.emit({ kind: "timeup" });
   } else if (event.type === "round.revealed" && playerId) {
     const mine = Object.values(event.result.dials).find((d) =>
       d.owners.includes(playerId),

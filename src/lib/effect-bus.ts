@@ -27,6 +27,8 @@ export type Celebration =
   | { kind: "newround" }
   | { kind: "gameover" }
   /** The clue was given; the eggs layer checks it for magic words. */
-  | { kind: "clue"; clue: string };
+  | { kind: "clue"; clue: string }
+  /** The dial timer ran out and every dial locked where it was. */
+  | { kind: "timeup" };
 
 export const celebrationBus = new Bus<Celebration>();

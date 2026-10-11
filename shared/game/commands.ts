@@ -246,16 +246,22 @@ export function disconnectPlayer(
 }
 
 /**
- * Mark players away whose grace period has expired, migrate the host if
- * needed and auto-advance anything that was only waiting on them.
+ * The room's clock tick: mark players away whose grace period has expired
+ * (migrating the host if needed), lock every dial if the dial timer has
+ * run out, and auto-advance anything that was only waiting on them.
+ * `nextDeadline` is the earliest moment this needs to run again.
  */
-export function expireGrace(
+export function expireTimers(
   state: ServerState,
   now: number,
   graceMs: number,
 ): { events: GameEvent[]; nextDeadline: number | null } {
   const tx = new Tx(state.game, state.secret);
   let nextDeadline: number | null = null;
+  const pending = (deadline: number) => {
+    nextDeadline =
+      nextDeadline === null ? deadline : Math.min(nextDeadline, deadline);
+  };
   for (const player of playersInOrder(tx.game)) {
     if (player.connected || player.away || player.disconnectedAt === null)
       continue;
@@ -269,13 +275,35 @@ export function expireGrace(
         disconnectedAt: player.disconnectedAt,
       });
     } else {
-      nextDeadline =
-        nextDeadline === null ? deadline : Math.min(nextDeadline, deadline);
+      pending(deadline);
     }
   }
   migrateHost(tx);
   autoAdvance(tx, now);
+  const deadline = guessDeadline(tx.game);
+  if (deadline !== null) {
+    if (deadline <= now) expireGuess(tx, now);
+    else pending(deadline);
+  }
   return { events: tx.events, nextDeadline };
+}
+
+/** The pending dial-timer deadline, if the round is still being guessed. */
+export function guessDeadline(game: GameState): number | null {
+  if (game.phase !== "guessing") return null;
+  return game.round?.guessDeadline ?? null;
+}
+
+/** Time's up: every dial locks where it is, then the round moves on. */
+function expireGuess(tx: Tx, now: number) {
+  const round = tx.game.round;
+  if (!round || tx.game.phase !== "guessing") return;
+  tx.emit({ type: "guess.expired", at: now });
+  for (const dial of Object.values(round.dials)) {
+    if (!dial.locked)
+      tx.emit({ type: "dial.locked", dialId: dial.id, at: now });
+  }
+  afterGuessing(tx, now);
 }
 
 function migrateHost(tx: Tx) {
@@ -417,12 +445,19 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
         tx.emit({ type: "shroud.toggled", open: cmd.open, at: ctx.now });
       return;
 
-    case "clue.submit":
+    case "clue.submit": {
       phase("clue");
       psychic();
-      tx.emit({ type: "clue.submitted", clue: cmd.clue, at: ctx.now });
+      const seconds = game.settings.guessSeconds;
+      tx.emit({
+        type: "clue.submitted",
+        clue: cmd.clue,
+        at: ctx.now,
+        deadline: seconds > 0 ? ctx.now + seconds * 1000 : null,
+      });
       tx.emit({ type: "phase.changed", phase: "guessing" });
       return;
+    }
 
     case "dial.set": {
       phase("guessing");
@@ -709,6 +744,7 @@ function makeRound(
       shroudOpen: false,
       peeks: 0,
       clue: null,
+      guessDeadline: null,
       dials,
       votes: {},
       target: null,

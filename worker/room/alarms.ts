@@ -1,3 +1,4 @@
+import { guessDeadline } from "@shared/game/commands";
 import type { GameState } from "@shared/game/types";
 
 export const DEFAULT_GRACE_MS = 60_000;
@@ -17,5 +18,7 @@ export function nextAlarmAt(
       continue;
     next = Math.min(next, player.disconnectedAt + graceMs);
   }
+  const timer = guessDeadline(game);
+  if (timer !== null) next = Math.min(next, timer);
   return next;
 }

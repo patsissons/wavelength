@@ -21,6 +21,7 @@ import { AvatarPicker } from "@/components/avatar/avatar-picker";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { usePrefs } from "@/lib/prefs";
 import { selectIsHost, useGameStore } from "@/lib/store";
+import { formatTimer } from "@/lib/time";
 import { useCommand } from "@/lib/use-game-connection";
 import { EnableSound } from "./enable-sound";
 import { HostSettings } from "./host-settings";
@@ -92,6 +93,8 @@ export function Lounge() {
               {game.settings.mode === "teams"
                 ? ` · first to ${game.settings.targetScore}`
                 : ` · ${game.settings.rounds} round${game.settings.rounds === 1 ? "" : "s"} · ${count} turn${count === 1 ? "" : "s"} each`}
+              {game.settings.guessSeconds > 0 &&
+                ` · ${formatTimer(game.settings.guessSeconds)} dial timer`}
             </span>
           </p>
         </div>

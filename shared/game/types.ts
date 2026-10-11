@@ -109,6 +109,8 @@ export interface RoundResult {
   deltas: Record<string, number>;
   /** Teams catch-up: the same team goes again. */
   goAgain: boolean;
+  /** Decided at reveal; applied when the round advances. */
+  gameOver: GameOver | null;
 }
 
 export interface Round {
@@ -149,7 +151,7 @@ export interface GameState {
   players: Record<string, Player>;
   /** Teams: whose turn it is. */
   activeTeam: TeamId | null;
-  /** Psychic rotation pointers. */
+  /** Psychic rotation: join `order` of the last psychic per pool (-1 = none). */
   psychicCursor: { left: number; right: number; all: number };
   /**
    * Scores keyed by "left"/"right" (teams), "coop" (co-op) or player id
@@ -164,7 +166,6 @@ export interface GameState {
   gameOver: GameOver | null;
   deckRemaining: number;
   createdAt: number;
-  lastActivityAt: number;
 }
 
 export const TEAM_NAMES: Record<TeamId, string> = {

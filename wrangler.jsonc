@@ -18,9 +18,11 @@
     "enabled": true,
   },
   "workers_dev": true,
+  "routes": [{ "pattern": "wavelength.lgtm.page", "custom_domain": true }],
   "env": {
     // Deterministic, fast e2e runs (see playwright.config.ts).
     "e2e": {
+      "routes": [],
       "vars": {
         "GAME_SEED": "e2e",
         "GRACE_MS": "3000",

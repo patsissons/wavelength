@@ -111,5 +111,6 @@ pnpm deploy
 Requires `wrangler login` (or `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`).
 The Worker serves static assets with SPA fallback and routes `/api/*` and
 `/parties/*` to the Worker first. CI (`.github/workflows/ci.yml`) validates
-every PR and deploys `main` with those two secrets. Add a custom domain in
-`wrangler.jsonc` (`routes`) when you have one.
+every PR and deploys `main` with those two secrets. Production is served at
+<https://wavelength.lgtm.page> (custom domain in `wrangler.jsonc` `routes`),
+with `wavelength.patricksissons.workers.dev` as a fallback.

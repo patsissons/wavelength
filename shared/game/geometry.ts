@@ -171,3 +171,58 @@ export function spinAngleAt(from: number, delta: number, t: number): number {
 export function discAngleToPosition(discAngle: number): number {
   return angleToPosition(normalizeAngle(discAngle + Math.PI / 2));
 }
+
+/* ---------- Pointer helpers ---------- */
+
+/** Full angle (0..2π, counter-clockwise from the right) of a point about C. */
+export function pointToFullAngle(x: number, y: number): number {
+  return normalizeAngle(Math.atan2(CY - y, x - CX));
+}
+
+export interface AngleSample {
+  angle: number;
+  t: number;
+}
+
+/**
+ * Angular velocity (rad/s, counter-clockwise positive) from the last
+ * `windowMs` of pointer samples, unwrapping across the 0/2π seam.
+ */
+export function angularVelocity(
+  samples: ReadonlyArray<AngleSample>,
+  windowMs = 80,
+): number {
+  if (samples.length < 2) return 0;
+  const last = samples[samples.length - 1]!;
+  let first = samples[0]!;
+  for (let i = samples.length - 2; i >= 0; i--) {
+    first = samples[i]!;
+    if (last.t - first.t >= windowMs) break;
+  }
+  const dt = (last.t - first.t) / 1000;
+  if (dt <= 0) return 0;
+  let delta = 0;
+  let prev = first.angle;
+  for (const s of samples) {
+    if (s.t <= first.t) continue;
+    let step = s.angle - prev;
+    if (step > Math.PI) step -= TAU;
+    if (step < -Math.PI) step += TAU;
+    delta += step;
+    prev = s.angle;
+  }
+  return delta / dt;
+}
+
+/** Convert a client point to viewBox coordinates using the SVG's box. */
+export function clientToView(
+  clientX: number,
+  clientY: number,
+  rect: { left: number; top: number; width: number; height: number },
+): { x: number; y: number } {
+  const scale = rect.width > 0 ? VIEW.width / rect.width : 1;
+  return {
+    x: (clientX - rect.left) * scale,
+    y: (clientY - rect.top) * scale,
+  };
+}

@@ -5,7 +5,10 @@ import {
   R,
   SEGMENT,
   WEDGE_HALF,
+  angularVelocity,
   clampTarget,
+  clientToView,
+  pointToFullAngle,
   discAngleForTarget,
   discAngleToPosition,
   normalizeAngle,
@@ -122,5 +125,35 @@ describe("spin", () => {
   it("starts where it was and eases out", () => {
     expect(spinAngleAt(2, 10, 0)).toBe(2);
     expect(spinAngleAt(2, 10, 0.5)).toBeGreaterThan(2 + 10 * 0.5);
+  });
+});
+
+describe("pointer helpers", () => {
+  it("estimates angular velocity across the seam", () => {
+    const samples = [
+      { angle: 6.2, t: 0 },
+      { angle: 6.25, t: 20 },
+      { angle: 0.02, t: 40 },
+      { angle: 0.1, t: 60 },
+    ];
+    const v = angularVelocity(samples, 50);
+    expect(v).toBeGreaterThan(0);
+    expect(v).toBeCloseTo((0.1 - 6.2 + Math.PI * 2) / 0.06, 3);
+    expect(angularVelocity([{ angle: 1, t: 0 }])).toBe(0);
+    expect(
+      angularVelocity([
+        { angle: 1, t: 0 },
+        { angle: 0.5, t: 100 },
+      ]),
+    ).toBeCloseTo(-5);
+  });
+
+  it("maps client coordinates into the viewBox", () => {
+    const rect = { left: 10, top: 20, width: 200, height: 115 };
+    const p = clientToView(110, 20 + 102.5, rect);
+    close(p.x, 200);
+    close(p.y, 205);
+    close(pointToFullAngle(CX + 10, CY - 10), Math.PI / 4);
+    close(pointToFullAngle(CX - 10, CY + 10), Math.PI * 1.25);
   });
 });

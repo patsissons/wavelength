@@ -156,9 +156,9 @@ export const EGGS: ReadonlyArray<EggDef> = [
   {
     id: "seasons",
     name: "Seasons",
-    how: "play in Halloween week, over the winter holidays, on New Year's Eve or Day, or on April 1st",
-    what: "a pumpkin shroud and drifting ghosts; snow on the home screen and in the lounge; fireworks at game over; a tagline with a disclaimer",
-    api: 'wavelength.season("halloween" | "winter" | "newyear" | "fools" | null)',
+    how: "nothing to do: the calendar switches them on in Halloween week, over the Thanksgiving weekends (US and Canadian), the winter holidays, New Year's Eve and Day, St Patrick's Day and April 1st",
+    what: "a pumpkin shroud and drifting ghosts; falling leaves and a turkey; snow on the home screen and in the lounge; fireworks at game over; shamrocks and a green shroud; a tagline with a disclaimer",
+    api: 'wavelength.season("halloween" | "thanksgiving" | "winter" | "newyear" | "stpatricks" | "fools" | null)',
   },
   {
     id: "reset",

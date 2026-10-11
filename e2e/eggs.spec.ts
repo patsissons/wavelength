@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { seasonFor, tagline } from "../src/lib/eggs/seasons";
 import {
   dragDial,
   flickWheelHard,
@@ -65,8 +66,9 @@ test("the console menu lists the eggs and the API fires them", async ({
 
   // Seven quick taps on the title: the wave, and a quip for a tagline.
   const title = page.getByRole("heading", { name: "Wavelength" });
+  // Whatever the calendar says today (the seasons have their own test).
   await expect(page.getByTestId("tagline")).toHaveText(
-    "Read your friends' minds.",
+    tagline(seasonFor(new Date())),
   );
   for (let i = 0; i < 7; i++) await title.click();
   await expect(title).toHaveAttribute("data-egg-wave", "true");
@@ -233,15 +235,30 @@ test("a season dresses the home screen and the lounge, never the round", async (
   await expect(host.page.getByTestId("tagline")).toContainText(
     "Results may vary",
   );
+  await host.page.evaluate(() => window.wavelength!.season("thanksgiving"));
+  await expect(host.page.getByTestId("egg-ambient")).toHaveAttribute(
+    "data-season",
+    "thanksgiving",
+  );
+  await expect(host.page.getByTestId("tagline")).toContainText("gravy");
+  await host.page.evaluate(() => window.wavelength!.season("stpatricks"));
+  await expect(host.page.getByTestId("tagline")).toContainText("Sláinte");
   expect(
     await host.page.evaluate(() => window.wavelength!.season("summer")),
   ).toContain("seasons:");
   await host.page.evaluate(() => window.wavelength!.season(null));
-  await expect(host.page.locator("html")).not.toHaveAttribute(
-    "data-egg-season",
-  );
-  await expect(host.page.getByTestId("tagline")).toHaveText(
-    "Read your friends' minds.",
-  );
+  // Back to whatever the calendar says today.
+  const today = seasonFor(new Date());
+  if (today === null) {
+    await expect(host.page.locator("html")).not.toHaveAttribute(
+      "data-egg-season",
+    );
+  } else {
+    await expect(host.page.locator("html")).toHaveAttribute(
+      "data-egg-season",
+      today,
+    );
+  }
+  await expect(host.page.getByTestId("tagline")).toHaveText(tagline(today));
   await game.close();
 });

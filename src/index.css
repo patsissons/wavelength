@@ -391,6 +391,18 @@ textarea,
 [data-egg-season="halloween"] [data-testid="shroud"] > text {
   fill: oklch(0.25 0.05 45);
 }
+[data-egg-season="thanksgiving"] [data-testid="shroud"] > path {
+  fill: oklch(0.55 0.12 55);
+}
+[data-egg-season="thanksgiving"] [data-testid="shroud"] > text {
+  fill: oklch(0.22 0.04 55);
+}
+[data-egg-season="stpatricks"] [data-testid="shroud"] > path {
+  fill: oklch(0.55 0.16 150);
+}
+[data-egg-season="stpatricks"] [data-testid="shroud"] > text {
+  fill: oklch(0.22 0.05 150);
+}
 .egg-snow {
   animation: egg-snow linear infinite;
 }

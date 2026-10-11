@@ -21,6 +21,8 @@ function EggsLayer() {
 describe("EggsLayer", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    // A plain June day: the calendar must not dress anything here.
+    vi.setSystemTime(new Date("2026-06-15T12:00:00"));
     useEggs.getState().reset();
     usePrefs.getState().setReduceEffects(false);
     // jsdom has no Web Animations API.

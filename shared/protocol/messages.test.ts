@@ -34,6 +34,7 @@ describe("parseClientMessage", () => {
       { cmdId, type: "game.playAgain" },
       { cmdId, type: "effect.send", effectId: "applause" },
       { cmdId, type: "poke.send", playerId: "p2" },
+      { cmdId, type: "reaction.send", playerId: "p2", emoji: "🔥" },
     ];
     for (const message of messages) {
       const parsed = parseClientMessage(JSON.stringify(message));
@@ -59,6 +60,12 @@ describe("parseClientMessage", () => {
       JSON.stringify({ cmdId, type: "player.setAvatar", avatar: "ab" }),
       JSON.stringify({ cmdId, type: "player.setAvatar", avatar: "🦄🦄" }),
       JSON.stringify({ cmdId, type: "player.setAvatar", avatar: "no-such" }),
+      JSON.stringify({
+        cmdId,
+        type: "reaction.send",
+        playerId: "p2",
+        emoji: "🦄",
+      }),
       JSON.stringify({
         cmdId,
         type: "settings.update",

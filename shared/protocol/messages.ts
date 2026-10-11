@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AVATAR_MAX, isValidAvatar } from "../avatars/catalog";
+import { isReaction } from "../effects/reactions";
 import type { GameState } from "../game/types";
 import { LIMITS } from "../game/types";
 import type { GameEvent } from "./events";
@@ -100,6 +101,11 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
     effectId: z.string().min(1).max(40),
   }),
   withCmd({ type: z.literal("poke.send"), playerId: PlayerId }),
+  withCmd({
+    type: z.literal("reaction.send"),
+    playerId: PlayerId,
+    emoji: z.string().min(1).max(16).refine(isReaction, "not a reaction"),
+  }),
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -124,7 +130,14 @@ export type ErrorCode =
 export type Ephemeral =
   | { kind: "dial.live"; dialId: string; position: number; by: string }
   | { kind: "effect"; effectId: string; from: string; nonce: string }
-  | { kind: "poke"; from: string; to: string; nonce: string };
+  | { kind: "poke"; from: string; to: string; nonce: string }
+  | {
+      kind: "reaction";
+      from: string;
+      to: string;
+      emoji: string;
+      nonce: string;
+    };
 
 export type ServerMessage =
   | {

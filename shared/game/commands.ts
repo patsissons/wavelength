@@ -1,5 +1,6 @@
 import type { DeckState } from "../deck/deck";
 import { canSendEffect } from "../effects/catalog";
+import { canReact, reactionEffectId } from "../effects/reactions";
 import { buildDeck, deckRemaining, drawCard } from "../deck/deck";
 import type { GameEvent } from "../protocol/events";
 import type {
@@ -608,6 +609,20 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
         type: "effect.sent",
         by: me.id,
         effectId: "poke",
+        to: cmd.playerId,
+      });
+      return;
+
+    case "reaction.send":
+      // Post-round only: the arena is where these are thrown from.
+      if (!game.settings.effects) fail("not_allowed", "effects are off");
+      if (!canReact(game)) fail("wrong_phase", "reactions wait for the reveal");
+      if (cmd.playerId === me.id) fail("invalid", "aim at someone else");
+      if (!game.players[cmd.playerId]) fail("invalid", "no such player");
+      tx.emit({
+        type: "effect.sent",
+        by: me.id,
+        effectId: reactionEffectId(cmd.emoji),
         to: cmd.playerId,
       });
       return;

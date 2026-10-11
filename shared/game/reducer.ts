@@ -223,7 +223,11 @@ function reduce(state: GameState, event: GameEvent): GameState {
 
     case "effect.sent": {
       let tally = tallied(state.effectTally, event.by, event.effectId);
-      if (event.to) tally = tallied(tally, event.to, "poked");
+      if (event.to) {
+        // Targets count what landed on them: pokes and thrown reactions.
+        const received = event.effectId === "poke" ? "poked" : "reacted";
+        tally = tallied(tally, event.to, received);
+      }
       return { ...state, effectTally: tally };
     }
 

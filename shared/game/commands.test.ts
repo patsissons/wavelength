@@ -928,6 +928,35 @@ describe("reactions and pokes", () => {
     expect(state.game.effectTally).toEqual({});
   });
 
+  it("throws arena reactions after the reveal and tallies them both ways", () => {
+    let { state } = setup("coop", ["Ann", "Bob", "Cid"]);
+    const react = (to: string, emoji = "🔥") =>
+      cmd("reaction.send", { playerId: to, emoji });
+    expectError(state, "p1", react("p0"), "wrong_phase"); // lobby
+    state = run(state, "p0", cmd("game.start"));
+    ({ state } = psychicTurn(state));
+    expectError(state, "p1", react("p0"), "wrong_phase"); // guessing
+    state = run(state, "p1", cmd("dial.accept", { dialId: "shared" }));
+    state = run(state, "p2", cmd("dial.accept", { dialId: "shared" }));
+    expect(state.game.phase).toBe("reveal");
+
+    state = run(state, "p1", react("p0"));
+    state = run(state, "p1", react("p0", "👏"));
+    state = run(state, "p2", react("p0"));
+    expect(state.game.effectTally).toEqual({
+      p0: { reacted: 3 },
+      p1: { "reaction:🔥": 1, "reaction:👏": 1 },
+      p2: { "reaction:🔥": 1 },
+    });
+    expectError(state, "p1", react("p1"), "invalid");
+    expectError(state, "p1", react("zz"), "invalid");
+
+    // Still open on the game-over screen.
+    state = run(state, "p0", cmd("host.endGame"));
+    state = run(state, "p0", react("p1"));
+    expect(state.game.effectTally.p1).toMatchObject({ reacted: 1 });
+  });
+
   it("refuses reactions when effects are off", () => {
     let { state } = setup("coop", ["Ann", "Bob"]);
     state = run(
@@ -945,6 +974,12 @@ describe("reactions and pokes", () => {
       state,
       "p1",
       cmd("effect.send", { effectId: "applause" }),
+      "not_allowed",
+    );
+    expectError(
+      state,
+      "p1",
+      cmd("reaction.send", { playerId: "p0", emoji: "🔥" }),
       "not_allowed",
     );
   });

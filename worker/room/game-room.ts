@@ -46,6 +46,7 @@ export class GameRoom extends Server<Env> {
 
   #state: ServerState | null = null;
   #playerBuckets = new Map<string, TokenBucket>();
+  #reactionBuckets = new Map<string, TokenBucket>();
   #roomBucket = new TokenBucket(
     EFFECT_LIMITS.room.capacity,
     EFFECT_LIMITS.room.perMs,
@@ -200,9 +201,13 @@ export class GameRoom extends Server<Env> {
     }
 
     const now = Date.now();
-    const reaction =
+    const effect =
       message.type === "effect.send" || message.type === "poke.send";
-    if (reaction && !this.#takeEffectToken(playerId, now)) {
+    const limited =
+      (effect && !this.#takeEffectToken(playerId, now)) ||
+      (message.type === "reaction.send" &&
+        !this.#takeReactionToken(playerId, now));
+    if (limited) {
       this.#send(connection, {
         type: "error",
         cmdId: message.cmdId,
@@ -253,6 +258,17 @@ export class GameRoom extends Server<Env> {
           kind: "poke",
           from: playerId,
           to: message.playerId,
+          nonce: message.cmdId,
+        },
+      });
+    } else if (message.type === "reaction.send") {
+      this.#broadcast({
+        type: "ephemeral",
+        payload: {
+          kind: "reaction",
+          from: playerId,
+          to: message.playerId,
+          emoji: message.emoji,
           nonce: message.cmdId,
         },
       });
@@ -365,6 +381,20 @@ export class GameRoom extends Server<Env> {
       this.#playerBuckets.set(playerId, bucket);
     }
     return bucket.take(now) && this.#roomBucket.take(now);
+  }
+
+  /** Reactions have their own, looser per-player bucket and skip the room one. */
+  #takeReactionToken(playerId: string, now: number): boolean {
+    let bucket = this.#reactionBuckets.get(playerId);
+    if (!bucket) {
+      bucket = new TokenBucket(
+        EFFECT_LIMITS.reaction.capacity,
+        EFFECT_LIMITS.reaction.perMs,
+        now,
+      );
+      this.#reactionBuckets.set(playerId, bucket);
+    }
+    return bucket.take(now);
   }
 
   /* ---------- Plumbing ---------- */

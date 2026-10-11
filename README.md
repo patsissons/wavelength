@@ -132,3 +132,8 @@ The Worker serves static assets with SPA fallback and routes `/api/*` and
 every PR and deploys `main` with those two secrets. Production is served at
 <https://wavelength.lgtm.page> (custom domain in `wrangler.jsonc` `routes`),
 with `wavelength.patricksissons.workers.dev` as a fallback.
+
+Every PR also gets a preview (`.github/workflows/preview.yml`) at
+`https://pr-<N>-wavelength.patricksissons.workers.dev`, with its own Durable
+Object storage. The URL is posted as a PR comment, updated on each push, and
+the preview is deleted when the PR is merged or closed.

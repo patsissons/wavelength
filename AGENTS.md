@@ -88,6 +88,9 @@ Commit in small, modular units (one logical change per commit).
 
 - wrangler environments do not inherit `durable_objects`; the `e2e` env
   declares the binding again.
+- Workers Previews (`wrangler preview`, used for PR previews) inherit no
+  top-level bindings or vars; the `previews` block in `wrangler.jsonc`
+  repeats the `GameRoom` binding. Add any new binding there too.
 - A server-initiated WebSocket close inside `onConnect` does not complete in
   local workerd; clients act on the in-band `error` frame instead.
 - `tsc -b` build info (`node_modules/.tmp`) can go stale after tsconfig

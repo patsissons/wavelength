@@ -61,6 +61,8 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
     dialId: DialId,
     position: Position,
   }),
+  // "I opened the reactions arena": after a reveal everyone follows.
+  z.object({ type: z.literal("arena.open") }),
   // lobby
   withCmd({ type: z.literal("settings.update"), patch: SettingsPatchSchema }),
   withCmd({ type: z.literal("team.join"), team: TeamIdSchema }),
@@ -131,6 +133,7 @@ export type Ephemeral =
   | { kind: "dial.live"; dialId: string; position: number; by: string }
   | { kind: "effect"; effectId: string; from: string; nonce: string }
   | { kind: "poke"; from: string; to: string; nonce: string }
+  | { kind: "arena"; from: string }
   | {
       kind: "reaction";
       from: string;

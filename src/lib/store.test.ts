@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createGame } from "@shared/game/commands";
 import type { RoundResult } from "@shared/game/types";
 import { celebrationBus } from "./effect-bus";
+import { useArena } from "./arena";
 import { useGameStore } from "./store";
 
 const game = createGame({
@@ -83,6 +84,26 @@ describe("store.receive", () => {
     });
     s.receive({ type: "error", code: "rate_limited", message: "slow" });
     expect(useGameStore.getState().error?.code).toBe("rate_limited");
+  });
+
+  it("follows someone into the arena only after a reveal", () => {
+    const s = useGameStore.getState();
+    useArena.setState({ open: false });
+    s.receive({
+      type: "snapshot",
+      state: game,
+      you: { playerId: "p1", target: null },
+    });
+    s.receive({ type: "ephemeral", payload: { kind: "arena", from: "p2" } });
+    expect(useArena.getState().open).toBe(false);
+    s.receive({
+      type: "snapshot",
+      state: { ...game, phase: "reveal" },
+      you: { playerId: "p1", target: null },
+    });
+    s.receive({ type: "ephemeral", payload: { kind: "arena", from: "p2" } });
+    expect(useArena.getState().open).toBe(true);
+    useArena.setState({ open: false });
   });
 
   it("drops a dial's live preview once its position is committed", () => {

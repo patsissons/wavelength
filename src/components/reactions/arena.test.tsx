@@ -89,6 +89,75 @@ describe("Arena", () => {
     });
   });
 
+  it("scrolls the tray when the finger slides along it, without a throw", () => {
+    render(<Arena />);
+    const tray = screen.getByTestId("arena-tray");
+    vi.spyOn(tray, "getBoundingClientRect").mockReturnValue({
+      top: 480,
+      bottom: 560,
+      left: 0,
+      right: 360,
+      width: 360,
+      height: 80,
+      x: 0,
+      y: 480,
+      toJSON: () => ({}),
+    });
+    const fire = screen.getByTestId("arena-emoji-🔥");
+    fireEvent.pointerDown(fire, {
+      pointerId: 3,
+      isPrimary: true,
+      clientX: 300,
+      clientY: 520,
+    });
+    expect(screen.getByTestId("arena-drag")).toBeInTheDocument();
+    fireEvent.pointerMove(fire, { pointerId: 3, clientX: 240, clientY: 523 });
+    expect(screen.queryByTestId("arena-drag")).toBeNull();
+    expect(tray.scrollLeft).toBe(60);
+    fireEvent.pointerMove(fire, { pointerId: 3, clientX: 200, clientY: 300 });
+    expect(tray.scrollLeft).toBe(100);
+    fireEvent.pointerUp(fire, { pointerId: 3, clientX: 200, clientY: 300 });
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("still throws when the finger leaves the tray before sliding", () => {
+    render(<Arena />);
+    const tray = screen.getByTestId("arena-tray");
+    vi.spyOn(tray, "getBoundingClientRect").mockReturnValue({
+      top: 480,
+      bottom: 560,
+      left: 0,
+      right: 360,
+      width: 360,
+      height: 80,
+      x: 0,
+      y: 480,
+      toJSON: () => ({}),
+    });
+    const fire = screen.getByTestId("arena-emoji-🔥");
+    const cid = layout.points[1]!;
+    fireEvent.pointerDown(fire, {
+      pointerId: 4,
+      isPrimary: true,
+      clientX: 180,
+      clientY: 520,
+    });
+    fireEvent.pointerMove(fire, { pointerId: 4, clientX: 185, clientY: 470 });
+    // Now far to the side, but the throw is already committed.
+    fireEvent.pointerMove(fire, {
+      pointerId: 4,
+      clientX: cid.x,
+      clientY: cid.y,
+    });
+    fireEvent.pointerUp(fire, { pointerId: 4, clientX: cid.x, clientY: cid.y });
+    expect(tray.scrollLeft).toBe(0);
+    expect(send).toHaveBeenCalledWith({
+      type: "reaction.send",
+      playerId: "p3",
+      emoji: "🔥",
+    });
+  });
+
   it("drops a release that hits nobody", () => {
     render(<Arena />);
     const fire = screen.getByTestId("arena-emoji-👏");

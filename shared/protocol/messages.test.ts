@@ -91,5 +91,7 @@ describe("parseClientMessage", () => {
     );
     expect(cmd.ok && isCommand(cmd.message)).toBe(true);
     expect(eph.ok && isCommand(eph.message)).toBe(false);
+    const arena = parseClientMessage(JSON.stringify({ type: "arena.open" }));
+    expect(arena.ok && isCommand(arena.message)).toBe(false);
   });
 });

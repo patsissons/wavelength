@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { dialsFor, roleOf } from "@shared/game/selectors";
+import { matchClue } from "@/lib/eggs/clues";
 import { useGameStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 import { EffectsBar, MuteToggle } from "@/components/effects/effects-bar";
 import { ShareStrip } from "@/components/lounge/share-card";
 import { BoardStage } from "./board-stage";
@@ -27,6 +29,7 @@ export function RoundScreen() {
   }
   const role = roleOf(game, you.playerId);
   const psychic = game.players[round.psychicId];
+  const clueEgg = matchClue(round.clue);
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
@@ -52,10 +55,19 @@ export function RoundScreen() {
         />
         {round.clue && (
           <p
-            className="rounded-2xl bg-primary/15 px-4 py-3 text-center text-xl font-bold"
+            className={cn(
+              "rounded-2xl bg-primary/15 px-4 py-3 text-center text-xl font-bold",
+              clueEgg?.shimmer && "egg-shimmer",
+            )}
             data-testid="clue"
+            data-egg-clue={clueEgg?.id}
           >
             “{round.clue}”
+            {clueEgg?.subtitle && (
+              <span className="block text-sm font-medium text-muted-foreground">
+                {clueEgg.subtitle}
+              </span>
+            )}
           </p>
         )}
         {game.phase === "reveal" && round.result ? (

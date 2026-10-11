@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { hostGame, joinGame, playerRow } from "./helpers";
+import {
+  hostGame,
+  joinGame,
+  playerRow,
+  psychicTurn,
+  startTeamsGame,
+} from "./helpers";
 
 /** `wavelength` in the console prints the menu; the API drives the eggs. */
 test("the console menu lists the eggs and the API fires them", async ({
@@ -114,4 +120,21 @@ test("disco mode dresses the lounge and swaps the record", async ({
     { timeout: 3000 },
   );
   await host.context.close();
+});
+
+test("a magic clue reaches every screen in the room", async ({ browser }) => {
+  const game = await startTeamsGame(browser);
+  const { host, bob, cid } = game;
+  await psychicTurn(host.page, "Marco!");
+  for (const { page } of [host, bob, cid]) {
+    await expect(page.getByTestId("clue")).toHaveAttribute(
+      "data-egg-clue",
+      "marco",
+    );
+    await expect(page.getByTestId("egg-chip")).toHaveText("POLO!");
+    await expect(
+      page.locator("[data-testid=effect-burst][data-effect=egg-marco]").first(),
+    ).toBeAttached();
+  }
+  await game.close();
 });

@@ -25,6 +25,8 @@ export type Celebration =
   | { kind: "lock" }
   | { kind: "score"; points: 2 | 3 | 4 }
   | { kind: "newround" }
-  | { kind: "gameover" };
+  | { kind: "gameover" }
+  /** The clue was given; the eggs layer checks it for magic words. */
+  | { kind: "clue"; clue: string };
 
 export const celebrationBus = new Bus<Celebration>();

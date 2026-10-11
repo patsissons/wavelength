@@ -878,6 +878,45 @@ const PATCHES: Record<SoundPatch, Patch> = {
       });
     }
   },
+  squeak: (ctx, out, v) => {
+    // A banana-peel slip: two rubbery chirps and a thud.
+    for (let i = 0; i < 2; i++) {
+      tone(ctx, out, {
+        type: "sine",
+        from: 1400,
+        to: 2600,
+        start: i * 0.14,
+        duration: 0.1,
+        gain: 0.16 * v,
+      });
+      tone(ctx, out, {
+        type: "sine",
+        from: 2600,
+        to: 1200,
+        start: i * 0.14 + 0.09,
+        duration: 0.06,
+        gain: 0.12 * v,
+      });
+    }
+    kick(ctx, out, ctx.currentTime + 0.34, 0.5 * v);
+  },
+  splash: (ctx, out, v) => {
+    // A cannonball: a bloop dropping in pitch under a wash of noise.
+    tone(ctx, out, {
+      type: "sine",
+      from: 520,
+      to: 120,
+      start: 0,
+      duration: 0.25,
+      gain: 0.22 * v,
+    });
+    noise(ctx, out, {
+      start: 0.03,
+      duration: 0.5,
+      gain: 0.22 * v,
+      filter: { type: "lowpass", from: 4000, to: 500 },
+    });
+  },
   poke: (ctx, out, v) => {
     // A springy "boing": a fast pitch drop with a wobbling tail.
     tone(ctx, out, {

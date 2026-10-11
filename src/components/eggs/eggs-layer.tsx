@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { burst } from "@/components/effects/burst";
+import { celebrationBus } from "@/lib/effect-bus";
 import { eggBus } from "@/lib/eggs/bus";
+import { fireClueEgg, matchClue } from "@/lib/eggs/clues";
 import { useEggs } from "@/lib/eggs/store";
 import { installTriggers } from "@/lib/eggs/triggers";
 import { usePrefs } from "@/lib/prefs";
@@ -46,6 +48,14 @@ export function EggsLayer() {
   }, [reduce]);
 
   useEffect(() => installTriggers(), []);
+
+  useEffect(() => {
+    return celebrationBus.subscribe((c) => {
+      if (c.kind !== "clue") return;
+      const egg = matchClue(c.clue);
+      if (egg) fireClueEgg(egg);
+    });
+  }, []);
 
   useEffect(() => {
     return eggBus.subscribe((event) => {

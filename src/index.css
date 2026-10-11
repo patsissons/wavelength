@@ -351,3 +351,24 @@ textarea,
     stroke: var(--color-primary);
   }
 }
+/* Magic clue: abracadabra shimmers */
+.egg-shimmer {
+  background-image: linear-gradient(
+    110deg,
+    transparent 30%,
+    oklch(1 0 0 / 0.35) 50%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+}
+:root:not([data-egg-reduce]) .egg-shimmer {
+  animation: egg-shimmer 2.4s ease-in-out infinite;
+}
+@keyframes egg-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}

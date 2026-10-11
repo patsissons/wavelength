@@ -75,6 +75,7 @@ export function EffectsLayer() {
 
   useEffect(() => {
     return celebrationBus.subscribe((c) => {
+      if (c.kind === "clue") return; // the eggs layer's business
       setCelebration(c.kind === "score" ? `score-${c.points}` : c.kind);
       celebrate(c, usePrefs.getState().reduceEffects);
     });
@@ -123,7 +124,7 @@ export function EffectsLayer() {
  * for 2 and 3 points, and an absurd barrage with shaking and haptics for
  * a bullseye. "Reduce effects" trims it to a single small burst.
  */
-function celebrate(c: Celebration, reduce: boolean) {
+function celebrate(c: Exclude<Celebration, { kind: "clue" }>, reduce: boolean) {
   const common = { disableForReducedMotion: true, zIndex: 60 } as const;
   if (c.kind === "newround") {
     audio.play("newround");

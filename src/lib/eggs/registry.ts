@@ -36,6 +36,12 @@ export const EGGS: ReadonlyArray<EggDef> = [
     what: "a nudge toward this very menu",
   },
   {
+    id: "clues",
+    name: "Magic clues",
+    how: 'the psychic gives the clue "banana", "marco", "42", "abracadabra", "disco", "do a barrel roll" or "wavelength"',
+    what: "every screen in the room reacts: a banana-peel slip, a POLO!, a towel day, a shimmer, a ten-second disco drop, a roll, or a very meta chip",
+  },
+  {
     id: "disco",
     name: "Disco",
     how: "ask for it (a number of seconds makes it a timed drop)",

@@ -57,12 +57,59 @@ phone (same network) to play.
 | `pnpm validate`            | `validate:quick` + e2e                                        |
 | `pnpm format-and-validate` | Prettier write, then `validate`. Run before every commit.     |
 
+## How a game works
+
+1. The host enters a name and taps **Host a game**; a four-letter code and a
+   share link / QR appear in the lounge.
+2. Players open the link (or type the code), enter a name and land in the
+   lounge. In Teams mode they are auto-balanced and can tap a team to switch.
+3. The host picks the mode and settings (points to win, rounds, catch-up,
+   custom spectra, effects) and starts the game.
+4. Each round the psychic draws a card off the pile, flips it to compare both
+   spectra, picks a side, flicks the shrouded wheel, peeks under the shroud
+   and types a clue (say it out loud too!).
+5. Guessers turn the dial. On a shared dial anyone on the team can move it;
+   the dial locks once every active teammate has accepted, and any move
+   clears the accepts. In free-for-all each guesser has a private dial.
+6. In Teams the other team calls **left** or **right** (majority wins, ties
+   score nothing), then the shroud opens for everyone and points are scored:
+   4 / 3 / 2 for the wedge, +1 for a correct call unless it was a bullseye,
+   and a 4 while behind grants another turn. First to the target wins; a tie
+   at the target goes to sudden death.
+7. Anyone can fire effects (emoji bursts, confetti, sounds, screen shakes,
+   haptics) at the room; the psychic has their own set. Tap **Enable sound**
+   in the lounge once so iOS allows audio.
+
+If a phone sleeps or the tab is backgrounded, the player keeps their seat:
+the client reconnects as soon as the page wakes, and the room only marks a
+player "away" after a grace period (never ejects them). Away players don't
+block the dial lock or the vote, and the host can skip a round if the
+psychic has vanished.
+
+## Architecture
+
+- `shared/` — pure, runtime-agnostic game logic used by both sides:
+  `game/commands.ts` (command → events with all phase/role rules),
+  `game/reducer.ts` (`applyEvent`, the single reducer), scoring, geometry,
+  the card deck, the effects catalog and the zod protocol schemas.
+- `worker/` — the Cloudflare Worker: `/api/*` (create / join / status via
+  Durable Object RPC) and `/parties/game-room/:code` WebSockets. `GameRoom`
+  is a hibernating partyserver Durable Object per game code; it applies
+  commands through the shared handler, persists after every command,
+  broadcasts versioned events and answers `ping` without waking.
+- `src/` — the React app. `lib/connection.ts` wraps partysocket with a
+  heartbeat watchdog, wake-up reconnects, acks and idempotency ids;
+  `lib/store.ts` applies events and resyncs on version gaps; the board is
+  SVG with pointer-driven dial and spin hooks.
+
 ## Deploy
 
 ```sh
 pnpm deploy
 ```
 
-Requires `wrangler login` (or `CLOUDFLARE_API_TOKEN`). The Worker serves
-static assets with SPA fallback and routes `/api/*` and `/parties/*` to the
-Worker first.
+Requires `wrangler login` (or `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`).
+The Worker serves static assets with SPA fallback and routes `/api/*` and
+`/parties/*` to the Worker first. CI (`.github/workflows/ci.yml`) validates
+every PR and deploys `main` with those two secrets. Add a custom domain in
+`wrangler.jsonc` (`routes`) when you have one.

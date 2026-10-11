@@ -58,4 +58,23 @@ Commit in small, modular units (one logical change per commit).
 - **Free to operate.** Cloudflare free tier only; SQLite-backed Durable
   Objects with WebSocket hibernation.
 - E2e is hermetic: the Worker reads `GAME_SEED` and `GRACE_MS` from the
-  wrangler `e2e` env so targets and timings are deterministic.
+  wrangler `e2e` env so targets and timings are deterministic. The psychic's
+  board exposes `data-target` so tests can aim the dial; the app installs
+  `window.__gameStore` and `window.__wsDrop` for diagnostics.
+- `SEGMENTS` (shared/game/geometry.ts) is the one wedge-width constant;
+  scoring and rendering both derive from it.
+- Protocol changes need the zod schema, the event union, the reducer AND a
+  scenario test in `shared/game/commands.test.ts`. Bump `PROTOCOL_VERSION`
+  when a change is not backward compatible; clients show a reload banner.
+- Effects must never leak the target (no warmer/colder for the psychic).
+
+## Gotchas
+
+- wrangler environments do not inherit `durable_objects`; the `e2e` env
+  declares the binding again.
+- A server-initiated WebSocket close inside `onConnect` does not complete in
+  local workerd; clients act on the in-band `error` frame instead.
+- `tsc -b` build info (`node_modules/.tmp`) can go stale after tsconfig
+  edits; delete it if typecheck results look wrong.
+- Playwright drives WebKit with synthetic pointer events delivered in a few
+  ms; wait for the phase the board expects before dragging or flicking.

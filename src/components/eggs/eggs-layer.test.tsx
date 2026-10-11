@@ -55,8 +55,9 @@ describe("EggsLayer", () => {
   it("reflects CRT on <html> and shows the pet", () => {
     render(<EggsLayer />);
     expect(document.documentElement.hasAttribute("data-egg-crt")).toBe(false);
-    act(() => useEggs.getState().set({ crt: true, pet: "🦀" }));
+    act(() => useEggs.getState().set({ crt: true, pet: "🦀", disco: true }));
     expect(document.documentElement.hasAttribute("data-egg-crt")).toBe(true);
+    expect(document.documentElement.hasAttribute("data-egg-disco")).toBe(true);
     expect(screen.getByTestId("egg-crt")).toBeInTheDocument();
     act(() => {
       vi.advanceTimersByTime(2000);
@@ -64,6 +65,7 @@ describe("EggsLayer", () => {
     expect(screen.getByTestId("egg-pet")).toHaveTextContent("🦀");
     act(() => useEggs.getState().reset());
     expect(document.documentElement.hasAttribute("data-egg-crt")).toBe(false);
+    expect(document.documentElement.hasAttribute("data-egg-disco")).toBe(false);
     expect(screen.queryByTestId("egg-pet")).toBeNull();
   });
 });

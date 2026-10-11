@@ -146,6 +146,24 @@ describe("audio manager", () => {
     usePrefs.getState().setMuted(false);
   });
 
+  it("spins the disco record too and lists every sound", async () => {
+    const { audio } = await load();
+    const { soundNames } = await import("./audio");
+    await audio.unlock();
+    const ctx = FakeAudioContext.instances[0]!;
+    const before = ctx.started.length;
+    audio.setLoop("disco");
+    expect(audio.loop).toBe("disco");
+    expect(ctx.started.length).toBeGreaterThan(before);
+    audio.setLoop("lounge"); // swapping records restarts the schedule
+    expect(audio.loop).toBe("lounge");
+    audio.setLoop(null);
+    const names = soundNames();
+    expect(names.loops).toEqual(["disco", "lounge"]);
+    expect(names.patches).toContain("konami");
+    expect(names.patches).toContain("ding");
+  });
+
   it("goes quiet while the tab is hidden or unfocused and resumes after", async () => {
     const { audio } = await load();
     expect(await audio.unlock()).toBe(true);

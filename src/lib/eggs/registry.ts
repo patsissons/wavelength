@@ -36,6 +36,20 @@ export const EGGS: ReadonlyArray<EggDef> = [
     what: "a nudge toward this very menu",
   },
   {
+    id: "disco",
+    name: "Disco",
+    how: "ask for it (a number of seconds makes it a timed drop)",
+    what: "the room hue-cycles, the wheel pulses and the lounge spins a 124 BPM stomp instead of the groove",
+    api: "wavelength.disco()",
+  },
+  {
+    id: "jukebox",
+    name: "Jukebox",
+    how: "ask for it, then play any sound by name",
+    what: "lists every synthesised sound and loop; play() and loop() fire them (tap the page once first so iOS allows audio)",
+    api: 'wavelength.jukebox() · wavelength.play("fanfare") · wavelength.loop("disco")',
+  },
+  {
     id: "rain",
     name: "Rain",
     how: "ask for it",

@@ -1,4 +1,7 @@
+import { audio, soundNames, type LoopName } from "@/lib/audio";
+import type { SoundPatch } from "@shared/effects/catalog";
 import { eggBus } from "./bus";
+import { discoFor, toggleDisco } from "./disco";
 import { toggleParty } from "./triggers";
 import { EGGS, menuText } from "./registry";
 import { useEggs } from "./store";
@@ -10,6 +13,10 @@ import { useEggs } from "./store";
 export interface EggApi {
   list: () => string;
   party: () => string;
+  disco: (seconds?: number) => string;
+  jukebox: () => string;
+  play: (name: string) => string;
+  loop: (name: string | null) => string;
   rain: (glyph?: string, count?: number) => string;
   barrelRoll: () => string;
   crt: () => string;
@@ -42,6 +49,40 @@ export const eggApi: EggApi = {
   },
   party() {
     return toggleParty() ? "🕹️ party on" : "party off";
+  },
+  disco(seconds) {
+    if (typeof seconds === "number" && seconds > 0) {
+      discoFor(Math.min(seconds, 600) * 1000);
+      return `🪩 disco for ${Math.min(seconds, 600)}s`;
+    }
+    return toggleDisco() ? "🪩 disco on" : "disco off";
+  },
+  jukebox() {
+    const { patches, loops } = soundNames();
+    console.log(
+      `%c🎵 Jukebox\n\nplay: ${patches.join(", ")}\nloop: ${loops.join(", ")}, null`,
+      MENU_STYLE,
+    );
+    return `${patches.length} sounds, ${loops.length} loops`;
+  },
+  play(name) {
+    const { patches } = soundNames();
+    if (!patches.includes(name as SoundPatch))
+      return `no sound called "${name}"`;
+    if (!audio.ready) return "tap the page first so the browser allows sound";
+    audio.play(name as SoundPatch);
+    return `▶ ${name}`;
+  },
+  loop(name) {
+    const { loops } = soundNames();
+    if (name === null) {
+      audio.setLoop(null);
+      return "loop stopped";
+    }
+    if (!loops.includes(name as LoopName)) return `no loop called "${name}"`;
+    if (!audio.ready) return "tap the page first so the browser allows sound";
+    audio.setLoop(name as LoopName);
+    return `🔁 ${name}`;
   },
   rain(glyph = "🌧️", count = 24) {
     const glyphs = Array.from(

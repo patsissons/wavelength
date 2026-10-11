@@ -16,6 +16,7 @@ export function EggsLayer() {
   const crt = useEggs((s) => s.crt);
   const pet = useEggs((s) => s.pet);
   const party = useEggs((s) => s.party);
+  const disco = useEggs((s) => s.disco);
   const reduce = usePrefs((s) => s.reduceEffects);
   const [chip, setChip] = useState<{
     id: string;
@@ -32,6 +33,11 @@ export function EggsLayer() {
     document.documentElement.toggleAttribute("data-egg-party", party);
     return () => document.documentElement.removeAttribute("data-egg-party");
   }, [party]);
+
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-egg-disco", disco);
+    return () => document.documentElement.removeAttribute("data-egg-disco");
+  }, [disco]);
 
   // Lets the egg styles skip motion without each rule checking prefs.
   useEffect(() => {

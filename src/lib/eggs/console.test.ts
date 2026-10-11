@@ -59,6 +59,35 @@ describe("console API", () => {
     ]);
   });
 
+  it("runs the jukebox through the audio manager", async () => {
+    const audio = await import("@/lib/audio");
+    const play = vi.spyOn(audio.audio, "play").mockImplementation(() => {});
+    const setLoop = vi
+      .spyOn(audio.audio, "setLoop")
+      .mockImplementation(() => {});
+    expect(eggApi.jukebox()).toMatch(/\d+ sounds, 2 loops/);
+    expect(String(log.mock.calls[0]?.[0])).toContain("fanfare");
+    expect(eggApi.play("nope")).toContain("no sound");
+    expect(eggApi.loop("nope")).toContain("no loop");
+    // Not unlocked yet: the console says why nothing played.
+    expect(eggApi.play("fanfare")).toContain("tap the page");
+    expect(eggApi.loop("disco")).toContain("tap the page");
+    expect(eggApi.loop(null)).toBe("loop stopped");
+    expect(setLoop).toHaveBeenCalledWith(null);
+    vi.spyOn(audio.audio, "ready", "get").mockReturnValue(true);
+    expect(eggApi.play("fanfare")).toBe("▶ fanfare");
+    expect(play).toHaveBeenCalledWith("fanfare");
+    expect(eggApi.loop("disco")).toBe("🔁 disco");
+    expect(setLoop).toHaveBeenCalledWith("disco");
+    expect(eggApi.disco()).toBe("🪩 disco on");
+    expect(eggApi.disco()).toBe("disco off");
+    expect(eggApi.disco(5)).toBe("🪩 disco for 5s");
+    expect(useEggs.getState().disco).toBe(true);
+    vi.advanceTimersByTime(5100);
+    expect(useEggs.getState().disco).toBe(false);
+    vi.restoreAllMocks();
+  });
+
   it("toggles the modes and resets them", () => {
     const seen: EggEvent[] = [];
     const off = eggBus.subscribe((e) => seen.push(e));

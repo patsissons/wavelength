@@ -316,3 +316,38 @@ textarea,
     background-position: 200% 0;
   }
 }
+/* Disco: the stage hue-cycles and the wheel ticks pulse to the beat */
+[data-egg-disco] body {
+  background: oklch(0.2 0.09 320);
+}
+[data-egg-disco]:not([data-egg-reduce]) body {
+  animation: egg-disco 4s linear infinite;
+}
+[data-egg-disco]:not([data-egg-reduce]) [data-testid="disc"] line {
+  animation: egg-pulse 0.484s ease-in-out infinite alternate;
+}
+@keyframes egg-disco {
+  0% {
+    background-color: oklch(0.2 0.09 320);
+  }
+  25% {
+    background-color: oklch(0.2 0.09 230);
+  }
+  50% {
+    background-color: oklch(0.2 0.09 150);
+  }
+  75% {
+    background-color: oklch(0.2 0.09 60);
+  }
+  100% {
+    background-color: oklch(0.2 0.09 320);
+  }
+}
+@keyframes egg-pulse {
+  from {
+    stroke: var(--color-muted-foreground);
+  }
+  to {
+    stroke: var(--color-primary);
+  }
+}

@@ -83,3 +83,35 @@ test("the Konami code starts party mode and tells the room", async ({
 
   await Promise.all([host.context.close(), bob.context.close()]);
 });
+
+test("disco mode dresses the lounge and swaps the record", async ({
+  browser,
+}) => {
+  const host = await hostGame(browser, "Ann");
+  expect(await host.page.evaluate(() => window.wavelength!.disco())).toBe(
+    "🪩 disco on",
+  );
+  await expect(host.page.locator("html")).toHaveAttribute("data-egg-disco", "");
+  // The disco loop renders real sound (checked offline, no speakers needed).
+  const peak = await host.page.evaluate(async () => {
+    const samples = await window.__audio!.render({ loop: "disco" }, 1);
+    let max = 0;
+    for (const s of samples) max = Math.max(max, Math.abs(s));
+    return max;
+  });
+  expect(peak).toBeGreaterThan(0.05);
+  expect(await host.page.evaluate(() => window.wavelength!.jukebox())).toMatch(
+    /sounds, 2 loops/,
+  );
+  expect(await host.page.evaluate(() => window.wavelength!.disco())).toBe(
+    "disco off",
+  );
+  // A timed drop switches itself off again.
+  await host.page.evaluate(() => window.wavelength!.disco(1));
+  await expect(host.page.locator("html")).toHaveAttribute("data-egg-disco", "");
+  await expect(host.page.locator("html")).not.toHaveAttribute(
+    "data-egg-disco",
+    { timeout: 3000 },
+  );
+  await host.context.close();
+});

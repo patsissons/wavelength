@@ -90,7 +90,9 @@ phone (same network) to play.
    every screen when a dial locks, and on the guessers' screens when they
    score (a bullseye gets the full barrage). Tap **Enable sound** in the
    lounge once so iOS allows audio; any later tap re-arms it, and sound
-   plays even with the iPhone ringer switch on silent.
+   plays even with the iPhone ringer switch on silent. A looping lounge
+   groove (toggle in the lounge) makes it obvious when sound works; a chime
+   marks every new turn and a jingle plays for bullseyes and at game over.
 8. The game-over screen hands out awards (Sharpshooter, Saboteur, Quick
    draw, Mind reader, Spin doctor and more), lists game-wide numbers, a
    per-player table and every turn's clue and score.

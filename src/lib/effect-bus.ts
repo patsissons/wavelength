@@ -22,6 +22,9 @@ export const effectBus = new Bus<EffectPayload>();
  * because everyone accepted, and a guesser's own score at the reveal.
  */
 export type Celebration =
-  { kind: "lock" } | { kind: "score"; points: 2 | 3 | 4 };
+  | { kind: "lock" }
+  | { kind: "score"; points: 2 | 3 | 4 }
+  | { kind: "newround" }
+  | { kind: "gameover" };
 
 export const celebrationBus = new Bus<Celebration>();

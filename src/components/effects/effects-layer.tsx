@@ -58,7 +58,7 @@ export function EffectsLayer() {
 
   useEffect(() => {
     return celebrationBus.subscribe((c) => {
-      setCelebration(c.kind === "lock" ? "lock" : `score-${c.points}`);
+      setCelebration(c.kind === "score" ? `score-${c.points}` : c.kind);
       celebrate(c, usePrefs.getState().reduceEffects);
     });
   }, []);
@@ -101,6 +101,22 @@ export function EffectsLayer() {
  */
 function celebrate(c: Celebration, reduce: boolean) {
   const common = { disableForReducedMotion: true, zIndex: 60 } as const;
+  if (c.kind === "newround") {
+    audio.play("newround");
+    return;
+  }
+  if (c.kind === "gameover") {
+    audio.play("celebrate");
+    if (!reduce) {
+      void confetti({
+        ...common,
+        particleCount: 200,
+        spread: 100,
+        origin: { y: 0.6 },
+      });
+    }
+    return;
+  }
   if (reduce) {
     void confetti({
       ...common,
@@ -148,7 +164,7 @@ function celebrate(c: Celebration, reduce: boolean) {
     return;
   }
   // Bullseye: 2.5 s of staggered cannons from both sides and the middle.
-  audio.play("fanfare");
+  audio.play("celebrate");
   vibrate([80, 40, 80, 40, 160]);
   shake();
   setTimeout(shake, 600);

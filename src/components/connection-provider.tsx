@@ -1,3 +1,4 @@
+import { renderOffline } from "@/lib/audio";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -15,6 +16,7 @@ declare global {
     __wsDrop?: () => void;
     /** Test hook: read client state. */
     __gameStore?: typeof useGameStore;
+    __audio?: { render: typeof renderOffline };
   }
 }
 
@@ -62,6 +64,7 @@ export function ConnectionProvider({
     ref.current = conn;
     window.__wsDrop = () => conn.simulateDrop();
     window.__gameStore = useGameStore;
+    window.__audio = { render: renderOffline };
     return () => {
       delete window.__wsDrop;
       conn.close();

@@ -13,10 +13,24 @@ import { usePrefs } from "./prefs";
  * session becomes "playback" and Web Audio is audible again. `unlock()`
  * therefore also starts a looping, inaudible <audio> element.
  */
+export type LoopName = "lounge";
+
 class AudioManager {
   #ctx: AudioContext | null = null;
   #master: AudioNode | null = null;
   #keepAlive: HTMLAudioElement | null = null;
+  #loop: {
+    name: LoopName;
+    gain: GainNode;
+    timer: ReturnType<typeof setInterval>;
+    step: number;
+    nextAt: number;
+  } | null = null;
+
+  /** Which background loop is playing, if any. */
+  get loop(): LoopName | null {
+    return this.#loop?.name ?? null;
+  }
 
   get context(): AudioContext | null {
     return this.#ctx;
@@ -76,6 +90,69 @@ class AudioManager {
     } catch {
       /* never let audio break the game */
     }
+  }
+
+  /**
+   * Start (or stop, with null) a background loop. Steps are scheduled a
+   * little ahead on the audio clock so the groove survives timer jitter;
+   * a suspended context simply pauses it.
+   */
+  setLoop(name: LoopName | null): void {
+    if (this.#loop?.name === name) return;
+    this.#stopLoop();
+    const ctx = this.#ctx;
+    if (!name || !ctx) return;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.55;
+    gain.connect(this.#out(ctx));
+    const loop = {
+      name,
+      gain,
+      step: 0,
+      nextAt: ctx.currentTime + 0.05,
+      timer: setInterval(() => this.#scheduleLoop(), 120),
+    };
+    this.#loop = loop;
+    this.#scheduleLoop();
+  }
+
+  #scheduleLoop(): void {
+    const ctx = this.#ctx;
+    const loop = this.#loop;
+    if (!ctx || !loop) return;
+    if (usePrefs.getState().muted) {
+      this.#stopLoop();
+      return;
+    }
+    if (ctx.state !== "running") return;
+    const pattern = LOOPS[loop.name];
+    const stepDur = 60 / pattern.bpm / 4; // 16th notes
+    while (loop.nextAt < ctx.currentTime + 0.35) {
+      // Fell far behind (tab was asleep): skip ahead instead of catching up.
+      if (loop.nextAt < ctx.currentTime - 0.5) loop.nextAt = ctx.currentTime;
+      try {
+        pattern.step(ctx, loop.gain, loop.step, loop.nextAt, stepDur);
+      } catch {
+        /* keep the loop alive */
+      }
+      loop.nextAt += stepDur;
+      loop.step = (loop.step + 1) % pattern.steps;
+    }
+  }
+
+  #stopLoop(): void {
+    const loop = this.#loop;
+    if (!loop) return;
+    clearInterval(loop.timer);
+    try {
+      const t = this.#ctx?.currentTime ?? 0;
+      loop.gain.gain.setValueAtTime(loop.gain.gain.value, t);
+      loop.gain.gain.linearRampToValueAtTime(0, t + 0.15);
+      setTimeout(() => loop.gain.disconnect(), 300);
+    } catch {
+      /* ignore */
+    }
+    this.#loop = null;
   }
 
   /** Gain + compressor so synth patches are audible on phone speakers. */
@@ -143,6 +220,39 @@ const SILENT_WAV = (() => {
   for (const byte of header) binary += String.fromCharCode(byte);
   return `data:audio/wav;base64,${btoa(binary)}`;
 })();
+
+/**
+ * Render a loop or a patch offline to mono samples. Used by diagnostics
+ * (e2e previews) rather than by gameplay.
+ */
+export async function renderOffline(
+  what: { loop: LoopName } | { patch: SoundPatch },
+  seconds: number,
+): Promise<Float32Array> {
+  const Offline =
+    window.OfflineAudioContext ??
+    (
+      window as unknown as {
+        webkitOfflineAudioContext: typeof OfflineAudioContext;
+      }
+    ).webkitOfflineAudioContext;
+  const rate = 44100;
+  const ctx = new Offline(1, Math.ceil(seconds * rate), rate);
+  const out = ctx.createGain();
+  out.connect(ctx.destination);
+  const live = ctx as unknown as AudioContext;
+  if ("loop" in what) {
+    const pattern = LOOPS[what.loop];
+    const stepDur = 60 / pattern.bpm / 4;
+    for (let i = 0, at = 0.05; at < seconds; i++, at += stepDur) {
+      pattern.step(live, out, i % pattern.steps, at, stepDur);
+    }
+  } else {
+    PATCHES[what.patch](live, out, 1);
+  }
+  const buffer = await ctx.startRendering();
+  return buffer.getChannelData(0);
+}
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | void> {
   return Promise.race([
@@ -242,6 +352,128 @@ function noise(
   src.start(t0);
   src.stop(t0 + opts.duration + 0.05);
 }
+
+/* ---------- background loops ---------- */
+
+interface LoopPattern {
+  bpm: number;
+  steps: number;
+  step: (
+    ctx: AudioContext,
+    out: AudioNode,
+    step: number,
+    at: number,
+    stepDur: number,
+  ) => void;
+}
+
+/** Plucked bass: sawtooth through a closing low-pass filter. */
+function pluck(
+  ctx: AudioContext,
+  out: AudioNode,
+  freq: number,
+  at: number,
+  duration: number,
+  gain: number,
+) {
+  const osc = ctx.createOscillator();
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(freq, at);
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.Q.value = 6;
+  filter.frequency.setValueAtTime(1400, at);
+  filter.frequency.exponentialRampToValueAtTime(180, at + duration);
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.0001, at);
+  env.gain.exponentialRampToValueAtTime(gain, at + 0.01);
+  env.gain.exponentialRampToValueAtTime(0.0001, at + duration);
+  osc.connect(filter).connect(env).connect(out);
+  osc.start(at);
+  osc.stop(at + duration + 0.05);
+}
+
+function kick(ctx: AudioContext, out: AudioNode, at: number, gain: number) {
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(160, at);
+  osc.frequency.exponentialRampToValueAtTime(45, at + 0.12);
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(gain, at);
+  env.gain.exponentialRampToValueAtTime(0.0001, at + 0.25);
+  osc.connect(env).connect(out);
+  osc.start(at);
+  osc.stop(at + 0.3);
+}
+
+// E minor pentatonic in Hz
+const E2 = 82.41;
+const G2 = 98;
+const A2 = 110;
+const B2 = 123.47;
+const D3 = 146.83;
+const E3 = 164.81;
+const CHORD_EM7 = [329.63, 392, 493.88, 587.33];
+const CHORD_A7 = [440, 554.37, 659.25, 783.99];
+
+/** Two bars of a laid-back funk groove at 104 BPM. */
+const LOOPS: Record<LoopName, LoopPattern> = {
+  lounge: {
+    bpm: 104,
+    steps: 32,
+    step(ctx, out, step, at, stepDur) {
+      const t = at - ctx.currentTime; // relative start for the helpers
+      // drums
+      if ([0, 6, 8, 14, 16, 22, 24, 28].includes(step)) kick(ctx, out, at, 0.5);
+      if (step % 8 === 4) {
+        noise(ctx, out, {
+          start: t,
+          duration: 0.12,
+          gain: 0.22,
+          filter: { type: "bandpass", from: 1800 },
+        });
+      }
+      if (step % 2 === 0) {
+        noise(ctx, out, {
+          start: t,
+          duration: step % 4 === 2 ? 0.05 : 0.025,
+          gain: step % 4 === 2 ? 0.07 : 0.05,
+          filter: { type: "highpass", from: 7000 },
+        });
+      }
+      // bass line
+      const bass: Record<number, number> = {
+        0: E2,
+        3: G2,
+        6: A2,
+        8: E2,
+        11: B2,
+        14: A2,
+        16: E2,
+        19: D3,
+        22: E3,
+        24: A2,
+        27: G2,
+        30: B2,
+      };
+      const note = bass[step];
+      if (note !== undefined) pluck(ctx, out, note, at, stepDur * 2.2, 0.28);
+      // chord stabs on the off-beats
+      if ([2, 10, 18, 26].includes(step)) {
+        const chord = step < 16 ? CHORD_EM7 : CHORD_A7;
+        for (const f of chord) {
+          tone(ctx, out, {
+            type: "triangle",
+            from: f,
+            start: t,
+            duration: stepDur * 1.5,
+            gain: 0.045,
+          });
+        }
+      }
+    },
+  },
+};
 
 const PATCHES: Record<SoundPatch, Patch> = {
   ding: (ctx, out, v) => {
@@ -373,6 +605,60 @@ const PATCHES: Record<SoundPatch, Patch> = {
         gain: 0.08 * v,
       }),
     );
+  },
+  celebrate: (ctx, out, v) => {
+    // Rising arpeggio, a held chord and sparkle.
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) =>
+      tone(ctx, out, {
+        type: "triangle",
+        from: f,
+        start: i * 0.07,
+        duration: 0.18,
+        gain: 0.14 * v,
+      }),
+    );
+    for (const f of [523.25, 659.25, 783.99, 1046.5]) {
+      tone(ctx, out, {
+        type: "square",
+        from: f,
+        start: 0.4,
+        duration: 1.1,
+        gain: 0.05 * v,
+      });
+    }
+    kick(ctx, out, ctx.currentTime + 0.4, 0.5 * v);
+    for (let i = 0; i < 12; i++) {
+      tone(ctx, out, {
+        type: "sine",
+        from: 2000 + Math.random() * 3000,
+        start: 0.45 + Math.random() * 0.9,
+        duration: 0.08,
+        gain: 0.05 * v,
+      });
+    }
+  },
+  newround: (ctx, out, v) => {
+    // A quick two-note chime with a soft riser underneath.
+    tone(ctx, out, {
+      type: "sine",
+      from: 659.25,
+      start: 0,
+      duration: 0.16,
+      gain: 0.22 * v,
+    });
+    tone(ctx, out, {
+      type: "sine",
+      from: 987.77,
+      start: 0.14,
+      duration: 0.45,
+      gain: 0.22 * v,
+    });
+    noise(ctx, out, {
+      start: 0,
+      duration: 0.5,
+      gain: 0.08 * v,
+      filter: { type: "bandpass", from: 400, to: 2500 },
+    });
   },
   crickets: (ctx, out, v) => {
     for (let i = 0; i < 6; i++) {

@@ -175,6 +175,10 @@ function celebrate(
     if (dial.id === "shared" || allDialsLocked(after)) {
       celebrationBus.emit({ kind: "lock" });
     }
+  } else if (event.type === "game.started" || event.type === "round.advanced") {
+    celebrationBus.emit({ kind: "newround" });
+  } else if (event.type === "game.over") {
+    celebrationBus.emit({ kind: "gameover" });
   } else if (event.type === "round.revealed" && playerId) {
     const mine = Object.values(event.result.dials).find((d) =>
       d.owners.includes(playerId),

@@ -250,6 +250,26 @@ describe("store.receive", () => {
       },
     });
     expect(seen).toHaveBeenLastCalledWith({ kind: "score", points: 4 });
+
+    s.receive({
+      type: "event",
+      version: 3,
+      event: {
+        type: "round.advanced",
+        round: started.round,
+        activeTeam: null,
+        psychicCursor: { left: -1, right: -1, all: 1 },
+        roundsPlayed: 0,
+        deckRemaining: 10,
+      },
+    });
+    expect(seen).toHaveBeenLastCalledWith({ kind: "newround" });
+    s.receive({
+      type: "event",
+      version: 4,
+      event: { type: "game.over", gameOver: { winner: null, label: "x" } },
+    });
+    expect(seen).toHaveBeenLastCalledWith({ kind: "gameover" });
     unsubscribe();
   });
 

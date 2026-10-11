@@ -120,6 +120,29 @@ describe("audio manager", () => {
     expect(ctx.resume).toHaveBeenCalled();
   });
 
+  it("schedules the lounge loop ahead on the audio clock and stops it", async () => {
+    const { audio, usePrefs } = await load();
+    await audio.unlock();
+    const ctx = FakeAudioContext.instances[0]!;
+    const before = ctx.started.length;
+    audio.setLoop("lounge");
+    expect(audio.loop).toBe("lounge");
+    // The first batch of steps is scheduled synchronously.
+    expect(ctx.started.length).toBeGreaterThan(before);
+    const scheduled = ctx.started.length;
+    audio.setLoop("lounge"); // idempotent
+    expect(ctx.started.length).toBe(scheduled);
+    audio.setLoop(null);
+    expect(audio.loop).toBeNull();
+
+    // Muting while looping stops it on the next tick.
+    audio.setLoop("lounge");
+    usePrefs.getState().setMuted(true);
+    await new Promise((r) => setTimeout(r, 150));
+    expect(audio.loop).toBeNull();
+    usePrefs.getState().setMuted(false);
+  });
+
   it("any tap re-unlocks a context that is not running", async () => {
     const { audio } = await load();
     expect(audio.context).toBeNull();

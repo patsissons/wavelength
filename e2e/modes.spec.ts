@@ -60,7 +60,17 @@ test("co-op: everyone shares a dial, no voting, one psychic turn each per round"
     await expect(page.getByTestId("winner")).toHaveText("Galaxy brain");
   }
   await expect(host.page.getByTestId("awards")).toBeVisible();
+  // One round of three turns, numbered within the round.
   await expect(host.page.getByTestId("turn")).toHaveCount(3);
+  await expect(host.page.getByTestId("round-heading")).toHaveText(["Round 1"]);
+  const turns = host.page.getByTestId("turn");
+  await expect(turns.nth(2)).toHaveAttribute("data-round", "1");
+  await expect(turns.nth(2)).toHaveAttribute("data-turn", "3");
+  // At game over the arena is opt-in: Bob goes in, nobody follows.
+  await bob.page.getByTestId("open-arena").click();
+  await expect(bob.page.getByTestId("arena")).toBeVisible();
+  await expect(host.page.getByTestId("arena")).toHaveCount(0);
+  await expect(cid.page.getByTestId("arena")).toHaveCount(0);
   await game.close();
 });
 

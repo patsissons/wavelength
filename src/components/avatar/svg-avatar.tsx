@@ -71,7 +71,8 @@ export function SvgAvatar({
       className="avatar-body"
       data-anim={def.anim}
       data-avatar-id={def.id}
-      style={origin(cx, cy)}
+      // The keyframes move in em: one em here is the knob radius.
+      style={{ fontSize: r, ...origin(cx, cy) }}
       data-testid="pip-figure"
     >
       <text
@@ -87,7 +88,7 @@ export function SvgAvatar({
         <g
           className="avatar-prop"
           data-prop-anim={propAnim}
-          style={origin(cx, cy)}
+          style={{ fontSize: r, ...origin(cx, cy) }}
         >
           <text
             className="avatar-prop-glyph"

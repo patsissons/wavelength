@@ -548,6 +548,11 @@ describe("co-op", () => {
     expect(psychics).toEqual(["p0", "p1", "p2", "p0", "p1"]);
     expect(state.game.roundsPlayed).toBe(1);
     expect(state.game.history).toHaveLength(5);
+    // Every result remembers the round it belonged to.
+    expect(state.game.history.map((r) => r.round)).toEqual([1, 1, 1, 2, 2]);
+    expect(state.game.history.map((r) => r.roundIndex)).toEqual([
+      0, 1, 2, 3, 4,
+    ]);
   });
 });
 

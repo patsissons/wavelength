@@ -40,7 +40,19 @@ interface Drag {
   emoji: string;
   x: number;
   y: number;
+  /**
+   * A press on the tray is undecided until the finger either leaves the
+   * tray (a throw) or slides along it (scrolling the tray).
+   */
+  mode: "undecided" | "aim" | "scroll";
+  /** Where the press started, in client coordinates. */
+  start: { x: number; y: number };
+  /** The tray's scroll offset at the press. */
+  scrollLeft: number;
 }
+
+/** Sideways movement along the tray that turns a press into a scroll. */
+const SCROLL_SLOP = 10;
 
 /**
  * The post-round arena: you at the centre of the baseline, everyone else
@@ -56,6 +68,7 @@ export function Arena() {
   const reduce = usePrefs((s) => s.reduceEffects);
   const send = useCommand();
   const body = useRef<HTMLDivElement | null>(null);
+  const tray = useRef<HTMLDivElement | null>(null);
   const nodes = useRef(new Map<string, HTMLElement>());
   const [size, setSize] = useState(DEFAULT_SIZE);
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -213,21 +226,48 @@ export function Arena() {
     event.currentTarget.setPointerCapture?.(event.pointerId);
     const p = toBody(event);
     samples.current = [{ ...p, t: event.timeStamp }];
-    setDrag({ pointerId: event.pointerId, emoji, ...p });
+    setDrag({
+      pointerId: event.pointerId,
+      emoji,
+      ...p,
+      mode: "undecided",
+      start: { x: event.clientX, y: event.clientY },
+      scrollLeft: tray.current?.scrollLeft ?? 0,
+    });
   };
 
   const onPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
     if (!drag || event.pointerId !== drag.pointerId) return;
+    const dx = event.clientX - drag.start.x;
+    const dy = event.clientY - drag.start.y;
+    let mode = drag.mode;
+    if (mode === "undecided") {
+      const band = tray.current?.getBoundingClientRect();
+      const inTray =
+        !!band && event.clientY >= band.top && event.clientY <= band.bottom;
+      if (!inTray) mode = "aim";
+      else if (Math.abs(dx) > SCROLL_SLOP && Math.abs(dx) > Math.abs(dy) * 1.5)
+        mode = "scroll";
+    }
+    if (mode === "scroll") {
+      if (tray.current) tray.current.scrollLeft = drag.scrollLeft - dx;
+      if (drag.mode !== "scroll") setDrag({ ...drag, mode });
+      return;
+    }
     const p = toBody(event);
     samples.current = [
       ...samples.current.slice(-9),
       { ...p, t: event.timeStamp },
     ];
-    setDrag({ ...drag, ...p });
+    setDrag({ ...drag, ...p, mode });
   };
 
   const onPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
     if (!drag || event.pointerId !== drag.pointerId) return;
+    if (drag.mode === "scroll") {
+      setDrag(null);
+      return;
+    }
     const release = toBody(event);
     samples.current = [...samples.current, { ...release, t: event.timeStamp }];
     const velocity = velocityOf(samples.current);
@@ -343,7 +383,7 @@ export function Arena() {
             {hit.from} threw {hit.emoji} at you
           </p>
         )}
-        {drag && (
+        {drag && drag.mode !== "scroll" && (
           <span
             className="pointer-events-none absolute text-4xl leading-none"
             style={{
@@ -358,8 +398,9 @@ export function Arena() {
         )}
 
         <div
+          ref={tray}
           className={cn(
-            "safe-x safe-bottom absolute inset-x-0 bottom-0 flex items-center gap-2 overflow-x-auto bg-card/80 pt-2 backdrop-blur [scrollbar-width:none]",
+            "safe-x safe-bottom absolute inset-x-0 bottom-0 flex items-center gap-2 overflow-x-auto overflow-y-hidden overscroll-x-contain bg-card/80 pt-2 backdrop-blur [scrollbar-width:none]",
             limited && "animate-pulse",
           )}
           style={{ minHeight: TRAY_HEIGHT }}

@@ -22,7 +22,8 @@ export type SoundPatch =
   | "konami"
   | "squeak"
   | "splash"
-  | "squeal";
+  | "squeal"
+  | "ticktock";
 
 export type ScreenFx = "shake" | "flash" | "fog" | "spotlight";
 
@@ -221,6 +222,16 @@ export const EFFECTS: ReadonlyArray<EffectDef> = [
     fx: "fog",
     sound: "boo",
     haptic: [80, 40, 80],
+  },
+  {
+    id: "hurry",
+    label: "Tick tock",
+    icon: "⏳",
+    roles: ["any"],
+    caption: "is waiting…",
+    burst: { glyphs: ["⏳", "⏰", "🐌"], count: 10 },
+    sound: "ticktock",
+    haptic: [40, 160, 40, 160, 40, 160, 40],
   },
   {
     id: "wow",

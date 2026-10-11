@@ -16,7 +16,7 @@ import { PsychicPanel, Panel } from "./psychic-panel";
 import { Arena } from "@/components/reactions/arena";
 import { RevealPanel } from "./reveal-panel";
 import { ScoreHeader } from "./score-header";
-import { SpectrumLabels } from "./spectrum-labels";
+import { SpectrumBar } from "./spectrum-bar";
 
 export function RoundScreen() {
   const game = useGameStore((s) => s.game)!;
@@ -34,6 +34,17 @@ export function RoundScreen() {
   const psychic = game.players[round.psychicId];
   const clueEgg = matchClue(round.clue);
   const arenaOpen = useArena((s) => s.open);
+  // The latest spin has landed (the clue input and re-spins wait for it).
+  const landed = spinDone || game.phase !== "clue" || round.spin === null;
+  // Only the psychic ever holds `you.target`, and their bar shows it only
+  // while they are peeking (shroud open), like the board; the reveal makes
+  // it public.
+  const knownTarget =
+    game.phase === "reveal"
+      ? (round.result?.target ?? null)
+      : landed && round.shroudOpen
+        ? you.target
+        : null;
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
@@ -52,7 +63,7 @@ export function RoundScreen() {
               : " The host can skip this round."}
           </p>
         )}
-        <SpectrumLabels spectrum={round.spectrum} />
+        <SpectrumBar spectrum={round.spectrum} target={knownTarget} />
         <BoardStage
           game={game}
           playerId={you.playerId}
@@ -84,10 +95,7 @@ export function RoundScreen() {
         {game.phase === "reveal" && round.result ? (
           <RevealPanel game={game} playerId={you.playerId} />
         ) : role === "psychic" ? (
-          <PsychicPanel
-            game={game}
-            spinDone={spinDone || game.phase !== "clue" || round.spin === null}
-          />
+          <PsychicPanel game={game} spinDone={landed} />
         ) : role === "guesser" &&
           (game.phase === "guessing" || game.phase === "voting") ? (
           <GuesserPanel

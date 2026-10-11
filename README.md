@@ -50,6 +50,7 @@ phone (same network) to play.
 | `pnpm preview`             | Serve the production build locally in the Workers runtime     |
 | `pnpm deploy`              | Build and deploy to Cloudflare with wrangler                  |
 | `pnpm types`               | Regenerate `worker-configuration.d.ts` from `wrangler.jsonc`  |
+| `pnpm og`                  | Re-render the link preview image `public/og.png`              |
 | `pnpm typecheck`           | Regenerate Worker types, then `tsc -b` over all projects      |
 | `pnpm test`                | Unit tests (Vitest)                                           |
 | `pnpm test:watch`          | Unit tests in watch mode                                      |
@@ -82,10 +83,16 @@ phone (same network) to play.
    the psychic taps or flicks it to spin (only their screen shows the
    wedge) and can spin again until they like the target (up to the spins
    setting). Tapping the shroud or its handle covers and uncovers the
-   wheel; the clue panel shows the wedge as a flat strip so it stays in
-   view with the keyboard up, and giving the clue (type it and say it out
-   loud) covers the wheel automatically.
-5. Guessers turn the dial. On a shared dial anyone on the team can move it
+   wheel. The spectrum bar at the top of everyone's screen carries both
+   ends of the spectrum; on the psychic's screen it shows the scoring wedge
+   while they are peeking at the uncovered wheel (covered, it shows the
+   plain gradient everyone else sees until the reveal), and the clue panel
+   repeats the wedge as a flat strip so it stays in view with the keyboard
+   up. Giving the clue (type it and say it
+   out loud) covers the wheel automatically.
+5. Guessers turn the dial. The shroud wears the same gradient as the
+   spectrum bar, so the sides of the wheel map onto the ends of the
+   spectrum. On a shared dial anyone on the team can move it
    (it wears the colour of whoever moved it last); the dial locks once
    every active teammate has accepted, and any move clears the accepts.
    In free-for-all each guesser has a private dial, the psychic watches
@@ -101,8 +108,10 @@ phone (same network) to play.
    and a 4 while behind grants another turn. First to the target wins; a tie
    at the target goes to sudden death.
 7. Anyone can fire effects (emoji bursts, confetti, sounds, screen shakes,
-   haptics) at the room; the psychic has their own set. Tapping a player's
-   name pokes them (their screen shakes with a boing). Confetti falls on
+   haptics) at the room; the psychic has their own set, and the ⏳ **Tick
+   tock** (a clock under a little waiting tune) tells whoever is dawdling
+   to get on with it. Tapping a player's name pokes them (their screen
+   shakes with a boing). Confetti falls on
    every screen when a dial locks, and on the guessers' screens when they
    score (a bullseye gets the full barrage). Tap **Enable sound** in the
    lounge once so iOS allows audio; any later tap re-arms it, and sound
@@ -114,23 +123,29 @@ phone (same network) to play.
    draw, Mind reader, Spin doctor, Hype machine, Pest, Fan favourite and
    more), lists game-wide numbers (including reactions and pokes), a
    per-player table and a play-by-play of every turn: clue, target, every
-   dial and what each player earned.
+   dial and what each player earned. In Co-op and free-for-all the turns
+   are grouped under their round and numbered within it.
 9. After every reveal (and at game over) **Throw reactions** opens the
    arena: you sit at the centre of the baseline, the other players are
    spaced along a semicircle above you, and a tray of emoji waits at the
-   bottom. Drop an emoji on someone or flick it their way; it flies over,
-   pops on them and lands on their screen (in their own arena, or as a
-   burst on the results). Reactions thrown count towards the end-of-game
-   awards.
+   bottom (slide a finger along it to scroll; drag up to throw). After a
+   reveal, one person opening the arena pulls the whole room in (anyone
+   can step back out to the results); at game over it is per person. Drop
+   an emoji on someone or flick it their way; it flies over, pops on them
+   and lands on their screen (in their own arena, or as a burst on the
+   results). Reactions thrown count towards the end-of-game awards.
 
 ## Easter eggs
 
-There are a few. Open the browser console and type `wavelength`: it prints
-the full list (how to trigger each one and what happens) and returns an
-API that fires them by hand, for example `wavelength.disco()` or
-`wavelength.rain("🍕", 24)`. Some are keyboard or touch sequences, some are
-magic clues the whole room reacts to, some only turn up on certain dates.
-Every one of them respects the **Reduce effects** setting.
+There are a few. Tap the QR code five times in five seconds (in the lounge
+or during a game) for a cheat sheet that lists every egg with the
+instructions for the device you are holding (swipes on a phone, keys on a
+desktop). On a desktop, open the browser console and type `wavelength`: it
+prints the same list and returns an API that fires them by hand, for
+example `wavelength.disco()` or `wavelength.rain("🍕", 24)`. Some are
+keyboard or touch sequences, some are magic clues the whole room reacts
+to, some only turn up on certain dates. Every one of them respects the
+**Reduce effects** setting.
 
 If a phone sleeps or the tab is backgrounded, the player keeps their seat:
 the client reconnects as soon as the page wakes, and the room only marks a
@@ -158,6 +173,13 @@ psychic has vanished.
   SVG with pointer-driven dial and spin hooks. `lib/eggs/` holds the
   easter eggs (the console menu, triggers, modes) and
   `components/eggs/eggs-layer.tsx` renders them over every screen.
+- `scripts/og/render.ts` — renders `public/og.png`, the 1200×630 Open
+  Graph image chat apps show when a link is unfurled. It draws the board
+  with the real `shared/game/geometry.ts` in headless Chromium, so rerun
+  `pnpm og` after changing the board's look. The `og:*` / `twitter:*` tags
+  in `index.html` point at the production host (previews need absolute
+  URLs) and cover `/join/:code` links too, since the SPA serves the same
+  document for every route.
 
 ## Deploy
 

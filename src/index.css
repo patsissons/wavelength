@@ -98,6 +98,9 @@
   --wedge-2: oklch(0.62 0.15 40);
   --wheel: oklch(0.3 0.06 290);
   --shroud: oklch(0.38 0.07 300);
+  /* The spectrum bar while the target is a mystery: magenta to cyan. */
+  --spectrum-left: oklch(0.62 0.2 340);
+  --spectrum-right: oklch(0.7 0.14 210);
 }
 
 @layer base {
@@ -512,7 +515,7 @@ h1[data-egg-wave] .egg-letter {
 }
 
 .avatar-body[data-anim="dance"] {
-  animation: avatar-dance 0.6s ease-in-out infinite alternate;
+  animation: avatar-dance 0.9s ease-in-out infinite alternate;
 }
 .avatar-body[data-anim="bob"] {
   animation: avatar-bob 1.2s ease-in-out infinite alternate;
@@ -521,7 +524,7 @@ h1[data-egg-wave] .egg-letter {
   animation: avatar-float 2.4s ease-in-out infinite alternate;
 }
 .avatar-body[data-anim="buzz"] {
-  animation: avatar-buzz 0.18s linear infinite;
+  animation: avatar-buzz 0.28s linear infinite;
 }
 .avatar-body[data-anim="spin"] {
   animation: avatar-spin 2.5s linear infinite;
@@ -533,28 +536,28 @@ h1[data-egg-wave] .egg-letter {
   animation: avatar-hop 1s ease-in-out infinite;
 }
 .avatar-body[data-anim="wiggle"] {
-  animation: avatar-wiggle 0.4s ease-in-out infinite alternate;
+  animation: avatar-wiggle 0.7s ease-in-out infinite alternate;
 }
 .avatar-body[data-anim="stomp"] {
-  animation: avatar-stomp 0.9s ease-in-out infinite;
+  animation: avatar-stomp 1.1s ease-in-out infinite;
 }
 .avatar-body[data-anim="chomp"] {
-  animation: avatar-chomp 0.5s ease-in-out infinite alternate;
+  animation: avatar-chomp 0.7s ease-in-out infinite alternate;
 }
 .avatar-body[data-anim="sway"] {
   animation: avatar-sway 1.6s ease-in-out infinite alternate;
 }
 .avatar-body[data-anim="zoom"] {
-  animation: avatar-zoom 0.8s ease-in-out infinite alternate;
+  animation: avatar-zoom 1.2s ease-in-out infinite alternate;
 }
 .avatar-body[data-anim="glitch"] {
-  animation: avatar-glitch 0.6s steps(1) infinite;
+  animation: avatar-glitch 1.1s steps(1) infinite;
 }
 .avatar-body[data-anim="pulse"] {
-  animation: avatar-pulse 0.7s ease-in-out infinite alternate;
+  animation: avatar-pulse 1s ease-in-out infinite alternate;
 }
 .avatar-body[data-anim="waddle"] {
-  animation: avatar-waddle 0.7s ease-in-out infinite alternate;
+  animation: avatar-waddle 0.9s ease-in-out infinite alternate;
 }
 .avatar-body[data-anim="creep"] {
   animation: avatar-creep 4s linear infinite alternate;
@@ -580,12 +583,16 @@ h1[data-egg-wave] .egg-letter {
   animation: none;
 }
 
+/* Amplitudes are in em so they scale with the glyph: the HTML figure is
+   1.3em tall and the SVG pip group sets font-size to its knob radius. A
+   percentage would be of the element's box in HTML but of the whole
+   view-box on an SVG pip, which is how the dial pips used to thrash. */
 @keyframes avatar-dance {
   from {
-    transform: rotate(-12deg) translateY(0);
+    transform: rotate(-7deg) translateY(0);
   }
   to {
-    transform: rotate(12deg) translateY(-8%);
+    transform: rotate(7deg) translateY(-0.05em);
   }
 }
 @keyframes avatar-bob {
@@ -593,16 +600,16 @@ h1[data-egg-wave] .egg-letter {
     transform: translateY(0);
   }
   to {
-    transform: translateY(-10%);
+    transform: translateY(-0.08em);
   }
 }
 @keyframes avatar-float {
   from {
-    transform: translateY(-6%);
-    opacity: 0.75;
+    transform: translateY(-0.05em);
+    opacity: 0.85;
   }
   to {
-    transform: translateY(6%);
+    transform: translateY(0.05em);
     opacity: 1;
   }
 }
@@ -611,13 +618,13 @@ h1[data-egg-wave] .egg-letter {
     transform: translate(0, 0);
   }
   25% {
-    transform: translate(3%, -3%);
+    transform: translate(0.02em, -0.02em);
   }
   50% {
-    transform: translate(-3%, 2%);
+    transform: translate(-0.02em, 0.015em);
   }
   75% {
-    transform: translate(2%, 3%);
+    transform: translate(0.015em, 0.02em);
   }
   100% {
     transform: translate(0, 0);
@@ -633,7 +640,7 @@ h1[data-egg-wave] .egg-letter {
     transform: scale(1);
   }
   to {
-    transform: scale(1.1);
+    transform: scale(1.06);
   }
 }
 @keyframes avatar-hop {
@@ -643,15 +650,15 @@ h1[data-egg-wave] .egg-letter {
     transform: translateY(0);
   }
   35% {
-    transform: translateY(-25%);
+    transform: translateY(-0.15em);
   }
 }
 @keyframes avatar-wiggle {
   from {
-    transform: rotate(-10deg);
+    transform: rotate(-6deg);
   }
   to {
-    transform: rotate(10deg);
+    transform: rotate(6deg);
   }
 }
 @keyframes avatar-stomp {
@@ -660,10 +667,10 @@ h1[data-egg-wave] .egg-letter {
     transform: translateY(0) scale(1, 1);
   }
   40% {
-    transform: translateY(-15%) scale(0.95, 1.05);
+    transform: translateY(-0.1em) scale(0.97, 1.03);
   }
   55% {
-    transform: translateY(0) scale(1.15, 0.85);
+    transform: translateY(0) scale(1.08, 0.92);
   }
   75% {
     transform: translateY(0) scale(1, 1);
@@ -674,23 +681,23 @@ h1[data-egg-wave] .egg-letter {
     transform: scaleY(1);
   }
   to {
-    transform: scaleY(0.7);
+    transform: scaleY(0.82);
   }
 }
 @keyframes avatar-sway {
   from {
-    transform: rotate(-8deg);
+    transform: rotate(-5deg);
   }
   to {
-    transform: rotate(8deg);
+    transform: rotate(5deg);
   }
 }
 @keyframes avatar-zoom {
   from {
-    transform: translateX(-12%);
+    transform: translateX(-0.08em);
   }
   to {
-    transform: translateX(12%);
+    transform: translateX(0.08em);
   }
 }
 @keyframes avatar-glitch {
@@ -698,16 +705,16 @@ h1[data-egg-wave] .egg-letter {
     transform: translate(0, 0);
   }
   20% {
-    transform: translate(-6%, 2%);
+    transform: translate(-0.04em, 0.015em);
   }
   40% {
-    transform: translate(5%, -3%);
+    transform: translate(0.03em, -0.02em);
   }
   60% {
-    transform: translate(-3%, 4%);
+    transform: translate(-0.02em, 0.03em);
   }
   80% {
-    transform: translate(4%, 0);
+    transform: translate(0.03em, 0);
   }
   100% {
     transform: translate(0, 0);
@@ -718,32 +725,32 @@ h1[data-egg-wave] .egg-letter {
     transform: scale(1);
   }
   to {
-    transform: scale(1.15);
+    transform: scale(1.08);
   }
 }
 @keyframes avatar-waddle {
   from {
-    transform: rotate(-10deg) translateX(-6%);
+    transform: rotate(-6deg) translateX(-0.04em);
   }
   to {
-    transform: rotate(10deg) translateX(6%);
+    transform: rotate(6deg) translateX(0.04em);
   }
 }
 @keyframes avatar-creep {
   from {
-    transform: translateX(-15%);
+    transform: translateX(-0.1em);
   }
   to {
-    transform: translateX(15%);
+    transform: translateX(0.1em);
   }
 }
 @keyframes avatar-sparkle {
   from {
-    transform: scale(0.6);
-    opacity: 0.4;
+    transform: scale(0.8);
+    opacity: 0.5;
   }
   to {
-    transform: scale(1.2);
+    transform: scale(1.1);
     opacity: 1;
   }
 }
@@ -753,15 +760,15 @@ h1[data-egg-wave] .egg-letter {
     opacity: 1;
   }
   to {
-    transform: translateY(-70%);
+    transform: translateY(-0.5em);
     opacity: 0;
   }
 }
 @keyframes avatar-hover {
   from {
-    transform: translateY(-10%);
+    transform: translateY(-0.08em);
   }
   to {
-    transform: translateY(10%);
+    transform: translateY(0.08em);
   }
 }

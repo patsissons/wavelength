@@ -1,8 +1,9 @@
 import { Check, Copy, Share2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { renderSVG } from "uqr";
 import { Button } from "@/components/ui/button";
-import { isPalindrome } from "@/lib/eggs/charm";
+import { EggCheatsheet } from "@/components/eggs/cheatsheet";
+import { isPalindrome, TapCounter } from "@/lib/eggs/charm";
 import { cn } from "@/lib/utils";
 
 function useShare(code: string) {
@@ -18,6 +19,12 @@ function useShare(code: string) {
     [url],
   );
   const canShare = typeof navigator !== "undefined" && "share" in navigator;
+  // Five quick taps on the QR code: the easter-egg cheat sheet.
+  const taps = useRef(new TapCounter(5, 5000));
+  const [eggs, setEggs] = useState(false);
+  const tapQr = () => {
+    if (taps.current.push(Date.now())) setEggs(true);
+  };
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -34,18 +41,41 @@ function useShare(code: string) {
       /* user cancelled */
     }
   };
-  return { url, qr, copied, canShare, copy, share };
+  return { url, qr, copied, canShare, copy, share, eggs, setEggs, tapQr };
+}
+
+/** The QR image; five quick taps open the easter-egg cheat sheet. */
+function QrCode({
+  qr,
+  onTap,
+  className,
+}: {
+  qr: string;
+  onTap: () => void;
+  className: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "shrink-0 overflow-hidden bg-white [&>svg]:size-full",
+        className,
+      )}
+      dangerouslySetInnerHTML={{ __html: qr }}
+      aria-label="QR code to join"
+      onClick={onTap}
+      data-testid="qr-code"
+    />
+  );
 }
 
 export function ShareCard({ code }: { code: string }) {
-  const { qr, copied, canShare, copy, share } = useShare(code);
+  const { qr, copied, canShare, copy, share, eggs, setEggs, tapQr } =
+    useShare(code);
   return (
     <section className="flex items-center gap-4 rounded-2xl bg-card p-4">
-      <div
-        className="size-24 shrink-0 overflow-hidden rounded-lg bg-white p-1 [&>svg]:size-full"
-        dangerouslySetInnerHTML={{ __html: qr }}
-        aria-label="QR code to join"
-      />
+      <QrCode qr={qr} onTap={tapQr} className="size-24 rounded-lg p-1" />
+      <EggCheatsheet open={eggs} onOpenChange={setEggs} />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <p className="text-xs tracking-widest text-muted-foreground uppercase">
           Game code
@@ -90,7 +120,8 @@ export function ShareStrip({
   code: string;
   className?: string;
 }) {
-  const { url, qr, copied, canShare, copy, share } = useShare(code);
+  const { url, qr, copied, canShare, copy, share, eggs, setEggs, tapQr } =
+    useShare(code);
   return (
     <section
       className={cn(
@@ -99,11 +130,8 @@ export function ShareStrip({
       )}
       data-testid="share-compact"
     >
-      <div
-        className="size-14 shrink-0 overflow-hidden rounded-md bg-white p-0.5 [&>svg]:size-full"
-        dangerouslySetInnerHTML={{ __html: qr }}
-        aria-label="QR code to join"
-      />
+      <QrCode qr={qr} onTap={tapQr} className="size-14 rounded-md p-0.5" />
+      <EggCheatsheet open={eggs} onOpenChange={setEggs} />
       <div className="flex min-w-0 flex-1 flex-col">
         <p className="text-[10px] tracking-widest text-muted-foreground uppercase">
           Join with code

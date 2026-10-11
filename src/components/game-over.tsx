@@ -234,9 +234,33 @@ function Stats() {
           Play by play
         </h2>
         <ol className="flex flex-col gap-2" data-testid="turns">
-          {history.map((r, i) => (
-            <TurnCard key={i} index={i} result={r} game={game} />
-          ))}
+          {history.map((r, i) => {
+            // Teams has no rotations: a turn is a turn. Co-op / FFA group
+            // the turns under their round, numbered within it.
+            const rounds = settings.mode !== "teams" && r.round !== undefined;
+            const newRound = rounds && history[i - 1]?.round !== r.round;
+            const number = rounds
+              ? i - history.findIndex((h) => h.round === r.round) + 1
+              : i + 1;
+            return (
+              <li key={i} className="contents">
+                {newRound && (
+                  <h3
+                    className="mt-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                    data-testid="round-heading"
+                  >
+                    Round {r.round}
+                  </h3>
+                )}
+                <TurnCard
+                  number={number}
+                  label={rounds ? `Turn ${number}` : undefined}
+                  result={r}
+                  game={game}
+                />
+              </li>
+            );
+          })}
         </ol>
       </section>
     </div>
@@ -248,11 +272,14 @@ function Stats() {
  * dial ended up and what each player got out of it.
  */
 function TurnCard({
-  index,
+  number,
+  label,
   result: r,
   game,
 }: {
-  index: number;
+  /** Turn number, within the round when rounds are shown. */
+  number: number;
+  label?: string;
   result: RoundResult;
   game: GameState;
 }) {
@@ -308,13 +335,19 @@ function TurnCard({
   }
 
   return (
-    <li
+    <div
       className="flex flex-col gap-2 rounded-2xl bg-card px-3 py-2 text-sm"
       data-testid="turn"
+      data-round={r.round}
+      data-turn={number}
     >
       <div className="flex items-center gap-2">
-        <span className="w-5 text-center text-muted-foreground">
-          {index + 1}
+        <span
+          className="w-5 text-center text-muted-foreground"
+          title={label}
+          aria-label={label}
+        >
+          {number}
         </span>
         {psychic && <PlayerAvatar player={psychic} size="sm" />}
         <span className="min-w-0 flex-1 truncate">
@@ -366,6 +399,6 @@ function TurnCard({
           );
         })}
       </ul>
-    </li>
+    </div>
   );
 }

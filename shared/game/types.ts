@@ -166,7 +166,13 @@ export interface VoteResult {
 }
 
 export interface RoundResult {
+  /** 0-based turn number (`Round.index`). */
   roundIndex: number;
+  /**
+   * 1-based round (co-op / FFA: rotation; Teams: same as the turn) this
+   * turn belongs to. Missing on results recorded before it was tracked.
+   */
+  round?: number;
   psychicId: string;
   psychicTeam: TeamId | null;
   spectrum: Spectrum;

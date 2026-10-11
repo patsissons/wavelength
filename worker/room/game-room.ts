@@ -343,6 +343,16 @@ export class GameRoom extends Server<Env> {
       case "resync":
         this.#sendSnapshot(connection, playerId);
         return;
+      case "arena.open": {
+        // Only a post-round reveal pulls the whole room in; the game-over
+        // arena is per device.
+        if (game.phase !== "reveal") return;
+        this.#broadcast(
+          { type: "ephemeral", payload: { kind: "arena", from: playerId } },
+          [connection.id],
+        );
+        return;
+      }
       case "dial.move": {
         const dial = game.round?.dials[message.dialId];
         if (

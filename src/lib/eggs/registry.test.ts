@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EGGS, eggById, menuText } from "./registry";
+import { EGGS, eggById, howFor, menuText } from "./registry";
 
 describe("egg registry", () => {
   it("lists unique eggs that each say how and what", () => {
@@ -13,6 +13,21 @@ describe("egg registry", () => {
     }
     expect(eggById("menu")?.api).toBe("wavelength.list()");
     expect(eggById("nope")).toBeUndefined();
+  });
+
+  it("words the trigger for the platform and knows the console-only ones", () => {
+    const konami = eggById("konami")!;
+    expect(howFor(konami, "desktop")).toContain("keyboard");
+    expect(howFor(konami, "ios")).toContain("swipe");
+    expect(howFor(konami, "android")).toContain("swipe");
+    const sheet = eggById("cheatsheet")!;
+    expect(howFor(sheet, "ios")).toBe(howFor(sheet, "desktop"));
+    expect(sheet.how).toContain("QR code five times");
+    for (const egg of EGGS) {
+      if (egg.consoleOnly) expect(egg.api).toBeDefined();
+    }
+    expect(eggById("rain")?.consoleOnly).toBe(true);
+    expect(eggById("titlewave")?.consoleOnly).toBeUndefined();
   });
 
   it("prints every egg in the menu", () => {

@@ -3,7 +3,7 @@ import type { GameState, RoundResult } from "@shared/game/types";
 import { TEAM_NAMES } from "@shared/game/types";
 import { Button } from "@/components/ui/button";
 import { useArena } from "@/lib/arena";
-import { useCommand } from "@/lib/use-game-connection";
+import { useCommand, useConnection } from "@/lib/use-game-connection";
 import { cn } from "@/lib/utils";
 
 export function RevealPanel({
@@ -14,6 +14,7 @@ export function RevealPanel({
   playerId: string;
 }) {
   const send = useCommand();
+  const { sendEphemeral } = useConnection();
   const openArena = useArena((s) => s.setOpen);
   const reduced = useReducedMotion();
   const round = game.round!;
@@ -51,7 +52,11 @@ export function RevealPanel({
         <Button
           variant="secondary"
           className="h-12 w-full"
-          onClick={() => openArena(true)}
+          onClick={() => {
+            openArena(true);
+            // Everyone jumps in together (the game-over arena is opt-in).
+            sendEphemeral({ type: "arena.open" });
+          }}
           data-testid="open-arena"
         >
           🎯 Throw reactions

@@ -14,6 +14,10 @@ test("effects reach every player, respect roles and are rate limited", async ({
   await expect(cid.page.getByTestId("effect-panic")).toBeVisible();
   await expect(cid.page.getByTestId("effect-drumroll")).toHaveCount(0);
   await expect(bob.page.getByTestId("effect-heckle")).toBeVisible();
+  // Anyone can tell anyone to hurry up.
+  for (const { page } of [host, bob, cid]) {
+    await expect(page.getByTestId("effect-hurry")).toBeVisible();
+  }
 
   // The host button shares the toolbar with the effects; nothing overlaps.
   const hostBox = (await host.page.getByTestId("host-controls").boundingBox())!;

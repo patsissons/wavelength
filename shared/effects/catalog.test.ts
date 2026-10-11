@@ -29,6 +29,21 @@ describe("effects catalog", () => {
     }
   });
 
+  it("lets every role hurry the room along", () => {
+    const hurry = effectById("hurry");
+    expect(hurry?.roles).toEqual(["any"]);
+    expect(hurry?.sound).toBe("ticktock");
+    expect(hurry?.caption).toBe("is waiting…");
+    for (const role of [
+      "psychic",
+      "guesser",
+      "opponent",
+      "spectator",
+    ] as const) {
+      expect(effectsFor(role).map((e) => e.id)).toContain("hurry");
+    }
+  });
+
   it("keeps easter-egg effects off the bar but lets anyone send them", () => {
     const konami = effectById("konami");
     expect(konami?.hidden).toBe(true);

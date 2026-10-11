@@ -12,12 +12,28 @@ test("players flick emoji at each other in the post-round arena", async ({
   await cid.page.getByTestId("accept-dial").click();
   await expect(host.page.getByTestId("reveal")).toBeVisible();
 
-  // Bob and Cid open the arena; Ann stays on the results.
-  for (const { page } of [bob, cid]) {
-    await page.getByTestId("open-arena").click();
+  // Bob opens the arena and everyone follows; Ann steps back out to the
+  // results.
+  await bob.page.getByTestId("open-arena").click();
+  for (const { page } of [bob, cid, host]) {
     await expect(page.getByTestId("arena")).toBeVisible();
     await expect(page.getByTestId("arena-player")).toHaveCount(2);
   }
+  await host.page.getByTestId("close-arena").click();
+  await expect(host.page.getByTestId("arena")).toHaveCount(0);
+  await expect(host.page.getByTestId("reveal")).toBeVisible();
+
+  // Sliding a finger along the tray scrolls it instead of throwing.
+  const tray = bob.page.getByTestId("arena-tray");
+  const first = await centre(bob.page.getByTestId("arena-emoji-👏"));
+  await bob.page.mouse.move(first.x, first.y);
+  await bob.page.mouse.down();
+  await bob.page.mouse.move(first.x - 60, first.y + 2, { steps: 4 });
+  await bob.page.mouse.move(first.x - 150, first.y + 3, { steps: 4 });
+  await bob.page.mouse.up();
+  expect(await tray.evaluate((el) => el.scrollLeft)).toBeGreaterThan(100);
+  await expect(bob.page.getByTestId("arena-drag")).toHaveCount(0);
+  await tray.evaluate((el) => el.scrollTo({ left: 0 }));
   // Everyone else is the same distance from you.
   const you = await centre(bob.page.getByTestId("arena-you"));
   const seats = await Promise.all(
@@ -56,13 +72,19 @@ test("players flick emoji at each other in the post-round arena", async ({
       .first(),
   ).toBeAttached();
 
-  const tally = await host.page.evaluate(
-    () => window.__gameStore!.getState().game!.effectTally,
-  );
+  // The tally comes with the `effect.sent` event, the burst with the
+  // ephemeral; under load the two can land a tick apart.
   const bobId = await bob.page.evaluate(
     () => window.__gameStore!.getState().you!.playerId,
   );
-  expect(tally[bobId]).toEqual({ "reaction:🔥": 1, "reaction:👏": 1 });
+  await expect
+    .poll(() =>
+      host.page.evaluate(
+        (id) => window.__gameStore!.getState().game!.effectTally[id],
+        bobId,
+      ),
+    )
+    .toEqual({ "reaction:🔥": 1, "reaction:👏": 1 });
 
   // The host moves on from inside the arena; everyone's arena closes.
   await host.page.getByTestId("next-round").click();

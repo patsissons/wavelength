@@ -4,6 +4,7 @@ import { activeOwners, allDialsLocked } from "@shared/game/selectors";
 import { PROTOCOL_VERSION, type GameState } from "@shared/game/types";
 import type { GameEvent } from "@shared/protocol/events";
 import type { ErrorCode, ServerMessage } from "@shared/protocol/messages";
+import { useArena } from "./arena";
 import { celebrationBus, effectBus } from "./effect-bus";
 
 export type ConnStatus = "connecting" | "open" | "reconnecting" | "closed";
@@ -128,6 +129,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
               },
             },
           }));
+        } else if (payload.kind === "arena") {
+          // Someone opened the arena after the reveal: everyone follows.
+          if (get().game?.phase === "reveal") useArena.getState().setOpen(true);
         } else {
           effectBus.emit(payload);
         }

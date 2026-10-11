@@ -113,7 +113,15 @@ Commit in small, modular units (one logical change per commit).
   and `reacted` for the target, and the room relays a `reaction`
   ephemeral. The arena (`components/reactions/`) animates its own throws
   and incoming flights; `EffectsLayer` only bursts for players who are not
-  in the arena (`useArena.open`). Aiming is pure math in `aim.ts`.
+  in the arena (`useArena.open`). Aiming is pure math in `aim.ts`. A press
+  on the tray is undecided until the finger leaves the tray (a throw) or
+  slides along it (scrolling the tray). Opening the arena after a reveal
+  sends the `arena.open` ephemeral; the room relays `{ kind: "arena" }`
+  (reveal phase only) and every client opens its own arena. At game over
+  the arena stays per device.
+- `RoundResult.round` is the 1-based round the turn belonged to
+  (`roundsPlayed + 1` at reveal); the play-by-play groups by it. It is
+  optional only because results recorded before it existed lack it.
 - Audio: iOS mutes Web Audio under the ringer switch until an
   HTMLMediaElement plays, so `audio.unlock()` also starts a looping silent
   `<audio>`; keep `unlock()` synchronous inside the gesture. A hidden or
@@ -131,7 +139,11 @@ Commit in small, modular units (one logical change per commit).
   room-wide egg (Konami) is a `hidden` catalog effect sent through the
   normal `effect.send` command, so it stays validated and rate-limited and
   needs no protocol bump. Every egg collapses under "Reduce effects"
-  (`<html data-egg-reduce>`). Add an entry to `EGGS` for anything new.
+  (`<html data-egg-reduce>`). Add an entry to `EGGS` for anything new,
+  with a `touch` wording when the phone instructions differ and
+  `consoleOnly` when there is nothing to do by hand; the QR-code cheat
+  sheet (`components/eggs/cheatsheet.tsx`) renders the list per platform
+  (`lib/eggs/platform.ts`).
 
 ## Gotchas
 
@@ -148,3 +160,8 @@ Commit in small, modular units (one logical change per commit).
   ms; wait for the phase the board expects before dragging or flicking.
 - Screenshot/debug specs live in `e2e/.debug/` (gitignored) and only run
   with `DEBUG_E2E=1`.
+- `public/og.png` is generated (`pnpm og`, `scripts/og/render.ts`) from the
+  shared board geometry; regenerate it instead of editing the PNG, and
+  rerun it when the board's look changes. `scripts/` is typechecked under
+  `tsconfig.node.json` with `allowImportingTsExtensions` because Node runs
+  the scripts directly and needs the `.ts` extension on imports.

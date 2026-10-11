@@ -29,7 +29,12 @@ export function PresenceStrip({
 
   return (
     <ul
-      className="-mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5 [scrollbar-width:none]"
+      className={cn(
+        "-mx-1 -my-0.5 flex gap-1.5 px-1 py-1 [scrollbar-width:none]",
+        // Sideways only: a bare overflow-x makes the vertical axis "auto"
+        // too, and iOS then rubber-bands the strip up and down.
+        "overflow-x-auto overflow-y-hidden overscroll-x-contain",
+      )}
       data-testid="presence"
     >
       {sortPlayers(game).map((p) => {

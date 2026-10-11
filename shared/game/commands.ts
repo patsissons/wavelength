@@ -751,6 +751,7 @@ function reveal(tx: Tx, now: number) {
     vote: null,
     deltas: {},
     goAgain: false,
+    psychicBonus: 0,
     gameOver: null,
     stats: computeRoundStats(round, target, now),
   };
@@ -796,12 +797,14 @@ function reveal(tx: Tx, now: number) {
       if (dial.movedBy !== null || dial.accepts.length > 0)
         guesses[dial.id] = dial.position;
     }
-    result.deltas = scoreFfaRound(
+    const scored = scoreFfaRound(
       guesses,
       target,
       round.psychicId,
       game.settings.psychicScoring,
     );
+    result.deltas = scored.deltas;
+    result.psychicBonus = scored.psychicBonus;
     for (const [id, delta] of Object.entries(result.deltas)) {
       scores[id] = (scores[id] ?? 0) + delta;
     }

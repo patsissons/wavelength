@@ -170,6 +170,8 @@ export interface RoundResult {
   deltas: Record<string, number>;
   /** Teams catch-up: the same team goes again. */
   goAgain: boolean;
+  /** FFA: extra points for the psychic because every guesser hit a 4. */
+  psychicBonus: number;
   /** Decided at reveal; applied when the round advances. */
   gameOver: GameOver | null;
   stats: RoundStats;

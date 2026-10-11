@@ -182,6 +182,7 @@ function result(
     vote: null,
     deltas: {},
     goAgain: false,
+    psychicBonus: 0,
     gameOver: null,
     stats: {
       durationMs: 60_000,

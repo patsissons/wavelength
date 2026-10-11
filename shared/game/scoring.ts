@@ -149,12 +149,15 @@ export function coopLabel(total: number, rounds: number): string {
 
 /* ---------- Free-for-all ---------- */
 
+/** Bonus for the psychic when every guesser (at least two) hits a 4. */
+export const SWEEP_BONUS = 2;
+
 export function scoreFfaRound(
   guesses: Record<string, number>,
   target: number,
   psychicId: string,
   psychicScoring: "none" | "average",
-): Record<string, number> {
+): { deltas: Record<string, number>; psychicBonus: number } {
   const deltas: Record<string, number> = {};
   const values: number[] = [];
   for (const [playerId, guess] of Object.entries(guesses)) {
@@ -168,7 +171,10 @@ export function scoreFfaRound(
   } else {
     deltas[psychicId] = 0;
   }
-  return deltas;
+  const sweep = values.length >= 2 && values.every((v) => v === 4);
+  const psychicBonus = sweep ? SWEEP_BONUS : 0;
+  deltas[psychicId]! += psychicBonus;
+  return { deltas, psychicBonus };
 }
 
 export function ranking(

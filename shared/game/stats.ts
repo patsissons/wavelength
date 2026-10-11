@@ -475,6 +475,7 @@ export function gameFacts(
   let spins = 0;
   let peeks = 0;
   let bullseyes = 0;
+  let sweeps = 0;
   let closestMiss: number | null = null;
   let total = 0;
   let longest: RoundResult | null = null;
@@ -486,6 +487,7 @@ export function gameFacts(
     }
     spins += r.stats.spins;
     peeks += r.stats.peeks;
+    if (r.psychicBonus > 0) sweeps += 1;
     for (const d of Object.values(r.dials)) {
       if (d.wedge === 4) bullseyes += 1;
       if (d.wedge === 0) {
@@ -519,6 +521,13 @@ export function gameFacts(
     label: "Bullseyes",
     value: `${bullseyes}`,
   });
+  if (sweeps > 0) {
+    facts.push({
+      id: "sweeps",
+      label: "Clean sweeps",
+      value: `${sweeps} (everyone hit a 4)`,
+    });
+  }
   if (closestMiss !== null) {
     facts.push({
       id: "closestmiss",

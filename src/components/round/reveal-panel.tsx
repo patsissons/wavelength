@@ -115,22 +115,33 @@ function Summary({
   }
   const rows = Object.entries(result.deltas).sort((a, b) => b[1] - a[1]);
   return (
-    <ul className="flex flex-col gap-1" data-testid="ffa-results">
-      {rows.map(([id, points]) => (
-        <li
-          key={id}
-          className="flex items-center justify-between rounded-xl bg-muted px-3 py-2 text-sm"
+    <>
+      {result.psychicBonus > 0 && (
+        <p
+          className="text-center text-sm font-semibold text-wedge-4"
+          data-testid="sweep"
         >
-          <span>
-            {game.players[id]?.name ?? "?"}
-            {id === result.psychicId && (
-              <span className="text-muted-foreground"> · psychic</span>
-            )}
-          </span>
-          <strong className="tabular-nums">+{points}</strong>
-        </li>
-      ))}
-    </ul>
+          Clean sweep! Everyone hit a 4: +{result.psychicBonus} bonus for{" "}
+          {psychicName}.
+        </p>
+      )}
+      <ul className="flex flex-col gap-1" data-testid="ffa-results">
+        {rows.map(([id, points]) => (
+          <li
+            key={id}
+            className="flex items-center justify-between rounded-xl bg-muted px-3 py-2 text-sm"
+          >
+            <span>
+              {game.players[id]?.name ?? "?"}
+              {id === result.psychicId && (
+                <span className="text-muted-foreground"> · psychic</span>
+              )}
+            </span>
+            <strong className="tabular-nums">+{points}</strong>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

@@ -194,14 +194,29 @@ describe("co-op", () => {
 
 describe("free-for-all", () => {
   it("scores each guesser and averages for the psychic", () => {
-    const deltas = scoreFfaRound(
+    const { deltas, psychicBonus } = scoreFfaRound(
       { a: 0.5, b: 0.5 + 2 * SEGMENT, c: 0.9 },
       0.5,
       "psy",
       "average",
     );
     expect(deltas).toEqual({ a: 4, b: 2, c: 0, psy: 2 });
-    expect(scoreFfaRound({ a: 0.5 }, 0.5, "psy", "none").psy).toBe(0);
+    expect(psychicBonus).toBe(0);
+    expect(scoreFfaRound({ a: 0.5 }, 0.5, "psy", "none").deltas.psy).toBe(0);
+  });
+
+  it("gives the psychic a sweep bonus when every guesser hits a 4", () => {
+    const sweep = scoreFfaRound({ a: 0.5, b: 0.51 }, 0.5, "psy", "average");
+    expect(sweep.psychicBonus).toBe(2);
+    expect(sweep.deltas.psy).toBe(6);
+    // Even without average scoring the bonus applies...
+    expect(
+      scoreFfaRound({ a: 0.5, b: 0.5 }, 0.5, "psy", "none").deltas.psy,
+    ).toBe(2);
+    // ...but a single guesser is not a sweep.
+    expect(scoreFfaRound({ a: 0.5 }, 0.5, "psy", "average").psychicBonus).toBe(
+      0,
+    );
   });
 
   it("ranks with shared ranks for ties", () => {

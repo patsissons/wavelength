@@ -554,6 +554,7 @@ describe("free-for-all", () => {
     expect(deltas.p2).toBe(2);
     expect(deltas.p3).toBeDefined();
     expect(deltas.p0).toBe(Math.round((4 + 2 + deltas.p3!) / 3));
+    expect(state.game.round!.result!.psychicBonus).toBe(0);
     // Three more psychic turns remain in this round.
     expect(state.game.round!.result!.gameOver).toBeNull();
     state = run(state, "p0", cmd("round.next"));
@@ -783,5 +784,26 @@ describe("rotation openings and spin limits", () => {
       expect(order).toEqual([0, 1, 2, 3, 4, 5].map((i) => ids[(k + i) % 3]));
     }
     expect(seen.size).toBeGreaterThan(1);
+  });
+});
+
+describe("free-for-all sweep", () => {
+  it("rewards the psychic when every guesser hits the bullseye", () => {
+    let { state } = setup("ffa", ["Ann", "Bob", "Cid"]);
+    state = run(state, "p0", cmd("game.start"));
+    const turn = psychicTurn(state);
+    state = turn.state;
+    for (const id of ["p1", "p2"]) {
+      state = run(
+        state,
+        id,
+        cmd("dial.set", { dialId: id, position: turn.target }),
+      );
+      state = run(state, id, cmd("dial.accept", { dialId: id }));
+    }
+    const result = state.game.round!.result!;
+    expect(result.psychicBonus).toBe(2);
+    expect(result.deltas).toEqual({ p0: 6, p1: 4, p2: 4 });
+    expect(state.game.scores.p0).toBe(6);
   });
 });

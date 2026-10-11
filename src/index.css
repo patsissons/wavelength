@@ -428,3 +428,22 @@ textarea,
     transform: translate(calc(100vw + 6rem), 0);
   }
 }
+/* Title wave: each letter hops in turn */
+h1[data-egg-wave] .egg-letter {
+  animation: egg-wave 0.9s ease-in-out;
+}
+[data-egg-reduce] h1[data-egg-wave] .egg-letter {
+  animation: none;
+}
+@keyframes egg-wave {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  35% {
+    transform: translateY(-14px) rotate(-6deg);
+  }
+  70% {
+    transform: translateY(3px) rotate(3deg);
+  }
+}

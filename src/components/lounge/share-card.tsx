@@ -2,6 +2,7 @@ import { Check, Copy, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { renderSVG } from "uqr";
 import { Button } from "@/components/ui/button";
+import { isPalindrome } from "@/lib/eggs/charm";
 import { cn } from "@/lib/utils";
 
 function useShare(code: string) {
@@ -49,11 +50,22 @@ export function ShareCard({ code }: { code: string }) {
         <p className="text-xs tracking-widest text-muted-foreground uppercase">
           Game code
         </p>
-        <p
-          className="font-mono text-4xl font-black tracking-[0.2em]"
-          data-testid="game-code"
-        >
-          {code}
+        <p className="flex items-center gap-2">
+          <span
+            className="font-mono text-4xl font-black tracking-[0.2em]"
+            data-testid="game-code"
+          >
+            {code}
+          </span>
+          {isPalindrome(code) && (
+            <span
+              className="text-xl"
+              title="A palindrome! Reads the same backwards."
+              data-testid="egg-palindrome"
+            >
+              🪞
+            </span>
+          )}
         </p>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={copy}>

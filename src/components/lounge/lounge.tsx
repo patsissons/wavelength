@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { audio } from "@/lib/audio";
+import { usePatience } from "@/lib/eggs/charm";
 import { loungeLoop } from "@/lib/eggs/disco";
 import { useEggs } from "@/lib/eggs/store";
 import { saveIdentity, loadIdentity } from "@/lib/identity";
@@ -42,6 +43,8 @@ export function Lounge() {
   const muted = usePrefs((s) => s.muted);
   const music = usePrefs((s) => s.music);
   const disco = useEggs((s) => s.disco);
+  const hostName = game.players[game.hostId]?.name ?? "the host";
+  const quip = usePatience(hostName);
 
   // A looping groove while everyone gathers: the easiest way to tell that
   // sound really works on this phone (disco mode swaps the record).
@@ -126,9 +129,9 @@ export function Lounge() {
           <p
             className="rounded-2xl bg-card py-4 text-center text-muted-foreground"
             data-testid="waiting"
+            data-quip={quip ? "" : undefined}
           >
-            Waiting for {game.players[game.hostId]?.name ?? "the host"} to
-            start…
+            {quip ?? `Waiting for ${hostName} to start…`}
           </p>
         )}
       </footer>

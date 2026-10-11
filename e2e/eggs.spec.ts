@@ -42,6 +42,17 @@ test("the console menu lists the eggs and the API fires them", async ({
   await page.evaluate(() => window.wavelength!.reset());
   await expect(page.locator("html")).not.toHaveAttribute("data-egg-crt");
   await expect(page.getByTestId("egg-pet")).toHaveCount(0);
+
+  // Seven quick taps on the title: the wave, and a quip for a tagline.
+  const title = page.getByRole("heading", { name: "Wavelength" });
+  await expect(page.getByTestId("tagline")).toHaveText(
+    "Read your friends' minds.",
+  );
+  for (let i = 0; i < 7; i++) await title.click();
+  await expect(title).toHaveAttribute("data-egg-wave", "true");
+  await expect(page.getByTestId("tagline")).toHaveText(
+    "Definitely not telepathy.",
+  );
 });
 
 test("the Konami code starts party mode and tells the room", async ({
@@ -138,6 +149,15 @@ test("a magic clue reaches every screen in the room", async ({ browser }) => {
       page.locator("[data-testid=effect-burst][data-effect=egg-marco]").first(),
     ).toBeAttached();
   }
+
+  // Ten taps on mute in five seconds: the button has had enough.
+  for (let i = 0; i < 10; i++)
+    await bob.page.getByTestId("mute-toggle").click();
+  await expect(bob.page.getByTestId("mute-toggle")).toHaveAttribute(
+    "data-fidget",
+    "true",
+  );
+  await expect(bob.page.getByText("Okay, okay.")).toBeVisible();
   await game.close();
 });
 

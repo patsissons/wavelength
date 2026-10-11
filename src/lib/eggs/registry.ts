@@ -102,6 +102,30 @@ export const EGGS: ReadonlyArray<EggDef> = [
     api: 'wavelength.pet("🐈")',
   },
   {
+    id: "titlewave",
+    name: "Title wave",
+    how: "tap the Wavelength title on the home screen seven times",
+    what: "the letters do the wave and the tagline gets a new quip every time",
+  },
+  {
+    id: "patience",
+    name: "Patience",
+    how: "wait in the lounge for a minute while the host dawdles",
+    what: "the waiting line starts to editorialise",
+  },
+  {
+    id: "fidget",
+    name: "Fidget",
+    how: "tap the mute button ten times in five seconds",
+    what: "it has had enough",
+  },
+  {
+    id: "palindrome",
+    name: "Palindrome",
+    how: "land a game code that reads the same backwards (BCCB)",
+    what: "a little mirror next to the code",
+  },
+  {
     id: "seasons",
     name: "Seasons",
     how: "play in Halloween week, over the winter holidays, on New Year's Eve or Day, or on April 1st",

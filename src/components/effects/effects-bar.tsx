@@ -1,9 +1,11 @@
 import { Volume2, VolumeX } from "lucide-react";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { effectsFor } from "@shared/effects/catalog";
 import type { Role } from "@shared/game/selectors";
 import { Button } from "@/components/ui/button";
 import { audio } from "@/lib/audio";
+import { TapCounter } from "@/lib/eggs/charm";
 import { usePrefs } from "@/lib/prefs";
 import { useCommand } from "@/lib/use-game-connection";
 import { cn } from "@/lib/utils";
@@ -15,6 +17,8 @@ export function MuteToggle() {
   const muted = usePrefs((s) => s.muted);
   const unlocked = usePrefs((s) => s.soundUnlocked);
   const setMuted = usePrefs((s) => s.setMuted);
+  const taps = useRef(new TapCounter(10, 5000));
+  const [fidget, setFidget] = useState(false);
   return (
     <Button
       variant="ghost"
@@ -30,11 +34,24 @@ export function MuteToggle() {
         // this tap too; the dot just tells the player sound is not on yet.
         setMuted(!muted);
         if (muted) void audio.unlock();
+        if (taps.current.push(Date.now())) {
+          // Ten taps in five seconds: the button has had enough.
+          toast("🙉 Okay, okay.");
+          setFidget(true);
+          setTimeout(() => setFidget(false), 3000);
+        }
       }}
       data-testid="mute-toggle"
       data-unlocked={unlocked || undefined}
+      data-fidget={fidget || undefined}
     >
-      {muted ? <VolumeX /> : <Volume2 />}
+      {fidget ? (
+        <span className="text-lg">🙉</span>
+      ) : muted ? (
+        <VolumeX />
+      ) : (
+        <Volume2 />
+      )}
       {!muted && !unlocked && (
         <span
           className="absolute top-1 right-1 size-2 rounded-full bg-primary"

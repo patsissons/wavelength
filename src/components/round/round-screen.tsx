@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { roleOf } from "@shared/game/selectors";
+import { dialsFor, roleOf } from "@shared/game/selectors";
 import { useGameStore } from "@/lib/store";
 import { BoardStage } from "./board-stage";
+import { GuesserPanel } from "./guesser-panel";
 import { PsychicPanel, Panel } from "./psychic-panel";
 import { ScoreHeader } from "./score-header";
 import { SpectrumLabels } from "./spectrum-labels";
@@ -40,6 +41,13 @@ export function RoundScreen() {
           peeking={peeking}
           setPeeking={setPeeking}
           spinDone={spinDone || game.phase !== "clue" || round.spin === null}
+        />
+      ) : role === "guesser" &&
+        (game.phase === "guessing" || game.phase === "voting") ? (
+        <GuesserPanel
+          game={game}
+          playerId={you.playerId}
+          dial={dialsFor(game, you.playerId)[0]!}
         />
       ) : (
         <Panel

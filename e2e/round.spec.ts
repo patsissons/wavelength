@@ -29,6 +29,7 @@ test("the psychic draws, spins, peeks and gives a clue that everyone sees", asyn
   );
   await expect(host.page.getByTestId("peek-toggle")).toHaveCount(0);
 
+  await expect(host.page.getByTestId("panel")).toContainText("Spin the wheel");
   const box = (await host.page.getByTestId("board").boundingBox())!;
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height * (205 / 230);

@@ -5,6 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
 // 5173) so a normally-running dev server is never reused.
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: process.env.DEBUG_E2E ? [] : ["**/.debug/**"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

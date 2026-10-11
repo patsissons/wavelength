@@ -46,20 +46,27 @@ export function playerRow(page: Page, name: string) {
 }
 
 /** Host + three guests in a Teams game, started. Ann/Cid left, Bob/Dee right. */
-export async function startTeamsGame(browser: Browser) {
+export async function startTeamsGame(
+  browser: Browser,
+  extraNames: string[] = [],
+) {
   const host = await hostGame(browser, "Ann");
   const bob = await joinGame(browser, host.code, "Bob");
   const cid = await joinGame(browser, host.code, "Cid");
   const dee = await joinGame(browser, host.code, "Dee");
+  const extras: Client[] = [];
+  for (const name of extraNames) {
+    extras.push(await joinGame(browser, host.code, name));
+  }
   await host.page.getByTestId("open-settings").click();
   await host.page.getByRole("button", { name: "Left Brain" }).click();
   await host.page.keyboard.press("Escape");
   await expect(host.page.getByTestId("start-game")).toBeEnabled();
   await host.page.getByTestId("start-game").click();
   await expect(host.page.getByTestId("score-header")).toBeVisible();
-  const all = [host, bob, cid, dee];
+  const all = [host, bob, cid, dee, ...extras];
   const close = () => Promise.all(all.map((c) => c.context.close()));
-  return { host, bob, cid, dee, all, code: host.code, close };
+  return { host, bob, cid, dee, extras, all, code: host.code, close };
 }
 
 /** Drive the psychic from drawing through to the clue. */
@@ -67,6 +74,8 @@ export async function psychicTurn(page: Page, clue: string) {
   await page.getByTestId("draw-card").click();
   await page.getByTestId("flip-card").click();
   await page.getByTestId("pick-side-1").click();
+  // The board only accepts a flick once the client has entered the spin phase.
+  await expect(page.getByTestId("panel")).toContainText("Spin the wheel");
   await flickWheel(page);
   await expect(page.getByTestId("peek-toggle")).toBeEnabled();
   await page.getByTestId("peek-toggle").click();
@@ -99,4 +108,21 @@ export async function dragDial(page: Page, position: number) {
   await page.mouse.down();
   await page.mouse.move(x, y, { steps: 4 });
   await page.mouse.up();
+}
+
+/** Assert a rendered dial is within `tolerance` of a spectrum position. */
+export async function expectDialNear(
+  page: Page,
+  dialId: string,
+  position: number,
+  tolerance = 0.03,
+) {
+  await expect
+    .poll(async () => {
+      const raw = await page
+        .getByTestId(`dial-${dialId}`)
+        .getAttribute("data-position");
+      return raw === null ? NaN : Math.abs(Number(raw) - position);
+    })
+    .toBeLessThanOrEqual(tolerance);
 }

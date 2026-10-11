@@ -13,6 +13,8 @@ declare global {
   interface Window {
     /** Test hook: simulate the OS killing the socket. */
     __wsDrop?: () => void;
+    /** Test hook: read client state. */
+    __gameStore?: typeof useGameStore;
   }
 }
 
@@ -59,6 +61,7 @@ export function ConnectionProvider({
     });
     ref.current = conn;
     window.__wsDrop = () => conn.simulateDrop();
+    window.__gameStore = useGameStore;
     return () => {
       delete window.__wsDrop;
       conn.close();

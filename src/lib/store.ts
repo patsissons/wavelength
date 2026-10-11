@@ -72,6 +72,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
         if (message.version <= game.version) return; // duplicate
         if (message.version !== game.version + 1) return "gap";
         const next = applyEvent(game, message.event);
+        if (
+          message.event.type === "dial.set" ||
+          message.event.type === "dial.locked"
+        ) {
+          // A committed position supersedes any live preview of that dial.
+          const dials = { ...get().live.dials };
+          delete dials[message.event.dialId];
+          set({ game: next, live: { ...get().live, dials } });
+          return;
+        }
         if (ROUND_RESETS.has(message.event.type)) {
           const you = get().you;
           set({

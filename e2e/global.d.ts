@@ -10,7 +10,11 @@ interface Window {
   __gameStore?: {
     getState(): {
       conn: string;
-      game: { phase: string; version: number } | null;
+      game: {
+        phase: string;
+        version: number;
+        effectTally: Record<string, Record<string, number>>;
+      } | null;
       you: { playerId: string } | null;
       error: { code: string } | null;
     };

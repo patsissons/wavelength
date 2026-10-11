@@ -1,6 +1,8 @@
 import confetti from "canvas-confetti";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { effectById, type ScreenFx } from "@shared/effects/catalog";
+import { useArena } from "@/lib/arena";
 import { audio } from "@/lib/audio";
 import { celebrationBus, effectBus, type Celebration } from "@/lib/effect-bus";
 import { vibrate } from "@/lib/haptics";
@@ -18,6 +20,7 @@ export function EffectsLayer() {
   const [fx, setFx] = useState<{ kind: ScreenFx; key: number } | null>(null);
   const [celebration, setCelebration] = useState<string | null>(null);
   const [poke, setPoke] = useState<string | null>(null);
+  const [reacted, setReacted] = useState<string | null>(null);
 
   useEffect(() => {
     return effectBus.subscribe((effect) => {
@@ -43,6 +46,30 @@ export function EffectsLayer() {
           if (!prefs.reduceEffects) shake();
           audio.play("poke");
           vibrate([60, 40, 60]);
+        }
+        return;
+      }
+      if (effect.kind === "reaction") {
+        // In the arena the reaction flies between seats; this layer only
+        // covers players still looking at the results.
+        if (useArena.getState().open) return;
+        const me = state.you?.playerId;
+        const target = state.game?.players[effect.to]?.name ?? "someone";
+        const mine = effect.to === me;
+        if (layer.current) {
+          burst(layer.current, {
+            glyphs: [effect.emoji],
+            count: prefs.reduceEffects ? 2 : mine ? 8 : 4,
+            label: mine
+              ? `${from ?? "Someone"} threw ${effect.emoji} at you!`
+              : `${from ?? "Someone"} ${effect.emoji} ${target}`,
+            effect: "reaction",
+          });
+        }
+        if (mine) {
+          setReacted(from ?? "someone");
+          audio.play("squeak");
+          vibrate([40, 30, 40]);
         }
         return;
       }
@@ -99,6 +126,12 @@ export function EffectsLayer() {
     return () => clearTimeout(t);
   }, [poke]);
 
+  useEffect(() => {
+    if (!reacted) return;
+    const t = setTimeout(() => setReacted(null), 2000);
+    return () => clearTimeout(t);
+  }, [reacted]);
+
   return (
     <div
       ref={layer}
@@ -107,6 +140,7 @@ export function EffectsLayer() {
       data-testid="effects-layer"
       data-celebration={celebration ?? undefined}
       data-poked-by={poke ?? undefined}
+      data-reacted-by={reacted ?? undefined}
     >
       {fx && fx.kind !== "shake" && (
         <div
@@ -128,6 +162,12 @@ function celebrate(c: Exclude<Celebration, { kind: "clue" }>, reduce: boolean) {
   const common = { disableForReducedMotion: true, zIndex: 60 } as const;
   if (c.kind === "newround") {
     audio.play("newround");
+    return;
+  }
+  if (c.kind === "timeup") {
+    toast("⏰ Time's up! Dials locked where they were.");
+    audio.play("buzz");
+    vibrate([80, 40, 80]);
     return;
   }
   if (c.kind === "gameover") {

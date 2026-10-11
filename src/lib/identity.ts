@@ -54,3 +54,23 @@ export function lastName(): string {
     return "";
   }
 }
+
+const AVATAR = "wavelength:avatar";
+
+/** The avatar last chosen on this device, applied to every new seat. */
+export function lastAvatar(): string | null {
+  try {
+    return localStorage.getItem(AVATAR) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveAvatar(avatar: string | null): void {
+  try {
+    if (avatar) localStorage.setItem(AVATAR, avatar);
+    else localStorage.removeItem(AVATAR);
+  } catch {
+    /* ignore */
+  }
+}

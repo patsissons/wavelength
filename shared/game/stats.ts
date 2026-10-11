@@ -1,4 +1,5 @@
 import { effectById } from "../effects/catalog";
+import { reactionEmoji } from "../effects/reactions";
 import { SEGMENT } from "./geometry";
 import { sideOfTarget, wedgeScore } from "./scoring";
 import type {
@@ -234,11 +235,14 @@ const deg = (v: number) => `${Math.round(v * DEG)}°`;
  * Fun superlatives for the end screen. Each award only appears when the
  * data supports it; ties go to whoever joined first.
  */
-/** Reactions a player sent (pokes included, "poked" excluded). */
+/** Tally ids that count what was received rather than sent. */
+const RECEIVED = new Set(["poked", "reacted"]);
+
+/** Reactions a player sent (pokes included, received ones excluded). */
 export function reactionsSent(tally: Record<string, number> | undefined) {
   let count = 0;
   for (const [id, n] of Object.entries(tally ?? {})) {
-    if (id !== "poked") count += n;
+    if (!RECEIVED.has(id)) count += n;
   }
   return count;
 }
@@ -249,7 +253,7 @@ export function favouriteReaction(
 ): { id: string; count: number } | null {
   let best: { id: string; count: number } | null = null;
   for (const [id, count] of Object.entries(tally ?? {})) {
-    if (id === "poked" || id === "poke") continue;
+    if (RECEIVED.has(id) || id === "poke") continue;
     if (!best || count > best.count) best = { id, count };
   }
   return best;
@@ -496,6 +500,16 @@ export function gameAwards(
     (t) => `poked ${tally[t.id]?.poked ?? 0} times`,
     (s) => s >= 2,
   );
+  pick(
+    "fanfavourite",
+    "🌟",
+    "Fan favourite",
+    totals,
+    (t) => tally[t.id]?.reacted ?? 0,
+    "max",
+    (t) => `${tally[t.id]?.reacted ?? 0} reactions thrown their way`,
+    (s) => s >= 3,
+  );
   if (mode === "teams") {
     pick(
       "oracle",
@@ -593,7 +607,7 @@ export function gameFacts(
   let pokes = 0;
   for (const mine of Object.values(tally)) {
     for (const [id, n] of Object.entries(mine)) {
-      if (id === "poked") continue;
+      if (RECEIVED.has(id)) continue;
       if (id === "poke") pokes += n;
       else reactions[id] = (reactions[id] ?? 0) + n;
     }
@@ -627,8 +641,11 @@ export function gameFacts(
   return facts;
 }
 
-/** The emoji shown for a reaction id (the effect's icon, or 👉 for pokes). */
+/**
+ * The emoji shown for a tally id: the effect's icon, 👉 for pokes, or the
+ * thrown emoji itself for arena reactions.
+ */
 export function effectIcon(id: string): string {
   if (id === "poke") return "👉";
-  return effectById(id)?.icon ?? "✨";
+  return reactionEmoji(id) ?? effectById(id)?.icon ?? "✨";
 }

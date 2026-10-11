@@ -89,8 +89,31 @@ Commit in small, modular units (one logical change per commit).
   scoring and rendering both derive from it.
 - Protocol changes need the zod schema, the event union, the reducer AND a
   scenario test in `shared/game/commands.test.ts`. Bump `PROTOCOL_VERSION`
-  (currently 3) when a change is not backward compatible; clients show a
-  reload banner.
+  (currently 4) when a change is not backward compatible; clients show a
+  reload banner. A new event type is never backward compatible: an old
+  reducer returns `undefined` for it and wipes the state.
+- **Avatars are validated server-side.** `Player.avatar` is a catalog id
+  (`shared/avatars/catalog.ts`, pure data) or one emoji (one grapheme that
+  starts with an Extended_Pictographic); `AvatarSchema` enforces it on
+  `player.setAvatar` and the create/join bodies. Catalog characters are
+  layered emoji (base + prop) animated by the `.avatar-*` CSS in
+  `index.css`; the HTML (`AvatarFigure`) and SVG (`SvgAvatar`, dial pips)
+  renderers share those classes, and SVG sets `transform-box: view-box`
+  origins inline. The device remembers the last choice
+  (`wavelength:avatar`).
+- **The dial timer is server time.** `settings.guessSeconds` (lobby only)
+  puts a `deadline` on `clue.submitted` → `round.guessDeadline`; the room's
+  alarm (`nextAlarmAt` + `expireTimers`, which also owns the away-grace
+  tick) emits `guess.expired` and locks every dial where it is. Clients
+  count down with the clock skew measured when the clue arrived
+  (`store.clockSkew`); they never decide the timeout.
+- **Arena reactions are commands.** `reaction.send` (reveal / gameover
+  only, emoji from `shared/effects/reactions.ts`, not yourself) has its own
+  looser per-player bucket, is tallied as `reaction:<emoji>` for the sender
+  and `reacted` for the target, and the room relays a `reaction`
+  ephemeral. The arena (`components/reactions/`) animates its own throws
+  and incoming flights; `EffectsLayer` only bursts for players who are not
+  in the arena (`useArena.open`). Aiming is pure math in `aim.ts`.
 - Audio: iOS mutes Web Audio under the ringer switch until an
   HTMLMediaElement plays, so `audio.unlock()` also starts a looping silent
   `<audio>`; keep `unlock()` synchronous inside the gesture. A hidden or

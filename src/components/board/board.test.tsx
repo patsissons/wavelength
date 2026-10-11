@@ -57,6 +57,61 @@ describe("Board", () => {
     expect(screen.getByTestId("shroud")).toHaveAttribute("data-open", "true");
   });
 
+  it("draws the owner's avatar on the knob and keeps a lock pin", () => {
+    render(
+      <Board
+        target={null}
+        shroudOpen={false}
+        dials={[
+          {
+            id: "p1",
+            position: 0.3,
+            color: "red",
+            avatar: { kind: "emoji", text: "🦊" },
+            locked: true,
+          },
+          {
+            id: "p2",
+            position: 0.6,
+            color: "blue",
+            avatar: {
+              kind: "figure",
+              def: {
+                id: "dancing-unicorn",
+                label: "Dancing unicorn",
+                base: "🦄",
+                prop: "✨",
+                anchor: "top-right",
+                anim: "dance",
+                propAnim: "sparkle",
+              },
+            },
+          },
+          {
+            id: "p3",
+            position: 0.9,
+            color: "green",
+            avatar: { kind: "initial", text: "C" },
+          },
+        ]}
+      />,
+    );
+    const fox = screen.getByTestId("dial-p1");
+    expect(fox.querySelector("[data-testid=pip-emoji]")).toHaveTextContent(
+      "🦊",
+    );
+    expect(fox.querySelector("[data-testid=pip-lock]")).not.toBeNull();
+    const uni = screen.getByTestId("dial-p2");
+    const figure = uni.querySelector("[data-testid=pip-figure]");
+    expect(figure).toHaveAttribute("data-anim", "dance");
+    expect(figure).toHaveTextContent("🦄");
+    expect(figure).toHaveTextContent("✨");
+    expect(uni.querySelector("[data-testid=pip-lock]")).toBeNull();
+    expect(
+      screen.getByTestId("dial-p3").querySelector("[data-testid=pip-initial]"),
+    ).toHaveTextContent("C");
+  });
+
   it("hides the wedge without a target and closes the shroud", () => {
     render(<Board target={null} shroudOpen={false} dials={[]} />);
     expect(screen.queryByTestId("wedge-4")).not.toBeInTheDocument();

@@ -3,7 +3,7 @@ import {
   connectPlayer,
   createGame,
   disconnectPlayer,
-  expireGrace,
+  expireTimers,
   handleCommand,
   joinGame,
   type PrivateMessage,
@@ -46,6 +46,7 @@ export class GameRoom extends Server<Env> {
 
   #state: ServerState | null = null;
   #playerBuckets = new Map<string, TokenBucket>();
+  #reactionBuckets = new Map<string, TokenBucket>();
   #roomBucket = new TokenBucket(
     EFFECT_LIMITS.room.capacity,
     EFFECT_LIMITS.room.perMs,
@@ -62,6 +63,7 @@ export class GameRoom extends Server<Env> {
 
   async create(input: {
     hostName: string;
+    hostAvatar?: string | null;
   }): Promise<
     | { ok: true; playerId: string; token: string }
     | { ok: false; code: ErrorCode }
@@ -76,6 +78,7 @@ export class GameRoom extends Server<Env> {
       code: this.name,
       hostId: playerId,
       hostName: input.hostName,
+      hostAvatar: input.hostAvatar ?? null,
       hostTokenHash: await sha256Hex(token),
       now,
     });
@@ -86,6 +89,7 @@ export class GameRoom extends Server<Env> {
 
   async join(input: {
     name: string;
+    avatar?: string | null;
   }): Promise<
     | { ok: true; playerId: string; token: string; phase: string }
     | { ok: false; code: ErrorCode }
@@ -98,6 +102,7 @@ export class GameRoom extends Server<Env> {
     const result = joinGame(state, {
       playerId,
       name: input.name,
+      avatar: input.avatar ?? null,
       tokenHash: await sha256Hex(token),
     });
     if (!result.ok) return { ok: false, code: result.code };
@@ -196,9 +201,13 @@ export class GameRoom extends Server<Env> {
     }
 
     const now = Date.now();
-    const reaction =
+    const effect =
       message.type === "effect.send" || message.type === "poke.send";
-    if (reaction && !this.#takeEffectToken(playerId, now)) {
+    const limited =
+      (effect && !this.#takeEffectToken(playerId, now)) ||
+      (message.type === "reaction.send" &&
+        !this.#takeReactionToken(playerId, now));
+    if (limited) {
       this.#send(connection, {
         type: "error",
         cmdId: message.cmdId,
@@ -249,6 +258,17 @@ export class GameRoom extends Server<Env> {
           kind: "poke",
           from: playerId,
           to: message.playerId,
+          nonce: message.cmdId,
+        },
+      });
+    } else if (message.type === "reaction.send") {
+      this.#broadcast({
+        type: "ephemeral",
+        payload: {
+          kind: "reaction",
+          from: playerId,
+          to: message.playerId,
+          emoji: message.emoji,
           nonce: message.cmdId,
         },
       });
@@ -305,7 +325,7 @@ export class GameRoom extends Server<Env> {
       }
       return;
     }
-    const { events } = expireGrace(state, now, this.#graceMs());
+    const { events } = expireTimers(state, now, this.#graceMs());
     this.#applyAndBroadcast(events);
     await this.#persist();
     await this.#scheduleAlarm();
@@ -361,6 +381,20 @@ export class GameRoom extends Server<Env> {
       this.#playerBuckets.set(playerId, bucket);
     }
     return bucket.take(now) && this.#roomBucket.take(now);
+  }
+
+  /** Reactions have their own, looser per-player bucket and skip the room one. */
+  #takeReactionToken(playerId: string, now: number): boolean {
+    let bucket = this.#reactionBuckets.get(playerId);
+    if (!bucket) {
+      bucket = new TokenBucket(
+        EFFECT_LIMITS.reaction.capacity,
+        EFFECT_LIMITS.reaction.perMs,
+        now,
+      );
+      this.#reactionBuckets.set(playerId, bucket);
+    }
+    return bucket.take(now);
   }
 
   /* ---------- Plumbing ---------- */

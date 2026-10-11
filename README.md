@@ -68,11 +68,15 @@ phone (same network) to play.
 2. Players open the link (or type the code next to their name on the home
    page) and land in the lounge. In Teams mode they are auto-balanced and
    can tap a team to switch. The code and QR stay visible during the game so
-   late arrivals can still join.
+   late arrivals can still join. Everyone can pick an **avatar** (on the
+   home page, the join page or in the lounge): one of 32 animated
+   characters (dancing unicorn, disco cat, space dog, pirate duck…), any
+   emoji, or just their initial. The choice is remembered on the device and
+   shows next to their name everywhere and on their dial's knob.
 3. The host picks the mode and settings (points to win, rounds, catch-up,
    who opens the psychic rotation (random or join order), wheel spins per
-   turn, custom spectra, effects) and starts the game. A **Leave** button
-   returns to the home screen; the seat stays open.
+   turn, a **dial timer**, custom spectra, effects) and starts the game. A
+   **Leave** button returns to the home screen; the seat stays open.
 4. Each turn the psychic draws a card off the pile, flips it to compare both
    spectra and picks a side. The shroud lifts and everyone watches the wheel;
    the psychic taps or flicks it to spin (only their screen shows the
@@ -87,7 +91,10 @@ phone (same network) to play.
    In free-for-all each guesser has a private dial, the psychic watches
    them all move live, and the psychic earns a +2 sweep bonus when every
    guesser hits a 4. The player strip at the top is sorted by score and
-   shows who has accepted or locked in.
+   shows who has accepted or locked in. With a dial timer set, a countdown
+   runs under the clue; when it hits zero every dial locks where it is
+   (an unaccepted position still counts as the guess) and the round moves
+   on.
 6. In Teams the other team calls **left** or **right** (majority wins, ties
    score nothing), then the shroud opens for everyone and points are scored:
    4 / 3 / 2 for the wedge, +1 for a correct call unless it was a bullseye,
@@ -104,10 +111,17 @@ phone (same network) to play.
    marks every new turn and a jingle plays for bullseyes and at game over.
    Audio goes quiet whenever the tab is hidden or unfocused.
 8. The game-over screen hands out awards (Sharpshooter, Saboteur, Quick
-   draw, Mind reader, Spin doctor, Hype machine, Pest and more), lists
-   game-wide numbers (including reactions and pokes), a per-player table
-   and a play-by-play of every turn: clue, target, every dial and what each
-   player earned.
+   draw, Mind reader, Spin doctor, Hype machine, Pest, Fan favourite and
+   more), lists game-wide numbers (including reactions and pokes), a
+   per-player table and a play-by-play of every turn: clue, target, every
+   dial and what each player earned.
+9. After every reveal (and at game over) **Throw reactions** opens the
+   arena: you sit at the centre of the baseline, the other players are
+   spaced along a semicircle above you, and a tray of emoji waits at the
+   bottom. Drop an emoji on someone or flick it their way; it flies over,
+   pops on them and lands on their screen (in their own arena, or as a
+   burst on the results). Reactions thrown count towards the end-of-game
+   awards.
 
 ## Easter eggs
 

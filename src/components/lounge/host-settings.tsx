@@ -17,6 +17,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { formatTimer } from "@/lib/time";
 import { useCommand } from "@/lib/use-game-connection";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +42,9 @@ const MODES: Array<{ id: Mode; label: string; blurb: string }> = [
 
 /** Spins per turn offered in the settings; 0 means unlimited. */
 const SPIN_OPTIONS = [1, 2, 3, 5, 0] as const;
+
+/** Dial timer options in seconds; 0 means no limit. */
+const TIMER_OPTIONS = [0, 15, 30, 45, 60, 90, 120, 180] as const;
 
 export function HostSettings({ settings }: { settings: Settings }) {
   const send = useCommand();
@@ -209,6 +213,32 @@ export function HostSettings({ settings }: { settings: Settings }) {
                   aria-label={v === 0 ? "Unlimited spins" : `${v} spins`}
                 >
                   {v === 0 ? "∞" : v}
+                </Button>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-2">
+            <Label>Dial timer</Label>
+            <p className="text-sm text-muted-foreground">
+              Time to move the dial once the clue is given. When it runs out,
+              every dial locks where it is.
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {TIMER_OPTIONS.map((v) => (
+                <Button
+                  key={v}
+                  type="button"
+                  variant={
+                    settings.guessSeconds === v ? "default" : "secondary"
+                  }
+                  onClick={() => patch({ guessSeconds: v })}
+                  data-testid={`guess-seconds-${v}`}
+                  aria-label={
+                    v === 0 ? "No dial timer" : `${v} second dial timer`
+                  }
+                >
+                  {formatTimer(v)}
                 </Button>
               ))}
             </div>

@@ -16,9 +16,12 @@ import { audio } from "@/lib/audio";
 import { usePatience } from "@/lib/eggs/charm";
 import { loungeLoop } from "@/lib/eggs/disco";
 import { useEggs } from "@/lib/eggs/store";
-import { saveIdentity, loadIdentity } from "@/lib/identity";
+import { saveAvatar, saveIdentity, loadIdentity } from "@/lib/identity";
+import { AvatarPicker } from "@/components/avatar/avatar-picker";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { usePrefs } from "@/lib/prefs";
 import { selectIsHost, useGameStore } from "@/lib/store";
+import { formatTimer } from "@/lib/time";
 import { useCommand } from "@/lib/use-game-connection";
 import { EnableSound } from "./enable-sound";
 import { HostSettings } from "./host-settings";
@@ -90,6 +93,8 @@ export function Lounge() {
               {game.settings.mode === "teams"
                 ? ` · first to ${game.settings.targetScore}`
                 : ` · ${game.settings.rounds} round${game.settings.rounds === 1 ? "" : "s"} · ${count} turn${count === 1 ? "" : "s"} each`}
+              {game.settings.guessSeconds > 0 &&
+                ` · ${formatTimer(game.settings.guessSeconds)} dial timer`}
             </span>
           </p>
         </div>
@@ -104,11 +109,30 @@ export function Lounge() {
             Players · {count}
           </h2>
           {me && (
-            <RenameDialog
-              code={game.code}
-              name={me.name}
-              onRename={(name) => send({ type: "player.rename", name })}
-            />
+            <div className="flex items-center gap-1">
+              <AvatarPicker
+                value={me.avatar}
+                onChange={(avatar) => {
+                  saveAvatar(avatar);
+                  void send({ type: "player.setAvatar", avatar });
+                }}
+                trigger={
+                  <button
+                    type="button"
+                    className="rounded-full"
+                    aria-label="Choose your avatar"
+                    data-testid="open-avatar"
+                  >
+                    <PlayerAvatar player={me} />
+                  </button>
+                }
+              />
+              <RenameDialog
+                code={game.code}
+                name={me.name}
+                onRename={(name) => send({ type: "player.rename", name })}
+              />
+            </div>
           )}
         </div>
         <PlayerList />

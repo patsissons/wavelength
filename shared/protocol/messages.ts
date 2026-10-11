@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { AVATAR_MAX, isValidAvatar } from "../avatars/catalog";
+import { isReaction } from "../effects/reactions";
 import type { GameState } from "../game/types";
 import { LIMITS } from "../game/types";
 import type { GameEvent } from "./events";
@@ -14,6 +16,12 @@ const DialId = z.string().min(1).max(40);
 export const SideSchema = z.enum(["left", "right"]);
 export const TeamIdSchema = z.enum(["left", "right"]);
 export const NameSchema = z.string().trim().min(1).max(LIMITS.nameMax);
+export const AvatarSchema = z
+  .string()
+  .min(1)
+  .max(AVATAR_MAX)
+  .refine(isValidAvatar, "not an avatar")
+  .nullable();
 
 export const SpectrumSchema = z.object({
   left: z.string().trim().min(1).max(LIMITS.labelMax),
@@ -34,6 +42,7 @@ export const SettingsPatchSchema = z
     firstTeam: z.enum(["left", "right", "random"]),
     firstPsychic: z.enum(["random", "order"]),
     maxSpins: z.number().int().min(0).max(LIMITS.maxSpins),
+    guessSeconds: z.number().int().min(0).max(LIMITS.maxGuessSeconds),
     customSpectra: z.array(SpectrumSchema).max(LIMITS.customSpectraMax),
     useBuiltInDeck: z.boolean(),
     effects: z.boolean(),
@@ -56,6 +65,7 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
   withCmd({ type: z.literal("settings.update"), patch: SettingsPatchSchema }),
   withCmd({ type: z.literal("team.join"), team: TeamIdSchema }),
   withCmd({ type: z.literal("player.rename"), name: NameSchema }),
+  withCmd({ type: z.literal("player.setAvatar"), avatar: AvatarSchema }),
   withCmd({ type: z.literal("game.start") }),
   // psychic
   withCmd({ type: z.literal("card.draw") }),
@@ -91,6 +101,11 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
     effectId: z.string().min(1).max(40),
   }),
   withCmd({ type: z.literal("poke.send"), playerId: PlayerId }),
+  withCmd({
+    type: z.literal("reaction.send"),
+    playerId: PlayerId,
+    emoji: z.string().min(1).max(16).refine(isReaction, "not a reaction"),
+  }),
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -115,7 +130,14 @@ export type ErrorCode =
 export type Ephemeral =
   | { kind: "dial.live"; dialId: string; position: number; by: string }
   | { kind: "effect"; effectId: string; from: string; nonce: string }
-  | { kind: "poke"; from: string; to: string; nonce: string };
+  | { kind: "poke"; from: string; to: string; nonce: string }
+  | {
+      kind: "reaction";
+      from: string;
+      to: string;
+      emoji: string;
+      nonce: string;
+    };
 
 export type ServerMessage =
   | {

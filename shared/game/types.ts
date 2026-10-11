@@ -3,7 +3,7 @@
  * secret target lives in the server-only `SecretState` until reveal.
  */
 
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 export type Mode = "teams" | "coop" | "ffa";
 export type TeamId = "left" | "right";
@@ -25,6 +25,11 @@ export interface Player {
   name: string;
   /** Index into the player colour palette. */
   color: number;
+  /**
+   * A catalog id (shared/avatars/catalog.ts) or a single emoji; null shows
+   * the monogram.
+   */
+  avatar: string | null;
   /** Teams mode only. */
   team: TeamId | null;
   /** Join order; drives psychic rotation. */
@@ -61,6 +66,11 @@ export interface Settings {
   firstPsychic: "random" | "order";
   /** Wheel spins allowed per turn; 0 = unlimited. */
   maxSpins: number;
+  /**
+   * Seconds guessers have to move their dial once the clue is given; 0 =
+   * no limit. When it elapses every dial locks where it is.
+   */
+  guessSeconds: number;
   /** Host-entered extra spectra, mixed into the deck. */
   customSpectra: Spectrum[];
   useBuiltInDeck: boolean;
@@ -106,6 +116,7 @@ export type RoundLogEntry =
   | { t: "accept"; at: number; by: string; dialId: string }
   | { t: "unaccept"; at: number; by: string; dialId: string }
   | { t: "lock"; at: number; dialId: string }
+  | { t: "timeout"; at: number }
   | { t: "vote"; at: number; by: string; side: Side };
 
 export interface PlayerRoundStats {
@@ -192,6 +203,8 @@ export interface Round {
   /** Explicit peeks (shroud opened by the psychic) this round. */
   peeks: number;
   clue: string | null;
+  /** Server time when the dial timer runs out; null without a timer. */
+  guessDeadline: number | null;
   dials: Record<string, DialState>;
   /** Teams: opposing players' left/right calls. */
   votes: Record<string, Side>;
@@ -268,6 +281,7 @@ export const DEFAULT_SETTINGS: Settings = {
   firstTeam: "random",
   firstPsychic: "random",
   maxSpins: 3,
+  guessSeconds: 0,
   customSpectra: [],
   useBuiltInDeck: true,
   effects: true,
@@ -284,6 +298,7 @@ export const LIMITS = {
   minRounds: 1,
   maxRounds: 10,
   maxSpins: 10,
+  maxGuessSeconds: 300,
 } as const;
 
 export function otherTeam(team: TeamId): TeamId {

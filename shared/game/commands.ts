@@ -1,5 +1,6 @@
 import type { DeckState } from "../deck/deck";
 import { canSendEffect } from "../effects/catalog";
+import { canReact, reactionEffectId } from "../effects/reactions";
 import { buildDeck, deckRemaining, drawCard } from "../deck/deck";
 import type { GameEvent } from "../protocol/events";
 import type {
@@ -123,6 +124,7 @@ export function createGame(input: {
   code: string;
   hostId: string;
   hostName: string;
+  hostAvatar?: string | null;
   hostTokenHash: string;
   now: number;
 }): ServerState {
@@ -130,6 +132,7 @@ export function createGame(input: {
     id: input.hostId,
     name: input.hostName,
     color: 0,
+    avatar: input.hostAvatar ?? null,
     team: "left",
     order: 0,
     connected: false,
@@ -170,7 +173,12 @@ export function createGame(input: {
 
 export function joinGame(
   state: ServerState,
-  input: { playerId: string; name: string; tokenHash: string },
+  input: {
+    playerId: string;
+    name: string;
+    avatar?: string | null;
+    tokenHash: string;
+  },
 ): CommandResult {
   const { game } = state;
   if (game.phase === "gameover") return error("no_game", "game is over");
@@ -185,6 +193,7 @@ export function joinGame(
       id: input.playerId,
       name: input.name,
       color: nextColor(game, PLAYER_COLORS),
+      avatar: input.avatar ?? null,
       team: game.settings.mode === "teams" ? smallerTeam(game) : null,
       order,
       connected: false,
@@ -238,16 +247,22 @@ export function disconnectPlayer(
 }
 
 /**
- * Mark players away whose grace period has expired, migrate the host if
- * needed and auto-advance anything that was only waiting on them.
+ * The room's clock tick: mark players away whose grace period has expired
+ * (migrating the host if needed), lock every dial if the dial timer has
+ * run out, and auto-advance anything that was only waiting on them.
+ * `nextDeadline` is the earliest moment this needs to run again.
  */
-export function expireGrace(
+export function expireTimers(
   state: ServerState,
   now: number,
   graceMs: number,
 ): { events: GameEvent[]; nextDeadline: number | null } {
   const tx = new Tx(state.game, state.secret);
   let nextDeadline: number | null = null;
+  const pending = (deadline: number) => {
+    nextDeadline =
+      nextDeadline === null ? deadline : Math.min(nextDeadline, deadline);
+  };
   for (const player of playersInOrder(tx.game)) {
     if (player.connected || player.away || player.disconnectedAt === null)
       continue;
@@ -261,13 +276,35 @@ export function expireGrace(
         disconnectedAt: player.disconnectedAt,
       });
     } else {
-      nextDeadline =
-        nextDeadline === null ? deadline : Math.min(nextDeadline, deadline);
+      pending(deadline);
     }
   }
   migrateHost(tx);
   autoAdvance(tx, now);
+  const deadline = guessDeadline(tx.game);
+  if (deadline !== null) {
+    if (deadline <= now) expireGuess(tx, now);
+    else pending(deadline);
+  }
   return { events: tx.events, nextDeadline };
+}
+
+/** The pending dial-timer deadline, if the round is still being guessed. */
+export function guessDeadline(game: GameState): number | null {
+  if (game.phase !== "guessing") return null;
+  return game.round?.guessDeadline ?? null;
+}
+
+/** Time's up: every dial locks where it is, then the round moves on. */
+function expireGuess(tx: Tx, now: number) {
+  const round = tx.game.round;
+  if (!round || tx.game.phase !== "guessing") return;
+  tx.emit({ type: "guess.expired", at: now });
+  for (const dial of Object.values(round.dials)) {
+    if (!dial.locked)
+      tx.emit({ type: "dial.locked", dialId: dial.id, at: now });
+  }
+  afterGuessing(tx, now);
 }
 
 function migrateHost(tx: Tx) {
@@ -332,6 +369,11 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
     case "player.rename":
       if (me.name !== cmd.name)
         tx.emit({ type: "player.renamed", playerId: me.id, name: cmd.name });
+      return;
+
+    case "player.setAvatar":
+      if (me.avatar !== cmd.avatar)
+        tx.emit({ type: "player.avatar", playerId: me.id, avatar: cmd.avatar });
       return;
 
     case "game.start":
@@ -404,12 +446,19 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
         tx.emit({ type: "shroud.toggled", open: cmd.open, at: ctx.now });
       return;
 
-    case "clue.submit":
+    case "clue.submit": {
       phase("clue");
       psychic();
-      tx.emit({ type: "clue.submitted", clue: cmd.clue, at: ctx.now });
+      const seconds = game.settings.guessSeconds;
+      tx.emit({
+        type: "clue.submitted",
+        clue: cmd.clue,
+        at: ctx.now,
+        deadline: seconds > 0 ? ctx.now + seconds * 1000 : null,
+      });
       tx.emit({ type: "phase.changed", phase: "guessing" });
       return;
+    }
 
     case "dial.set": {
       phase("guessing");
@@ -563,6 +612,20 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
         to: cmd.playerId,
       });
       return;
+
+    case "reaction.send":
+      // Post-round only: the arena is where these are thrown from.
+      if (!game.settings.effects) fail("not_allowed", "effects are off");
+      if (!canReact(game)) fail("wrong_phase", "reactions wait for the reveal");
+      if (cmd.playerId === me.id) fail("invalid", "aim at someone else");
+      if (!game.players[cmd.playerId]) fail("invalid", "no such player");
+      tx.emit({
+        type: "effect.sent",
+        by: me.id,
+        effectId: reactionEffectId(cmd.emoji),
+        to: cmd.playerId,
+      });
+      return;
   }
 }
 
@@ -696,6 +759,7 @@ function makeRound(
       shroudOpen: false,
       peeks: 0,
       clue: null,
+      guessDeadline: null,
       dials,
       votes: {},
       target: null,

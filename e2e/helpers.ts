@@ -45,10 +45,15 @@ export function playerRow(page: Page, name: string) {
   return page.locator(`[data-testid="player"][data-player-name="${name}"]`);
 }
 
-/** Host + three guests in a Teams game, started. Ann/Cid left, Bob/Dee right. */
+/**
+ * Host + three guests in a Teams game, started. Ann/Cid left, Bob/Dee right.
+ * `avatars` maps a player name to a catalog avatar id picked in the lounge.
+ */
 export async function startTeamsGame(
   browser: Browser,
   extraNames: string[] = [],
+  avatars: Record<string, string> = {},
+  guessSeconds = 0,
 ) {
   const host = await hostGame(browser, "Ann");
   const bob = await joinGame(browser, host.code, "Bob");
@@ -58,6 +63,15 @@ export async function startTeamsGame(
   for (const name of extraNames) {
     extras.push(await joinGame(browser, host.code, name));
   }
+  for (const client of [host, bob, cid, dee, ...extras]) {
+    const id = avatars[client.name];
+    if (!id) continue;
+    await client.page.getByTestId("open-avatar").click();
+    await client.page.getByTestId(`avatar-${id}`).click();
+    await expect(
+      playerRow(client.page, client.name).locator(`[data-avatar=${id}]`),
+    ).toBeVisible();
+  }
   await host.page.getByTestId("open-settings").click();
   await host.page.getByRole("button", { name: "Left Brain" }).click();
   // Tests know who is up: pin the rotation to join order.
@@ -66,6 +80,7 @@ export async function startTeamsGame(
     "data-variant",
     "default",
   );
+  await setGuessSeconds(host.page, guessSeconds);
   await host.page.keyboard.press("Escape");
   await expect(host.page.getByTestId("start-game")).toBeEnabled();
   await host.page.getByTestId("start-game").click();
@@ -73,6 +88,16 @@ export async function startTeamsGame(
   const all = [host, bob, cid, dee, ...extras];
   const close = () => Promise.all(all.map((c) => c.context.close()));
   return { host, bob, cid, dee, extras, all, code: host.code, close };
+}
+
+/** In the open settings sheet, pick a dial timer (0 leaves it off). */
+async function setGuessSeconds(page: Page, seconds: number) {
+  if (seconds === 0) return;
+  await page.getByTestId(`guess-seconds-${seconds}`).click();
+  await expect(page.getByTestId(`guess-seconds-${seconds}`)).toHaveAttribute(
+    "data-variant",
+    "default",
+  );
 }
 
 /** Drive the psychic from drawing through to the clue. */
@@ -154,6 +179,7 @@ export async function startModeGame(
   mode: "coop" | "ffa",
   rounds: number,
   guestNames: string[],
+  guessSeconds = 0,
 ) {
   const host = await hostGame(browser, "Ann");
   const guests: Client[] = [];
@@ -184,10 +210,16 @@ export async function startModeGame(
       String(i + 1),
     );
   }
+  await setGuessSeconds(host.page, guessSeconds);
   await host.page.keyboard.press("Escape");
   await expect(host.page.getByTestId("mode-label")).toContainText(
     `${rounds} round`,
   );
+  if (guessSeconds > 0) {
+    await expect(host.page.getByTestId("mode-label")).toContainText(
+      "dial timer",
+    );
+  }
   await host.page.getByTestId("start-game").click();
   await expect(host.page.getByTestId("score-header")).toBeVisible();
   const all = [host, ...guests];

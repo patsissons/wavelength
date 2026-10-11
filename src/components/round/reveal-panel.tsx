@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from "motion/react";
 import type { GameState, RoundResult } from "@shared/game/types";
 import { TEAM_NAMES } from "@shared/game/types";
 import { Button } from "@/components/ui/button";
+import { useArena } from "@/lib/arena";
 import { useCommand } from "@/lib/use-game-connection";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,7 @@ export function RevealPanel({
   playerId: string;
 }) {
   const send = useCommand();
+  const openArena = useArena((s) => s.setOpen);
   const reduced = useReducedMotion();
   const round = game.round!;
   const result = round.result!;
@@ -45,6 +47,16 @@ export function RevealPanel({
           Catch-up! {TEAM_NAMES[round.psychicTeam!]} goes again.
         </p>
       )}
+      {game.settings.effects && (
+        <Button
+          variant="secondary"
+          className="h-12 w-full"
+          onClick={() => openArena(true)}
+          data-testid="open-arena"
+        >
+          🎯 Throw reactions
+        </Button>
+      )}
       {canAdvance ? (
         <Button
           size="lg"
@@ -56,8 +68,11 @@ export function RevealPanel({
         </Button>
       ) : (
         <p className="text-center text-sm text-muted-foreground">
-          Waiting for {game.players[game.hostId]?.name ?? "the host"} or{" "}
-          {psychicName}…
+          Waiting for{" "}
+          {game.hostId === round.psychicId
+            ? psychicName
+            : `${game.players[game.hostId]?.name ?? "the host"} or ${psychicName}`}
+          …
         </p>
       )}
     </section>

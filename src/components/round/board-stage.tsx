@@ -2,6 +2,7 @@ import { useReducedMotion } from "motion/react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { roleOf, spinsRemaining } from "@shared/game/selectors";
 import type { GameState } from "@shared/game/types";
+import { avatarOf } from "@/components/avatar/avatar";
 import { Board, type BoardDial } from "@/components/board/board";
 import { useSpinAnimation } from "@/components/board/use-spin";
 import { audio } from "@/lib/audio";
@@ -143,6 +144,7 @@ export function BoardStage({
         position,
         color: owner ? playerColor(owner.color) : "var(--color-primary)",
         by: dial.id === "shared" ? owner?.name : undefined,
+        avatar: owner ? avatarOf(owner) : undefined,
         emphasized: mine,
         locked: dial.locked,
         faded: !mine && game.settings.mode === "ffa" && !isPsychic,

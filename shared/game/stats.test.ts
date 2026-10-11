@@ -12,6 +12,7 @@ const player = (id: string, order: number): Player => ({
   id,
   name: id.toUpperCase(),
   color: order,
+  avatar: null,
   team: null,
   order,
   connected: true,
@@ -41,6 +42,7 @@ function round(
     shroudOpen: false,
     peeks: 1,
     clue,
+    guessDeadline: null,
     dials,
     votes: {},
     target: null,
@@ -327,19 +329,22 @@ describe("gameAwards / gameFacts", () => {
 
   it("awards reactions and pokes from the tally", () => {
     const tally = {
-      ann: { applause: 2, laugh: 1, poke: 3 },
-      bob: { ghost: 1, poked: 2 },
-      cid: { poked: 1 },
+      ann: { applause: 2, laugh: 1, poke: 3, "reaction:🔥": 1 },
+      bob: { ghost: 1, poked: 2, reacted: 3 },
+      cid: { poked: 1, "reaction:🔥": 2, "reaction:👏": 1 },
     };
     const awards = gameAwards(history, players, "coop", tally);
     const by = Object.fromEntries(awards.map((a) => [a.id, a]));
     expect(by.hype!.playerId).toBe("ann");
-    expect(by.hype!.value).toBe("3 reactions");
+    expect(by.hype!.value).toBe("4 reactions");
     expect(by.pest!.playerId).toBe("ann");
     expect(by.punchingbag!.playerId).toBe("bob");
+    expect(by.fanfavourite!.playerId).toBe("bob");
+    expect(by.fanfavourite!.value).toBe("3 reactions thrown their way");
     const facts = gameFacts(history, players, tally);
     const f = Object.fromEntries(facts.map((x) => [x.id, x.value]));
-    expect(f.reactions).toBe("4 sent · favourite 👏");
+    // Thrown reactions count as sent, and a thrown emoji can be the favourite.
+    expect(f.reactions).toBe("8 sent · favourite 🔥");
     expect(f.pokes).toBe("3");
   });
 

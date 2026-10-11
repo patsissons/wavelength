@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { dialsFor, roleOf } from "@shared/game/selectors";
+import { useArena } from "@/lib/arena";
 import { matchClue } from "@/lib/eggs/clues";
 import { useGameStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -7,10 +8,12 @@ import { EffectsBar, MuteToggle } from "@/components/effects/effects-bar";
 import { ShareStrip } from "@/components/lounge/share-card";
 import { BoardStage } from "./board-stage";
 import { GuesserPanel } from "./guesser-panel";
+import { GuessTimer } from "./guess-timer";
 import { HostControls } from "./host-controls";
 import { OpponentPanel } from "./opponent-panel";
 import { PresenceStrip } from "./presence-strip";
 import { PsychicPanel, Panel } from "./psychic-panel";
+import { Arena } from "@/components/reactions/arena";
 import { RevealPanel } from "./reveal-panel";
 import { ScoreHeader } from "./score-header";
 import { SpectrumLabels } from "./spectrum-labels";
@@ -30,9 +33,11 @@ export function RoundScreen() {
   const role = roleOf(game, you.playerId);
   const psychic = game.players[round.psychicId];
   const clueEgg = matchClue(round.clue);
+  const arenaOpen = useArena((s) => s.open);
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
+      {arenaOpen && game.phase === "reveal" && <Arena />}
       <main className="safe-x safe-top flex flex-1 flex-col gap-3 pb-3">
         <ScoreHeader game={game} />
         <PresenceStrip game={game} playerId={you.playerId} />
@@ -69,6 +74,12 @@ export function RoundScreen() {
               </span>
             )}
           </p>
+        )}
+        {game.phase === "guessing" && round.guessDeadline !== null && (
+          <GuessTimer
+            deadline={round.guessDeadline}
+            totalSeconds={game.settings.guessSeconds}
+          />
         )}
         {game.phase === "reveal" && round.result ? (
           <RevealPanel game={game} playerId={you.playerId} />

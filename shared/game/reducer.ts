@@ -48,6 +48,9 @@ function reduce(state: GameState, event: GameEvent): GameState {
     case "player.renamed":
       return updatePlayer(state, event.playerId, { name: event.name });
 
+    case "player.avatar":
+      return updatePlayer(state, event.playerId, { avatar: event.avatar });
+
     case "team.changed":
       return updatePlayer(state, event.playerId, { team: event.team });
 
@@ -109,7 +112,14 @@ function reduce(state: GameState, event: GameEvent): GameState {
       return updateRound(state, {
         clue: event.clue,
         shroudOpen: false,
+        guessDeadline: event.deadline,
         log: logged(state, { t: "clue", at: event.at }),
+      });
+
+    case "guess.expired":
+      return updateRound(state, {
+        guessDeadline: null,
+        log: logged(state, { t: "timeout", at: event.at }),
       });
 
     case "dial.set": {
@@ -213,7 +223,11 @@ function reduce(state: GameState, event: GameEvent): GameState {
 
     case "effect.sent": {
       let tally = tallied(state.effectTally, event.by, event.effectId);
-      if (event.to) tally = tallied(tally, event.to, "poked");
+      if (event.to) {
+        // Targets count what landed on them: pokes and thrown reactions.
+        const received = event.effectId === "poke" ? "poked" : "reacted";
+        tally = tallied(tally, event.to, received);
+      }
       return { ...state, effectTally: tally };
     }
 

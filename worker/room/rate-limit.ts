@@ -26,4 +26,6 @@ export class TokenBucket {
 export const EFFECT_LIMITS = {
   player: { capacity: 3, perMs: 1 / 1500 },
   room: { capacity: 20, perMs: 10 / 1000 },
+  /** Arena reactions are cheap and meant to be flung in volleys. */
+  reaction: { capacity: 8, perMs: 1 / 400 },
 } as const;

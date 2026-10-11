@@ -27,6 +27,7 @@ export type GameEvent =
       disconnectedAt: number | null;
     }
   | { type: "player.renamed"; playerId: string; name: string }
+  | { type: "player.avatar"; playerId: string; avatar: string | null }
   | { type: "team.changed"; playerId: string; team: TeamId | null }
   | { type: "host.changed"; hostId: string }
   | { type: "settings.changed"; settings: Settings }
@@ -43,7 +44,15 @@ export type GameEvent =
   | { type: "side.picked"; side: 0 | 1; spectrum: Spectrum; at: number }
   | { type: "spin.started"; spin: Spin }
   | { type: "shroud.toggled"; open: boolean; at: number }
-  | { type: "clue.submitted"; clue: string; at: number }
+  | {
+      type: "clue.submitted";
+      clue: string;
+      at: number;
+      /** Dial timer deadline (server time), or null without a timer. */
+      deadline: number | null;
+    }
+  /** The dial timer ran out; the locks that follow were not accepts. */
+  | { type: "guess.expired"; at: number }
   | {
       type: "dial.set";
       dialId: string;

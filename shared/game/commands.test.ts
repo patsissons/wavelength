@@ -5,7 +5,8 @@ import {
   connectPlayer,
   createGame,
   disconnectPlayer,
-  expireGrace,
+  expireTimers,
+  guessDeadline,
   handleCommand,
   joinGame,
   type PrivateMessage,
@@ -143,6 +144,11 @@ function psychicTurn(
   return { state, target };
 }
 
+/** The pending dial-timer deadline the room should wake for. */
+function nextAlarm(state: ServerState): number | null {
+  return guessDeadline(state.game);
+}
+
 /* ---------- lobby ---------- */
 
 describe("lobby", () => {
@@ -171,6 +177,39 @@ describe("lobby", () => {
       "p1",
       cmd("settings.update", { patch: { targetScore: 8 } }),
       "not_allowed",
+    );
+  });
+
+  it("lets players pick an avatar and carries it through joins", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    expect(state.game.players.p0!.avatar).toBeNull();
+    state = run(state, "p1", cmd("player.setAvatar", { avatar: "🦄" }));
+    expect(state.game.players.p1!.avatar).toBe("🦄");
+    state = run(
+      state,
+      "p1",
+      cmd("player.setAvatar", { avatar: "dancing-unicorn" }),
+    );
+    expect(state.game.players.p1!.avatar).toBe("dancing-unicorn");
+    const before = state.game.version;
+    state = run(
+      state,
+      "p1",
+      cmd("player.setAvatar", { avatar: "dancing-unicorn" }),
+    );
+    expect(state.game.version).toBe(before); // no-op emits nothing
+    state = run(state, "p1", cmd("player.setAvatar", { avatar: null }));
+    expect(state.game.players.p1!.avatar).toBeNull();
+    const joined = joinGame(state, {
+      playerId: "p9",
+      name: "Zed",
+      avatar: "space-dog",
+      tokenHash: "h9",
+    });
+    expect(joined.ok).toBe(true);
+    if (!joined.ok) return;
+    expect(applyEvents(state.game, joined.events).players.p9!.avatar).toBe(
+      "space-dog",
     );
   });
 
@@ -590,11 +629,11 @@ describe("presence", () => {
     expect(state.game.players.p2!.connected).toBe(false);
     expect(state.game.players.p2!.away).toBe(false);
 
-    const early = expireGrace(state, clock + 1000, 3000);
+    const early = expireTimers(state, clock + 1000, 3000);
     expect(early.events).toEqual([]);
     expect(early.nextDeadline).toBe(clock + 3000);
 
-    const late = expireGrace(state, clock + 3000, 3000);
+    const late = expireTimers(state, clock + 3000, 3000);
     state = { ...state, game: applyEvents(state.game, late.events) };
     expect(state.game.players.p2!.away).toBe(true);
     expect(state.game.players.p0!.away).toBe(true);
@@ -643,6 +682,64 @@ describe("presence", () => {
     state = run(state, "p0", cmd("host.endGame"));
     expect(state.game.phase).toBe("gameover");
     expect(state.game.gameOver!.winner).toBe("left"); // left started on 1
+  });
+});
+
+describe("dial timer", () => {
+  it("locks every dial where it is when the timer runs out", () => {
+    let { state } = setup("ffa", ["Ann", "Bob", "Cid"]);
+    state = run(
+      state,
+      "p0",
+      cmd("settings.update", { patch: { guessSeconds: 30 } }),
+    );
+    state = run(state, "p0", cmd("game.start"));
+    expect(state.game.round!.guessDeadline).toBeNull();
+    const before = clock;
+    ({ state } = psychicTurn(state));
+    const clueAt = before + 30; // three commands at 10 ms each
+    expect(state.game.round!.guessDeadline).toBe(clueAt + 30_000);
+    expect(nextAlarm(state)).toBe(clueAt + 30_000);
+
+    state = run(state, "p1", cmd("dial.set", { dialId: "p1", position: 0.3 }));
+    state = run(state, "p1", cmd("dial.accept", { dialId: "p1" }));
+    state = run(state, "p2", cmd("dial.set", { dialId: "p2", position: 0.7 }));
+    expect(state.game.phase).toBe("guessing");
+
+    const early = expireTimers(state, clueAt + 29_000, 60_000);
+    expect(early.events).toEqual([]);
+    expect(early.nextDeadline).toBe(clueAt + 30_000);
+
+    const late = expireTimers(state, clueAt + 30_000, 60_000);
+    expect(late.events.map((e) => e.type)).toEqual([
+      "guess.expired",
+      "dial.locked",
+      "round.revealed",
+    ]);
+    state = { ...state, game: applyEvents(state.game, late.events) };
+    expect(state.game.phase).toBe("reveal");
+    expect(state.game.round!.guessDeadline).toBeNull();
+    // Cid's unaccepted position still counts as the guess.
+    expect(state.game.round!.result!.dials.p2!.position).toBe(0.7);
+    expect(state.game.round!.log.some((e) => e.t === "timeout")).toBe(true);
+    expect(late.nextDeadline).toBeNull();
+    expect(nextAlarm(state)).toBeNull();
+  });
+
+  it("has no deadline without a timer and clears it once guessing ends", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    state = run(state, "p0", cmd("game.start"));
+    ({ state } = psychicTurn(state));
+    expect(state.game.round!.guessDeadline).toBeNull();
+    expect(nextAlarm(state)).toBeNull();
+    expect(expireTimers(state, clock + 60_000, 60_000).events).toEqual([]);
+    // The timer is a lobby setting: it cannot be switched on mid-round.
+    expectError(
+      state,
+      "p0",
+      cmd("settings.update", { patch: { guessSeconds: 15 } }),
+      "wrong_phase",
+    );
   });
 });
 
@@ -831,6 +928,35 @@ describe("reactions and pokes", () => {
     expect(state.game.effectTally).toEqual({});
   });
 
+  it("throws arena reactions after the reveal and tallies them both ways", () => {
+    let { state } = setup("coop", ["Ann", "Bob", "Cid"]);
+    const react = (to: string, emoji = "🔥") =>
+      cmd("reaction.send", { playerId: to, emoji });
+    expectError(state, "p1", react("p0"), "wrong_phase"); // lobby
+    state = run(state, "p0", cmd("game.start"));
+    ({ state } = psychicTurn(state));
+    expectError(state, "p1", react("p0"), "wrong_phase"); // guessing
+    state = run(state, "p1", cmd("dial.accept", { dialId: "shared" }));
+    state = run(state, "p2", cmd("dial.accept", { dialId: "shared" }));
+    expect(state.game.phase).toBe("reveal");
+
+    state = run(state, "p1", react("p0"));
+    state = run(state, "p1", react("p0", "👏"));
+    state = run(state, "p2", react("p0"));
+    expect(state.game.effectTally).toEqual({
+      p0: { reacted: 3 },
+      p1: { "reaction:🔥": 1, "reaction:👏": 1 },
+      p2: { "reaction:🔥": 1 },
+    });
+    expectError(state, "p1", react("p1"), "invalid");
+    expectError(state, "p1", react("zz"), "invalid");
+
+    // Still open on the game-over screen.
+    state = run(state, "p0", cmd("host.endGame"));
+    state = run(state, "p0", react("p1"));
+    expect(state.game.effectTally.p1).toMatchObject({ reacted: 1 });
+  });
+
   it("refuses reactions when effects are off", () => {
     let { state } = setup("coop", ["Ann", "Bob"]);
     state = run(
@@ -848,6 +974,12 @@ describe("reactions and pokes", () => {
       state,
       "p1",
       cmd("effect.send", { effectId: "applause" }),
+      "not_allowed",
+    );
+    expectError(
+      state,
+      "p1",
+      cmd("reaction.send", { playerId: "p0", emoji: "🔥" }),
       "not_allowed",
     );
   });

@@ -9,6 +9,7 @@ import { RoundScreen } from "@/components/round/round-screen";
 import { loadIdentity } from "@/lib/identity";
 import { releaseWakeLock, requestWakeLock } from "@/lib/wake-lock";
 import { useEffect } from "react";
+import { useArena } from "@/lib/arena";
 import { useGameStore } from "@/lib/store";
 import { ConnectionProvider } from "@/components/connection-provider";
 
@@ -31,6 +32,10 @@ export function Game() {
 
 function GameScreen() {
   const phase = useGameStore((s) => s.game?.phase ?? null);
+  // The arena belongs to one post-round moment: leaving it closes the arena.
+  useEffect(() => {
+    useArena.getState().setOpen(false);
+  }, [phase]);
   useEffect(() => {
     // Best effort: Safari needs a gesture first (the lounge's sound button
     // re-requests it), but Chrome grants it here.

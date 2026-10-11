@@ -6,7 +6,9 @@ import { TEAM_NAMES } from "@shared/game/types";
 import { WedgeStrip, type StripMarker } from "@/components/board/wedge-strip";
 import { ShareStrip } from "@/components/lounge/share-card";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { Arena } from "@/components/reactions/arena";
 import { Button } from "@/components/ui/button";
+import { useArena } from "@/lib/arena";
 import { selectIsHost, useGameStore } from "@/lib/store";
 import { useCommand } from "@/lib/use-game-connection";
 import { cn, firstGrapheme, playerColor } from "@/lib/utils";
@@ -15,6 +17,8 @@ export function GameOver() {
   const game = useGameStore((s) => s.game)!;
   const isHost = useGameStore(selectIsHost);
   const send = useCommand();
+  const arenaOpen = useArena((s) => s.open);
+  const openArena = useArena((s) => s.setOpen);
   const over = game.gameOver!;
   const mode = game.settings.mode;
 
@@ -39,6 +43,7 @@ export function GameOver() {
       className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6"
       data-testid="game-over"
     >
+      {arenaOpen && <Arena />}
       <header className="text-center">
         <p className="text-sm tracking-widest text-muted-foreground uppercase">
           Game over
@@ -78,6 +83,16 @@ export function GameOver() {
         </ol>
       )}
 
+      {game.settings.effects && (
+        <Button
+          variant="secondary"
+          className="h-12"
+          onClick={() => openArena(true)}
+          data-testid="open-arena"
+        >
+          🎯 Throw reactions
+        </Button>
+      )}
       {isHost ? (
         <Button
           size="lg"

@@ -10,8 +10,12 @@ describe("parseClientMessage", () => {
       { type: "dial.move", dialId: "shared", position: 0.25 },
       { type: "shroud.toggle", cmdId, open: true },
       { cmdId, type: "settings.update", patch: { mode: "coop", rounds: 5 } },
+      { cmdId, type: "settings.update", patch: { guessSeconds: 60 } },
       { cmdId, type: "team.join", team: "left" },
       { cmdId, type: "player.rename", name: "  Pat " },
+      { cmdId, type: "player.setAvatar", avatar: "dancing-unicorn" },
+      { cmdId, type: "player.setAvatar", avatar: "🦄" },
+      { cmdId, type: "player.setAvatar", avatar: null },
       { cmdId, type: "game.start" },
       { cmdId, type: "card.draw" },
       { cmdId, type: "card.pickSide", side: 1 },
@@ -30,6 +34,7 @@ describe("parseClientMessage", () => {
       { cmdId, type: "game.playAgain" },
       { cmdId, type: "effect.send", effectId: "applause" },
       { cmdId, type: "poke.send", playerId: "p2" },
+      { cmdId, type: "reaction.send", playerId: "p2", emoji: "🔥" },
     ];
     for (const message of messages) {
       const parsed = parseClientMessage(JSON.stringify(message));
@@ -52,10 +57,24 @@ describe("parseClientMessage", () => {
       JSON.stringify({ type: "game.start" }), // missing cmdId
       JSON.stringify({ cmdId, type: "clue.submit", clue: "   " }),
       JSON.stringify({ cmdId, type: "spin.flick", velocity: 1000 }),
+      JSON.stringify({ cmdId, type: "player.setAvatar", avatar: "ab" }),
+      JSON.stringify({ cmdId, type: "player.setAvatar", avatar: "🦄🦄" }),
+      JSON.stringify({ cmdId, type: "player.setAvatar", avatar: "no-such" }),
+      JSON.stringify({
+        cmdId,
+        type: "reaction.send",
+        playerId: "p2",
+        emoji: "🦄",
+      }),
       JSON.stringify({
         cmdId,
         type: "settings.update",
         patch: { targetScore: 99 },
+      }),
+      JSON.stringify({
+        cmdId,
+        type: "settings.update",
+        patch: { guessSeconds: 301 },
       }),
     ];
     for (const raw of bad) {

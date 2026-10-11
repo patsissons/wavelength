@@ -11,6 +11,7 @@ interface Window {
     getState(): {
       conn: string;
       game: { phase: string; version: number } | null;
+      you: { playerId: string } | null;
       error: { code: string } | null;
     };
   };

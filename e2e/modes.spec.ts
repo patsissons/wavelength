@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { dragDial, psychicTurn, readTarget, startModeGame } from "./helpers";
+import {
+  dragDial,
+  expectDialNear,
+  psychicTurn,
+  readTarget,
+  startModeGame,
+} from "./helpers";
 
 test("co-op: everyone shares a dial, no voting, one psychic turn each per round", async ({
   browser,
@@ -68,12 +74,22 @@ test("free-for-all: private dials, individual scores and a winner", async ({
   await psychicTurn(host.page, "Karaoke");
   const target = await readTarget(host.page);
 
-  // Each guesser has their own dial and cannot see the other's.
+  // Each guesser has their own dial and cannot see the other's; the
+  // psychic watches both move live.
   await expect(bob.page.locator("[data-testid^=dial-]")).toHaveCount(1);
+  await expect(host.page.locator("[data-testid^=dial-]")).toHaveCount(2);
   await dragDial(bob.page, target);
   await expect(cid.page.locator("[data-testid^=dial-]")).toHaveCount(1);
+  const bobId = await bob.page.evaluate(
+    () => window.__gameStore!.getState().you!.playerId,
+  );
+  await expectDialNear(host.page, bobId, target, 0.03);
   await bob.page.getByTestId("accept-dial").click();
   await expect(bob.page.getByTestId("locked")).toBeVisible();
+  await expect(host.page.getByTestId(`dial-${bobId}`)).toHaveAttribute(
+    "data-locked",
+    "true",
+  );
   await expect(host.page.getByTestId("reveal")).toHaveCount(0);
 
   // Cid aims as far from the target as possible, then locks.

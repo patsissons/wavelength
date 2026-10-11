@@ -13,6 +13,10 @@ test("the psychic draws, spins, peeks and gives a clue that everyone sees", asyn
     "Ann is drawing a card",
   );
   await expect(host.page.getByTestId("spectrum")).toContainText("?");
+  // Late arrivals can still be invited from inside the game.
+  await expect(bob.page.getByTestId("share-compact-code")).toHaveText(
+    game.code,
+  );
 
   await host.page.getByTestId("draw-card").click();
   await expect(host.page.getByTestId("card-side-0")).toBeVisible();

@@ -1,5 +1,6 @@
 import { ranking } from "@shared/game/scoring";
 import { TEAM_NAMES } from "@shared/game/types";
+import { ShareStrip } from "@/components/lounge/share-card";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { Button } from "@/components/ui/button";
 import { selectIsHost, useGameStore } from "@/lib/store";
@@ -73,6 +74,7 @@ export function GameOver() {
         </ol>
       )}
 
+      <ShareStrip code={game.code} />
       {isHost ? (
         <Button
           size="lg"

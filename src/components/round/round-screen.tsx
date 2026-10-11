@@ -2,6 +2,7 @@ import { useState } from "react";
 import { dialsFor, roleOf } from "@shared/game/selectors";
 import { useGameStore } from "@/lib/store";
 import { EffectsBar } from "@/components/effects/effects-bar";
+import { ShareStrip } from "@/components/lounge/share-card";
 import { BoardStage } from "./board-stage";
 import { GuesserPanel } from "./guesser-panel";
 import { HostControls } from "./host-controls";
@@ -81,6 +82,7 @@ export function RoundScreen() {
         />
       )}
       {game.settings.effects && <EffectsBar role={role} />}
+      <ShareStrip code={game.code} className="mt-auto" />
       {game.hostId === you.playerId && (
         <HostControls game={game} playerId={you.playerId} />
       )}

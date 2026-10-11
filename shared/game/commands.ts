@@ -835,6 +835,7 @@ function reveal(tx: Tx, now: number) {
 
   const result: RoundResult = {
     roundIndex: round.index,
+    round: game.roundsPlayed + 1,
     psychicId: round.psychicId,
     psychicTeam: round.psychicTeam,
     spectrum,

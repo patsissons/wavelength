@@ -12,6 +12,9 @@ describe("parseClientMessage", () => {
       { cmdId, type: "settings.update", patch: { mode: "coop", rounds: 5 } },
       { cmdId, type: "team.join", team: "left" },
       { cmdId, type: "player.rename", name: "  Pat " },
+      { cmdId, type: "player.setAvatar", avatar: "dancing-unicorn" },
+      { cmdId, type: "player.setAvatar", avatar: "🦄" },
+      { cmdId, type: "player.setAvatar", avatar: null },
       { cmdId, type: "game.start" },
       { cmdId, type: "card.draw" },
       { cmdId, type: "card.pickSide", side: 1 },
@@ -52,6 +55,9 @@ describe("parseClientMessage", () => {
       JSON.stringify({ type: "game.start" }), // missing cmdId
       JSON.stringify({ cmdId, type: "clue.submit", clue: "   " }),
       JSON.stringify({ cmdId, type: "spin.flick", velocity: 1000 }),
+      JSON.stringify({ cmdId, type: "player.setAvatar", avatar: "ab" }),
+      JSON.stringify({ cmdId, type: "player.setAvatar", avatar: "🦄🦄" }),
+      JSON.stringify({ cmdId, type: "player.setAvatar", avatar: "no-such" }),
       JSON.stringify({
         cmdId,
         type: "settings.update",

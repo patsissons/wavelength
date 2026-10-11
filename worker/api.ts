@@ -1,5 +1,5 @@
 import { getServerByName } from "partyserver";
-import { NameSchema } from "@shared/protocol/messages";
+import { AvatarSchema, NameSchema } from "@shared/protocol/messages";
 import { secureRandom } from "@shared/util/random";
 import { generateCode, normalizeCode } from "./room/codes";
 
@@ -21,12 +21,15 @@ export async function handleApi(
   if (path === "/api/health") return json({ ok: true });
 
   if (path === "/api/games" && request.method === "POST") {
-    const name = await readName(request);
-    if (!name) return json({ error: "invalid_name" }, { status: 400 });
+    const who = await readPlayer(request);
+    if (!who) return json({ error: "invalid_name" }, { status: 400 });
     for (let i = 0; i < CREATE_ATTEMPTS; i++) {
       const code = generateCode(secureRandom);
       const room = await getServerByName(env.GameRoom, code);
-      const result = await room.create({ hostName: name });
+      const result = await room.create({
+        hostName: who.name,
+        hostAvatar: who.avatar,
+      });
       if (result.ok) {
         return json({ code, playerId: result.playerId, token: result.token });
       }
@@ -41,9 +44,9 @@ export async function handleApi(
       return json({ error: "invalid_code" }, { status: 400 });
     const room = await getServerByName(env.GameRoom, code);
     if (match[2] && request.method === "POST") {
-      const name = await readName(request);
-      if (!name) return json({ error: "invalid_name" }, { status: 400 });
-      const result = await room.join({ name });
+      const who = await readPlayer(request);
+      if (!who) return json({ error: "invalid_name" }, { status: 400 });
+      const result = await room.join(who);
       if (!result.ok) {
         const status = result.code === "no_game" ? 404 : 409;
         return json({ error: result.code }, { status });
@@ -64,15 +67,22 @@ export async function handleApi(
   return json({ error: "not_found" }, { status: 404 });
 }
 
-async function readName(request: Request): Promise<string | null> {
+/** `{ name, avatar? }` from the request body; null when the name is invalid. */
+async function readPlayer(
+  request: Request,
+): Promise<{ name: string; avatar: string | null } | null> {
   try {
     const body: unknown = await request.json();
-    const name =
-      typeof body === "object" && body !== null && "name" in body
-        ? (body as { name: unknown }).name
-        : null;
-    const parsed = NameSchema.safeParse(name);
-    return parsed.success ? parsed.data : null;
+    if (typeof body !== "object" || body === null) return null;
+    const { name, avatar } = body as { name?: unknown; avatar?: unknown };
+    const parsedName = NameSchema.safeParse(name);
+    if (!parsedName.success) return null;
+    // A bad avatar is not worth refusing the join over; it just falls back.
+    const parsedAvatar = AvatarSchema.safeParse(avatar ?? null);
+    return {
+      name: parsedName.data,
+      avatar: parsedAvatar.success ? parsedAvatar.data : null,
+    };
   } catch {
     return null;
   }

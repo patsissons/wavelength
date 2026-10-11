@@ -123,6 +123,7 @@ export function createGame(input: {
   code: string;
   hostId: string;
   hostName: string;
+  hostAvatar?: string | null;
   hostTokenHash: string;
   now: number;
 }): ServerState {
@@ -130,6 +131,7 @@ export function createGame(input: {
     id: input.hostId,
     name: input.hostName,
     color: 0,
+    avatar: input.hostAvatar ?? null,
     team: "left",
     order: 0,
     connected: false,
@@ -170,7 +172,12 @@ export function createGame(input: {
 
 export function joinGame(
   state: ServerState,
-  input: { playerId: string; name: string; tokenHash: string },
+  input: {
+    playerId: string;
+    name: string;
+    avatar?: string | null;
+    tokenHash: string;
+  },
 ): CommandResult {
   const { game } = state;
   if (game.phase === "gameover") return error("no_game", "game is over");
@@ -185,6 +192,7 @@ export function joinGame(
       id: input.playerId,
       name: input.name,
       color: nextColor(game, PLAYER_COLORS),
+      avatar: input.avatar ?? null,
       team: game.settings.mode === "teams" ? smallerTeam(game) : null,
       order,
       connected: false,
@@ -332,6 +340,11 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
     case "player.rename":
       if (me.name !== cmd.name)
         tx.emit({ type: "player.renamed", playerId: me.id, name: cmd.name });
+      return;
+
+    case "player.setAvatar":
+      if (me.avatar !== cmd.avatar)
+        tx.emit({ type: "player.avatar", playerId: me.id, avatar: cmd.avatar });
       return;
 
     case "game.start":

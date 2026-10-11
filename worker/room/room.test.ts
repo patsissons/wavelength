@@ -76,6 +76,7 @@ describe("nextAlarmAt", () => {
     id,
     name: id,
     color: 0,
+    avatar: null,
     team: null,
     order: 0,
     connected: disconnectedAt === null,

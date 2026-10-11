@@ -12,6 +12,7 @@ const player = (id: string, order: number): Player => ({
   id,
   name: id.toUpperCase(),
   color: order,
+  avatar: null,
   team: null,
   order,
   connected: true,

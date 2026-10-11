@@ -174,6 +174,39 @@ describe("lobby", () => {
     );
   });
 
+  it("lets players pick an avatar and carries it through joins", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    expect(state.game.players.p0!.avatar).toBeNull();
+    state = run(state, "p1", cmd("player.setAvatar", { avatar: "🦄" }));
+    expect(state.game.players.p1!.avatar).toBe("🦄");
+    state = run(
+      state,
+      "p1",
+      cmd("player.setAvatar", { avatar: "dancing-unicorn" }),
+    );
+    expect(state.game.players.p1!.avatar).toBe("dancing-unicorn");
+    const before = state.game.version;
+    state = run(
+      state,
+      "p1",
+      cmd("player.setAvatar", { avatar: "dancing-unicorn" }),
+    );
+    expect(state.game.version).toBe(before); // no-op emits nothing
+    state = run(state, "p1", cmd("player.setAvatar", { avatar: null }));
+    expect(state.game.players.p1!.avatar).toBeNull();
+    const joined = joinGame(state, {
+      playerId: "p9",
+      name: "Zed",
+      avatar: "space-dog",
+      tokenHash: "h9",
+    });
+    expect(joined.ok).toBe(true);
+    if (!joined.ok) return;
+    expect(applyEvents(state.game, joined.events).players.p9!.avatar).toBe(
+      "space-dog",
+    );
+  });
+
   it("requires two players per team before starting", () => {
     const { state } = setup("teams", ["Ann", "Bob", "Cid"]);
     expectError(state, "p0", cmd("game.start"), "invalid");

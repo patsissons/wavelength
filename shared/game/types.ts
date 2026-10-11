@@ -3,7 +3,7 @@
  * secret target lives in the server-only `SecretState` until reveal.
  */
 
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 export type Mode = "teams" | "coop" | "ffa";
 export type TeamId = "left" | "right";
@@ -25,6 +25,11 @@ export interface Player {
   name: string;
   /** Index into the player colour palette. */
   color: number;
+  /**
+   * A catalog id (shared/avatars/catalog.ts) or a single emoji; null shows
+   * the monogram.
+   */
+  avatar: string | null;
   /** Teams mode only. */
   team: TeamId | null;
   /** Join order; drives psychic rotation. */

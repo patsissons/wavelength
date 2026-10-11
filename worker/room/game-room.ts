@@ -62,6 +62,7 @@ export class GameRoom extends Server<Env> {
 
   async create(input: {
     hostName: string;
+    hostAvatar?: string | null;
   }): Promise<
     | { ok: true; playerId: string; token: string }
     | { ok: false; code: ErrorCode }
@@ -76,6 +77,7 @@ export class GameRoom extends Server<Env> {
       code: this.name,
       hostId: playerId,
       hostName: input.hostName,
+      hostAvatar: input.hostAvatar ?? null,
       hostTokenHash: await sha256Hex(token),
       now,
     });
@@ -86,6 +88,7 @@ export class GameRoom extends Server<Env> {
 
   async join(input: {
     name: string;
+    avatar?: string | null;
   }): Promise<
     | { ok: true; playerId: string; token: string; phase: string }
     | { ok: false; code: ErrorCode }
@@ -98,6 +101,7 @@ export class GameRoom extends Server<Env> {
     const result = joinGame(state, {
       playerId,
       name: input.name,
+      avatar: input.avatar ?? null,
       tokenHash: await sha256Hex(token),
     });
     if (!result.ok) return { ok: false, code: result.code };

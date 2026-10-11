@@ -48,6 +48,9 @@ function reduce(state: GameState, event: GameEvent): GameState {
     case "player.renamed":
       return updatePlayer(state, event.playerId, { name: event.name });
 
+    case "player.avatar":
+      return updatePlayer(state, event.playerId, { avatar: event.avatar });
+
     case "team.changed":
       return updatePlayer(state, event.playerId, { team: event.team });
 

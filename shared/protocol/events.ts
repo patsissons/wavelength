@@ -27,6 +27,7 @@ export type GameEvent =
       disconnectedAt: number | null;
     }
   | { type: "player.renamed"; playerId: string; name: string }
+  | { type: "player.avatar"; playerId: string; avatar: string | null }
   | { type: "team.changed"; playerId: string; team: TeamId | null }
   | { type: "host.changed"; hostId: string }
   | { type: "settings.changed"; settings: Settings }

@@ -67,14 +67,14 @@ export function AvatarPicker({
                   aria-pressed={value === def.id}
                   data-testid={`avatar-${def.id}`}
                   className={cn(
-                    "flex h-20 flex-col items-center justify-center gap-1 rounded-xl border-2 bg-card transition-colors",
+                    "flex h-24 flex-col items-center justify-center gap-1 rounded-xl border-2 bg-card transition-colors",
                     value === def.id
                       ? "border-primary bg-primary/10"
                       : "border-transparent",
                   )}
                 >
                   <AvatarFigure def={def} className="text-3xl" />
-                  <span className="w-full truncate px-1 text-center text-[10px] text-muted-foreground">
+                  <span className="line-clamp-2 w-full px-1 text-center text-[10px] leading-tight text-muted-foreground">
                     {def.label}
                   </span>
                 </button>

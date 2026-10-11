@@ -68,8 +68,11 @@ export function RevealPanel({
         </Button>
       ) : (
         <p className="text-center text-sm text-muted-foreground">
-          Waiting for {game.players[game.hostId]?.name ?? "the host"} or{" "}
-          {psychicName}…
+          Waiting for{" "}
+          {game.hostId === round.psychicId
+            ? psychicName
+            : `${game.players[game.hostId]?.name ?? "the host"} or ${psychicName}`}
+          …
         </p>
       )}
     </section>

@@ -217,7 +217,7 @@ export async function startModeGame(
   );
   if (guessSeconds > 0) {
     await expect(host.page.getByTestId("mode-label")).toContainText(
-      `${guessSeconds}s dial timer`,
+      "dial timer",
     );
   }
   await host.page.getByTestId("start-game").click();

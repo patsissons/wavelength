@@ -110,6 +110,19 @@ export function Board({
           <stop offset="0%" stopColor="var(--wheel)" />
           <stop offset="100%" stopColor="var(--color-background)" />
         </radialGradient>
+        {/* Same gradient as the spectrum bar, so the sides of the shroud
+            map onto the ends of the spectrum. */}
+        <linearGradient
+          id="shroud-spectrum"
+          gradientUnits="userSpaceOnUse"
+          x1={CX - SHROUD_R}
+          x2={CX + SHROUD_R}
+          y1={0}
+          y2={0}
+        >
+          <stop offset="0" stopColor="var(--spectrum-left)" />
+          <stop offset="1" stopColor="var(--spectrum-right)" />
+        </linearGradient>
       </defs>
 
       {/* window */}
@@ -192,6 +205,15 @@ export function Board({
           fill="var(--shroud)"
           stroke="var(--color-border)"
           strokeWidth={2}
+        />
+        {/* Fades out while open so the sliver below the baseline (rotated,
+            colours reversed) never contradicts the bar. */}
+        <path
+          d={windowPath(SHROUD_R)}
+          fill="url(#shroud-spectrum)"
+          opacity={shroudOpen ? 0 : 0.55}
+          className="transition-opacity duration-500 motion-reduce:transition-none"
+          data-testid="shroud-spectrum"
         />
         <text
           x={CX}

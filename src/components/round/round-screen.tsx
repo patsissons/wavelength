@@ -5,6 +5,7 @@ import { BoardStage } from "./board-stage";
 import { GuesserPanel } from "./guesser-panel";
 import { HostControls } from "./host-controls";
 import { OpponentPanel } from "./opponent-panel";
+import { PresenceStrip } from "./presence-strip";
 import { PsychicPanel, Panel } from "./psychic-panel";
 import { RevealPanel } from "./reveal-panel";
 import { ScoreHeader } from "./score-header";
@@ -23,6 +24,18 @@ export function RoundScreen() {
   return (
     <main className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col gap-3 p-4">
       <ScoreHeader game={game} />
+      <PresenceStrip game={game} playerId={you.playerId} />
+      {psychic?.away && game.phase !== "reveal" && (
+        <p
+          className="rounded-xl bg-destructive/15 px-3 py-2 text-center text-sm"
+          data-testid="psychic-away"
+        >
+          {psychic.name} seems to have left.
+          {game.hostId === you.playerId
+            ? " Use the host controls to skip this round."
+            : " The host can skip this round."}
+        </p>
+      )}
       <SpectrumLabels spectrum={round.spectrum} />
       <BoardStage
         game={game}

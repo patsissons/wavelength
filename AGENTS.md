@@ -46,8 +46,20 @@ Commit in small, modular units (one logical change per commit).
   outside the command → events → reducer path, and the client never
   computes game outcomes itself.
 - **Events are the only way state changes**, each bumping `version`.
-  Ephemeral messages (live dial moves, effects, shroud peeks) are never
-  persisted and never carry a version.
+  Ephemeral messages (live dial moves, effects) are never persisted and
+  never carry a version. The shroud is game state (`shroud.toggle` →
+  `shroud.toggled`), not an ephemeral, so it survives reconnects and feeds
+  the stats.
+- **Stats come from the round log.** Timed events (`at`) append to
+  `round.log`; the server folds the log into `RoundResult.stats` at reveal
+  (`shared/game/stats.ts`) and clients derive awards from `history`.
+  Celebrations (confetti on lock / score) are derived client-side from
+  events in `src/lib/store.ts`, never sent by the server.
+- **A re-spin is a new target.** `spin.flick` is allowed until the clue;
+  the server sends the private target before the spin event so the
+  psychic's board can anchor the wedge to the spin it belongs to.
+- **Rounds vs turns.** In co-op / FFA `roundsPlayed` counts completed
+  rotations (everyone psychic once) and `history.length` counts turns.
 - **The target is server-generated.** Clients animate to it; they never
   pick it.
 - **Mobile first.** iPhone Safari is the primary surface: 44px touch
@@ -65,7 +77,11 @@ Commit in small, modular units (one logical change per commit).
   scoring and rendering both derive from it.
 - Protocol changes need the zod schema, the event union, the reducer AND a
   scenario test in `shared/game/commands.test.ts`. Bump `PROTOCOL_VERSION`
-  when a change is not backward compatible; clients show a reload banner.
+  (currently 2) when a change is not backward compatible; clients show a
+  reload banner.
+- Audio: iOS mutes Web Audio under the ringer switch until an
+  HTMLMediaElement plays, so `audio.unlock()` also starts a looping silent
+  `<audio>`; keep `unlock()` synchronous inside the gesture.
 - Effects must never leak the target (no warmer/colder for the psychic).
 
 ## Gotchas
@@ -78,3 +94,5 @@ Commit in small, modular units (one logical change per commit).
   edits; delete it if typecheck results look wrong.
 - Playwright drives WebKit with synthetic pointer events delivered in a few
   ms; wait for the phase the board expects before dragging or flicking.
+- Screenshot/debug specs live in `e2e/.debug/` (gitignored) and only run
+  with `DEBUG_E2E=1`.

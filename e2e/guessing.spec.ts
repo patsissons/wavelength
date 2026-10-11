@@ -29,11 +29,14 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
     "Cid",
   );
 
-  // Cid accepts → 1 of 2; Eve moves → reset
+  // Cid accepts → 1 of 2 (and a tick on Cid's pill); Eve moves → reset
   await cid.page.getByTestId("accept-dial").click();
   await expect(
     eve.page.locator("[data-testid=accept-chip][data-accepted]"),
   ).toHaveCount(1);
+  await expect(
+    bob.page.locator("[data-testid=presence-player][data-player-name=Cid]"),
+  ).toHaveAttribute("data-accepted", "true");
   await expect(cid.page.getByTestId("accept-dial")).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -55,6 +58,9 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
   await eve.page.getByTestId("accept-dial").click();
   await cid.page.getByTestId("accept-dial").click();
   await expect(cid.page.getByTestId("locked")).toBeVisible();
+  await expect(
+    bob.page.locator("[data-testid=presence-player][data-player-name=Cid]"),
+  ).toHaveAttribute("data-locked", "true");
   // Everyone gets a little confetti when the team agrees.
   await expect(bob.page.getByTestId("effects-layer")).toHaveAttribute(
     "data-celebration",

@@ -90,6 +90,10 @@ test("free-for-all: private dials, individual scores and a winner", async ({
     "data-locked",
     "true",
   );
+  // Everyone's strip shows Bob has locked in.
+  await expect(
+    cid.page.locator("[data-testid=presence-player][data-player-name=Bob]"),
+  ).toHaveAttribute("data-locked", "true");
   await expect(host.page.getByTestId("reveal")).toHaveCount(0);
 
   // Cid aims as far from the target as possible, then locks.
@@ -111,6 +115,15 @@ test("free-for-all: private dials, individual scores and a winner", async ({
   await expect(results.locator("li").filter({ hasText: "Ann" })).toContainText(
     "+2",
   );
+
+  // The player strip is sorted by score and shows each score on the pill.
+  const pills = cid.page.getByTestId("presence-player");
+  await expect(pills).toHaveCount(3);
+  await expect(pills.nth(0)).toHaveAttribute("data-player-name", "Bob");
+  await expect(pills.nth(0)).toHaveAttribute("data-score", "4");
+  await expect(pills.nth(1)).toHaveAttribute("data-player-name", "Ann");
+  await expect(pills.nth(2)).toHaveAttribute("data-player-name", "Cid");
+  await expect(cid.page.getByTestId("score-lead")).toContainText("Bob");
 
   // A round is one psychic turn per player: Bob is up next, not game over.
   await host.page.getByTestId("next-round").click();

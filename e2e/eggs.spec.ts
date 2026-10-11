@@ -9,6 +9,26 @@ import {
   startTeamsGame,
 } from "./helpers";
 
+test("five taps on the QR code open the cheat sheet for this device", async ({
+  browser,
+}, testInfo) => {
+  const host = await hostGame(browser, "Ann");
+  const qr = host.page.getByTestId("qr-code").first();
+  for (let i = 0; i < 5; i++) await qr.click();
+  const sheet = host.page.getByTestId("egg-cheatsheet");
+  await expect(sheet).toBeVisible();
+  await expect(sheet).toContainText("Konami code");
+  // Phone emulation gets the swipe wording, not the keyboard one.
+  const phone =
+    testInfo.project.name === "mobile-safari" ? "iPhone" : "Android";
+  await expect(sheet).toContainText(`on ${phone}`);
+  await expect(sheet).toContainText("swipe ↑ ↑ ↓ ↓");
+  await expect(sheet).not.toContainText("B A on a keyboard");
+  await host.page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  await host.context.close();
+});
+
 /** `wavelength` in the console prints the menu; the API drives the eggs. */
 test("the console menu lists the eggs and the API fires them", async ({
   page,

@@ -3,29 +3,50 @@
  * to whatever triggers it; this list is the single place that says what
  * exists, so the menu and the docs never drift from the code.
  */
+import type { Platform } from "./platform";
+
 export interface EggDef {
   id: string;
   name: string;
-  /** How a player triggers it. */
+  /** How a player triggers it (keyboard / desktop wording). */
   how: string;
+  /** The same, worded for a phone, when it differs. */
+  touch?: string;
+  /** Only reachable from the console API (nothing to do on a phone). */
+  consoleOnly?: boolean;
   /** What they get. */
   what: string;
   /** Console call that fires it by hand, if there is one. */
   api?: string;
 }
 
+/** The trigger wording for a platform (see `lib/eggs/platform.ts`). */
+export function howFor(egg: EggDef, platform: Platform): string {
+  return platform === "desktop" ? egg.how : (egg.touch ?? egg.how);
+}
+
 export const EGGS: ReadonlyArray<EggDef> = [
   {
     id: "menu",
     name: "The menu",
-    how: "type `wavelength` in the console",
+    how: "type `wavelength` in the browser console",
+    touch:
+      "needs a desktop browser console; on a phone this cheat sheet is the way in",
     what: "prints this list and hands back the egg API",
     api: "wavelength.list()",
   },
   {
+    id: "cheatsheet",
+    name: "Cheat sheet",
+    how: "tap the QR code five times in five seconds (lounge or in-game)",
+    what: "a sheet with every egg and how to trigger it on this device",
+  },
+  {
     id: "konami",
     name: "Konami code",
-    how: "↑ ↑ ↓ ↓ ← → ← → B A on a keyboard; on a phone swipe ↑ ↑ ↓ ↓ ← → ← → then tap twice (home or lounge)",
+    how: "↑ ↑ ↓ ↓ ← → ← → B A on a keyboard (home or lounge)",
+    touch:
+      "swipe ↑ ↑ ↓ ↓ ← → ← → anywhere on the home screen or lounge, then tap twice",
     what: "party mode: a rainbow wheel, an 8-bit jingle, +30 lives, and the whole room learns you know the code",
     api: "wavelength.party()",
   },
@@ -33,6 +54,7 @@ export const EGGS: ReadonlyArray<EggDef> = [
     id: "magicword",
     name: "The magic word",
     how: 'type "wavelength" on a keyboard, outside any field',
+    touch: 'needs a hardware keyboard: type "wavelength" outside any field',
     what: "a nudge toward this very menu",
   },
   {
@@ -61,6 +83,7 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "disco",
+    consoleOnly: true,
     name: "Disco",
     how: "ask for it (a number of seconds makes it a timed drop)",
     what: "the room hue-cycles, the wheel pulses and the lounge spins a 124 BPM stomp instead of the groove",
@@ -68,6 +91,7 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "jukebox",
+    consoleOnly: true,
     name: "Jukebox",
     how: "ask for it, then play any sound by name",
     what: "lists every synthesised sound and loop; play() and loop() fire them (tap the page once first so iOS allows audio)",
@@ -75,6 +99,7 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "rain",
+    consoleOnly: true,
     name: "Rain",
     how: "ask for it",
     what: "emoji rain down the screen (any emoji, any amount)",
@@ -82,6 +107,7 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "barrelroll",
+    consoleOnly: true,
     name: "Barrel roll",
     how: "ask for it",
     what: "the whole page rolls 360°",
@@ -89,6 +115,7 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "crt",
+    consoleOnly: true,
     name: "CRT",
     how: "ask for it",
     what: "scanlines and a vignette, like a 1987 arcade cabinet (toggle)",
@@ -96,6 +123,7 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "pet",
+    consoleOnly: true,
     name: "Pet",
     how: "ask for it",
     what: "a critter trots along the bottom edge now and then; null sends it home",
@@ -134,6 +162,7 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "reset",
+    consoleOnly: true,
     name: "Reset",
     how: "ask for it",
     what: "switches every egg mode off again",

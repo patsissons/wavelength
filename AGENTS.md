@@ -46,10 +46,13 @@ Commit in small, modular units (one logical change per commit).
   outside the command → events → reducer path, and the client never
   computes game outcomes itself.
 - **Events are the only way state changes**, each bumping `version`.
-  Ephemeral messages (live dial moves, effects) are never persisted and
-  never carry a version. The shroud is game state (`shroud.toggle` →
-  `shroud.toggled`), not an ephemeral, so it survives reconnects and feeds
-  the stats.
+  Ephemeral messages (live dial moves, the visible effect / poke) are never
+  persisted and never carry a version. The shroud is game state
+  (`shroud.toggle` → `shroud.toggled`), not an ephemeral, so it survives
+  reconnects and feeds the stats. Reactions (`effect.send`, `poke.send`)
+  are commands: the room rate-limits them, the handler validates and emits
+  `effect.sent` (the per-game `effectTally`), then the room broadcasts the
+  ephemeral that actually renders.
 - **Stats come from the round log.** Timed events (`at`) append to
   `round.log`; the server folds the log into `RoundResult.stats` at reveal
   (`shared/game/stats.ts`) and clients derive awards from `history`.
@@ -59,12 +62,21 @@ Commit in small, modular units (one logical change per commit).
   the server sends the private target before the spin event so the
   psychic's board can anchor the wedge to the spin it belongs to.
 - **Rounds vs turns.** In co-op / FFA `roundsPlayed` counts completed
-  rotations (everyone psychic once) and `history.length` counts turns.
+  rotations (everyone psychic once) and `history.length` counts turns. A
+  rotation can open anywhere (`settings.firstPsychic` random): `psychicStart`
+  remembers the opening order per pool and `nextPsychic` reports `wrapped`
+  when the cursor crosses it again. E2e helpers pin the rotation to join
+  order so tests know who is up.
 - **The target is server-generated.** Clients animate to it; they never
   pick it.
 - **Mobile first.** iPhone Safari is the primary surface: 44px touch
   targets, `100dvh`, safe-area insets, `touch-action: none` on the board,
-  reduced-motion respected.
+  reduced-motion respected. Page padding comes from the `safe-area` /
+  `safe-x` / `safe-top` / `safe-bottom` utilities in `index.css`
+  (`max(env(inset), --page-pad)`); never pair them with `p-*` on the same
+  element and never bleed a child past them with negative margins (the
+  round toolbar is a footer outside the padded main). `e2e/layout.spec.ts`
+  guards the margins.
 - **Never eject a player for a dropped socket.** Disconnected players go
   "away" after a grace period and keep their seat, team, and score.
 - **Free to operate.** Cloudflare free tier only; SQLite-backed Durable
@@ -77,11 +89,15 @@ Commit in small, modular units (one logical change per commit).
   scoring and rendering both derive from it.
 - Protocol changes need the zod schema, the event union, the reducer AND a
   scenario test in `shared/game/commands.test.ts`. Bump `PROTOCOL_VERSION`
-  (currently 2) when a change is not backward compatible; clients show a
+  (currently 3) when a change is not backward compatible; clients show a
   reload banner.
 - Audio: iOS mutes Web Audio under the ringer switch until an
   HTMLMediaElement plays, so `audio.unlock()` also starts a looping silent
-  `<audio>`; keep `unlock()` synchronous inside the gesture.
+  `<audio>`; keep `unlock()` synchronous inside the gesture. A hidden or
+  unfocused tab is silenced (`audio.background()` suspends the context)
+  and resumes on its own when it is back.
+- Player initials go through `firstGrapheme` (Intl.Segmenter): never
+  `charAt(0)` a name, it splits emoji.
 - Effects must never leak the target (no warmer/colder for the psychic).
 
 ## Gotchas

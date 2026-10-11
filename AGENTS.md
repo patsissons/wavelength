@@ -85,6 +85,11 @@ Commit in small, modular units (one logical change per commit).
   wrangler `e2e` env so targets and timings are deterministic. The psychic's
   board exposes `data-target` so tests can aim the dial; the app installs
   `window.__gameStore` and `window.__wsDrop` for diagnostics.
+- **The built-in deck is original.** `shared/deck/cards.ts` holds spectra
+  written to the style guide in its header (short labels, a capped
+  "Bad X | Great X" template, unrelated sides per card, Canadian
+  spelling); `deck.test.ts` enforces the mix, label length and spelling.
+  Never adapt cards from a published deck.
 - `SEGMENTS` (shared/game/geometry.ts) is the one wedge-width constant;
   scoring and rendering both derive from it.
 - Protocol changes need the zod schema, the event union, the reducer AND a

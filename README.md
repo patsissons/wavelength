@@ -78,8 +78,9 @@ phone (same network) to play.
    who opens the psychic rotation (random or join order), wheel spins per
    turn, a **dial timer**, custom spectra, effects) and starts the game. A
    **Leave** button returns to the home screen; the seat stays open.
-4. Each turn the psychic draws a card off the pile, flips it to compare both
-   spectra and picks a side. The shroud lifts and everyone watches the wheel;
+4. Each turn the psychic draws a card off the pile (165 original two-sided
+   cards, plus any custom spectra), flips it to compare both spectra and
+   picks a side. The shroud lifts and everyone watches the wheel;
    the psychic taps or flicks it to spin (only their screen shows the
    wedge) and can spin again until they like the target (up to the spins
    setting). Tapping the shroud or its handle covers and uncovers the

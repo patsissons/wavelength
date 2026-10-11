@@ -29,6 +29,72 @@ describe("built-in cards", () => {
       }
     }
   });
+
+  const spectra = CARDS.flatMap((c) => c.sides);
+  const labels = spectra.flatMap((s) => [s.left, s.right]);
+  const words = (label: string) => label.toLowerCase().split(/\s+/);
+  const isTemplate = (s: { left: string }) => /^(bad|worst) /i.test(s.left);
+
+  it("caps the Bad X | Great X template and never doubles it on a card", () => {
+    const templated = spectra.filter(isTemplate).length;
+    expect(templated / spectra.length).toBeLessThanOrEqual(0.15);
+    for (const card of CARDS) {
+      expect(card.sides.every(isTemplate), card.id).toBe(false);
+    }
+  });
+
+  it("keeps labels short: mostly one or two words, never more than four", () => {
+    const twoOrFewer = labels.filter((l) => words(l).length <= 2).length;
+    expect(twoOrFewer / labels.length).toBeGreaterThanOrEqual(0.75);
+    for (const label of labels) {
+      expect(words(label).length, label).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it("never pairs a label with itself", () => {
+    for (const side of spectra) {
+      expect(side.left.toLowerCase()).not.toBe(side.right.toLowerCase());
+    }
+  });
+
+  it("puts unrelated spectra on the two sides of a card", () => {
+    const stopwords = new Set(
+      "a an the to of for in on at and or with from it bad good great fine worst best".split(
+        " ",
+      ),
+    );
+    const meaningful = (side: { left: string; right: string }) =>
+      new Set(
+        [...words(side.left), ...words(side.right)].filter(
+          (w) => !stopwords.has(w),
+        ),
+      );
+    for (const card of CARDS) {
+      const [a, b] = card.sides;
+      const shared = [...meaningful(a)].filter((w) => meaningful(b).has(w));
+      expect(shared, card.id).toEqual([]);
+    }
+  });
+
+  it("uses Canadian spelling", () => {
+    const denied = [
+      /\bcolor/,
+      /\bfavorite/,
+      /\bflavor/,
+      /\bsavory/,
+      /\bneighbor/,
+      /\bhonor/,
+      /\bhumor/,
+      /\bcenter/,
+      /\bcosy/,
+      /(organ|real|energ|recogn)is(e|ing|ed)\b/,
+    ];
+    for (const label of labels) {
+      for (const pattern of denied) {
+        expect(pattern.test(label.toLowerCase()), label).toBe(false);
+      }
+    }
+  });
 });
 
 describe("custom spectra", () => {

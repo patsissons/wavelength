@@ -148,3 +148,8 @@ Commit in small, modular units (one logical change per commit).
   ms; wait for the phase the board expects before dragging or flicking.
 - Screenshot/debug specs live in `e2e/.debug/` (gitignored) and only run
   with `DEBUG_E2E=1`.
+- `public/og.png` is generated (`pnpm og`, `scripts/og/render.ts`) from the
+  shared board geometry; regenerate it instead of editing the PNG, and
+  rerun it when the board's look changes. `scripts/` is typechecked under
+  `tsconfig.node.json` with `allowImportingTsExtensions` because Node runs
+  the scripts directly and needs the `.ts` extension on imports.

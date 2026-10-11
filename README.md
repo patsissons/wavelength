@@ -50,6 +50,7 @@ phone (same network) to play.
 | `pnpm preview`             | Serve the production build locally in the Workers runtime     |
 | `pnpm deploy`              | Build and deploy to Cloudflare with wrangler                  |
 | `pnpm types`               | Regenerate `worker-configuration.d.ts` from `wrangler.jsonc`  |
+| `pnpm og`                  | Re-render the link preview image `public/og.png`              |
 | `pnpm typecheck`           | Regenerate Worker types, then `tsc -b` over all projects      |
 | `pnpm test`                | Unit tests (Vitest)                                           |
 | `pnpm test:watch`          | Unit tests in watch mode                                      |
@@ -158,6 +159,13 @@ psychic has vanished.
   SVG with pointer-driven dial and spin hooks. `lib/eggs/` holds the
   easter eggs (the console menu, triggers, modes) and
   `components/eggs/eggs-layer.tsx` renders them over every screen.
+- `scripts/og/render.ts` — renders `public/og.png`, the 1200×630 Open
+  Graph image chat apps show when a link is unfurled. It draws the board
+  with the real `shared/game/geometry.ts` in headless Chromium, so rerun
+  `pnpm og` after changing the board's look. The `og:*` / `twitter:*` tags
+  in `index.html` point at the production host (previews need absolute
+  URLs) and cover `/join/:code` links too, since the SPA serves the same
+  document for every route.
 
 ## Deploy
 

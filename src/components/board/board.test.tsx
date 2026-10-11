@@ -163,4 +163,42 @@ describe("Board", () => {
     expect(onFlick).toHaveBeenCalledTimes(1);
     expect(onFlick.mock.calls[0]![0]).toBeLessThan(0); // left → right is clockwise
   });
+
+  it("fires onShroudTap for a tap on the shroud or its handle, not on a drag", () => {
+    mockRect();
+    const onShroudTap = vi.fn();
+    const onFlick = vi.fn();
+    const { rerender } = render(
+      <Board
+        target={null}
+        shroudOpen={false}
+        dials={[]}
+        spin={{ enabled: true, onFlick }}
+        onShroudTap={onShroudTap}
+      />,
+    );
+    expect(screen.queryByTestId("shroud-handle")).toBeNull();
+    const shroud = screen.getByTestId("shroud");
+    fireEvent.pointerDown(shroud, { clientX: 200, clientY: 100 });
+    fireEvent.pointerUp(shroud, { clientX: 203, clientY: 102 });
+    expect(onShroudTap).toHaveBeenCalledTimes(1);
+    expect(onFlick).not.toHaveBeenCalled(); // the tap never reaches the board
+    fireEvent.pointerDown(shroud, { clientX: 100, clientY: 100 });
+    fireEvent.pointerUp(shroud, { clientX: 200, clientY: 100 });
+    expect(onShroudTap).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <Board
+        target={null}
+        shroudOpen
+        dials={[]}
+        spin={{ enabled: true, onFlick }}
+        onShroudTap={onShroudTap}
+      />,
+    );
+    const handle = screen.getByTestId("shroud-handle");
+    fireEvent.pointerDown(handle, { clientX: 200, clientY: CY + 10 });
+    fireEvent.pointerUp(handle, { clientX: 200, clientY: CY + 10 });
+    expect(onShroudTap).toHaveBeenCalledTimes(2);
+  });
 });

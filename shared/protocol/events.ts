@@ -38,16 +38,23 @@ export type GameEvent =
       scores: Record<string, number>;
       deckRemaining: number;
     }
-  | { type: "card.drawn"; card: Card; deckRemaining: number }
-  | { type: "side.picked"; side: 0 | 1; spectrum: Spectrum }
+  | { type: "card.drawn"; card: Card; deckRemaining: number; at: number }
+  | { type: "side.picked"; side: 0 | 1; spectrum: Spectrum; at: number }
   | { type: "spin.started"; spin: Spin }
-  | { type: "clue.submitted"; clue: string }
-  | { type: "dial.set"; dialId: string; position: number; by: string }
-  | { type: "dial.accepted"; dialId: string; playerId: string }
-  | { type: "dial.unaccepted"; dialId: string; playerId: string }
-  | { type: "dial.locked"; dialId: string }
+  | { type: "shroud.toggled"; open: boolean; at: number }
+  | { type: "clue.submitted"; clue: string; at: number }
+  | {
+      type: "dial.set";
+      dialId: string;
+      position: number;
+      by: string;
+      at: number;
+    }
+  | { type: "dial.accepted"; dialId: string; playerId: string; at: number }
+  | { type: "dial.unaccepted"; dialId: string; playerId: string; at: number }
+  | { type: "dial.locked"; dialId: string; at: number }
   | { type: "phase.changed"; phase: Phase }
-  | { type: "vote.cast"; playerId: string; side: Side }
+  | { type: "vote.cast"; playerId: string; side: Side; at: number }
   | {
       type: "round.revealed";
       result: RoundResult;

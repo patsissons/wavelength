@@ -5,10 +5,11 @@ import { cn } from "@/lib/utils";
 
 export function ScoreHeader({ game }: { game: GameState }) {
   const round = game.round;
+  const players = Object.keys(game.players).length;
   const roundLabel = round
     ? game.settings.mode === "teams"
       ? `Turn ${game.roundsPlayed + 1}`
-      : `Round ${game.roundsPlayed + 1} of ${game.settings.rounds}`
+      : `Round ${game.roundsPlayed + 1} of ${game.settings.rounds} · Turn ${game.history.length + 1}`
     : "";
 
   if (game.settings.mode === "teams") {
@@ -64,7 +65,7 @@ export function ScoreHeader({ game }: { game: GameState }) {
           {game.scores.coop ?? 0}
           <span className="text-sm font-normal text-muted-foreground">
             {" "}
-            / {game.settings.rounds * 4}
+            / {game.settings.rounds * players * 4}
           </span>
         </p>
       </header>

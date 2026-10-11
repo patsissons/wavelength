@@ -3,7 +3,7 @@
  * secret target lives in the server-only `SecretState` until reveal.
  */
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 export type Mode = "teams" | "coop" | "ffa";
 export type TeamId = "left" | "right";
@@ -50,7 +50,7 @@ export interface Settings {
   mode: Mode;
   /** Teams: points to win. */
   targetScore: number;
-  /** Co-op / FFA: number of rounds. */
+  /** Co-op / FFA: number of rounds; a round is one psychic turn per player. */
   rounds: number;
   /** FFA: does the psychic score the guessers' average? */
   psychicScoring: "none" | "average";
@@ -84,6 +84,63 @@ export interface DialState {
   locked: boolean;
 }
 
+/** Timed actions within a round; the raw material for the stats. */
+export type RoundLogEntry =
+  | { t: "draw"; at: number }
+  | { t: "side"; at: number }
+  | { t: "spin"; at: number }
+  | { t: "shroud"; at: number; open: boolean }
+  | { t: "clue"; at: number }
+  | {
+      t: "move";
+      at: number;
+      by: string;
+      dialId: string;
+      from: number;
+      to: number;
+    }
+  | { t: "accept"; at: number; by: string; dialId: string }
+  | { t: "unaccept"; at: number; by: string; dialId: string }
+  | { t: "lock"; at: number; dialId: string }
+  | { t: "vote"; at: number; by: string; side: Side };
+
+export interface PlayerRoundStats {
+  moves: number;
+  /** Sum of |to − from| in spectrum units (1 = the whole dial). */
+  travel: number;
+  /** Moves that brought the dial closer to / further from the target. */
+  toward: number;
+  away: number;
+  /** Σ wedge(to) − wedge(from) over their moves. */
+  pointsSwing: number;
+  /** Closest any of their moves got to the target, in spectrum units. */
+  closest: number | null;
+  /** From the clue to their first move. */
+  firstMoveMs: number | null;
+  firstMover: boolean;
+  /** They made the last move on a dial that then locked. */
+  finalMover: boolean;
+  accepts: number;
+  unaccepts: number;
+  /** Their accept was the one that locked the dial. */
+  lastAccepter: boolean;
+  vote: "correct" | "wrong" | null;
+}
+
+export interface RoundStats {
+  durationMs: number;
+  drawMs: number | null;
+  pickMs: number | null;
+  /** From the last spin to the clue. */
+  clueMs: number | null;
+  /** From the clue to the last lock. */
+  guessMs: number | null;
+  spins: number;
+  peeks: number;
+  clueLength: number;
+  players: Record<string, PlayerRoundStats>;
+}
+
 export interface VoteResult {
   left: number;
   right: number;
@@ -111,6 +168,7 @@ export interface RoundResult {
   goAgain: boolean;
   /** Decided at reveal; applied when the round advances. */
   gameOver: GameOver | null;
+  stats: RoundStats;
 }
 
 export interface Round {
@@ -121,6 +179,12 @@ export interface Round {
   side: 0 | 1 | null;
   spectrum: Spectrum | null;
   spin: Spin | null;
+  /** Times the wheel has been spun this round (re-spins allowed until the clue). */
+  spins: number;
+  /** The psychic's shroud: open from the side pick until the clue, then toggled. */
+  shroudOpen: boolean;
+  /** Explicit peeks (shroud opened by the psychic) this round. */
+  peeks: number;
   clue: string | null;
   dials: Record<string, DialState>;
   /** Teams: opposing players' left/right calls. */
@@ -128,6 +192,7 @@ export interface Round {
   /** Only populated from reveal onward. */
   target: number | null;
   result: RoundResult | null;
+  log: RoundLogEntry[];
   /** This round was granted by the catch-up rule. */
   catchUp: boolean;
   startedAt: number;
@@ -159,7 +224,10 @@ export interface GameState {
    */
   scores: Record<string, number>;
   round: Round | null;
-  /** Completed rounds (co-op / ffa round limit). */
+  /**
+   * Teams: completed turns. Co-op / FFA: completed rounds, where a round is
+   * one psychic turn per player (`history.length` counts the turns).
+   */
   roundsPlayed: number;
   history: RoundResult[];
   suddenDeath: boolean;
@@ -178,7 +246,7 @@ export const PLAYER_COLORS = 12;
 export const DEFAULT_SETTINGS: Settings = {
   mode: "teams",
   targetScore: 10,
-  rounds: 7,
+  rounds: 2,
   psychicScoring: "average",
   catchUp: true,
   firstTeam: "random",
@@ -196,7 +264,7 @@ export const LIMITS = {
   minTargetScore: 5,
   maxTargetScore: 20,
   minRounds: 1,
-  maxRounds: 30,
+  maxRounds: 10,
 } as const;
 
 export function otherTeam(team: TeamId): TeamId {

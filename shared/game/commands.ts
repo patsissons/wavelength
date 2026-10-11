@@ -10,6 +10,7 @@ import type {
 import { ulid } from "../util/id";
 import { randomTarget, spinParams } from "./geometry";
 import { applyEvent } from "./reducer";
+import { computeRoundStats } from "./stats";
 import {
   nextColor,
   nextPsychic,
@@ -261,7 +262,7 @@ export function expireGrace(
     }
   }
   migrateHost(tx);
-  autoAdvance(tx);
+  autoAdvance(tx, now);
   return { events: tx.events, nextDeadline };
 }
 
@@ -346,6 +347,7 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
         type: "card.drawn",
         card: drawn.card,
         deckRemaining: deckRemaining(drawn.deck),
+        at: ctx.now,
       });
       return;
     }
@@ -358,14 +360,18 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
         type: "side.picked",
         side: cmd.side,
         spectrum: card.sides[cmd.side],
+        at: ctx.now,
       });
       tx.emit({ type: "phase.changed", phase: "spinning" });
       return;
     }
 
     case "spin.flick": {
-      phase("spinning");
+      // Re-spins are allowed until the clue is given; each one draws a
+      // fresh target.
+      phase("spinning", "clue");
       psychic();
+      if (round().clue !== null) fail("invalid", "the clue is already given");
       const target = randomTarget(ctx.random);
       tx.secret = { ...tx.secret, target };
       tx.emit({
@@ -376,7 +382,8 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
           startedAt: ctx.now,
         },
       });
-      tx.emit({ type: "phase.changed", phase: "clue" });
+      if (game.phase === "spinning")
+        tx.emit({ type: "phase.changed", phase: "clue" });
       tx.privates.push({
         playerId: me.id,
         message: { type: "private", target },
@@ -384,10 +391,17 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
       return;
     }
 
+    case "shroud.toggle":
+      phase("spinning", "clue", "guessing", "voting");
+      psychic();
+      if (round().shroudOpen !== cmd.open)
+        tx.emit({ type: "shroud.toggled", open: cmd.open, at: ctx.now });
+      return;
+
     case "clue.submit":
       phase("clue");
       psychic();
-      tx.emit({ type: "clue.submitted", clue: cmd.clue });
+      tx.emit({ type: "clue.submitted", clue: cmd.clue, at: ctx.now });
       tx.emit({ type: "phase.changed", phase: "guessing" });
       return;
 
@@ -400,6 +414,7 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
         dialId: dial.id,
         position: cmd.position,
         by: me.id,
+        at: ctx.now,
       });
       return;
     }
@@ -409,8 +424,13 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
       const dial = ownedDial(game, me.id, cmd.dialId);
       if (dial.locked) fail("invalid", "dial is locked");
       if (!dial.accepts.includes(me.id))
-        tx.emit({ type: "dial.accepted", dialId: dial.id, playerId: me.id });
-      autoAdvance(tx);
+        tx.emit({
+          type: "dial.accepted",
+          dialId: dial.id,
+          playerId: me.id,
+          at: ctx.now,
+        });
+      autoAdvance(tx, ctx.now);
       return;
     }
 
@@ -419,7 +439,12 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
       const dial = ownedDial(game, me.id, cmd.dialId);
       if (dial.locked) fail("invalid", "dial is locked");
       if (dial.accepts.includes(me.id))
-        tx.emit({ type: "dial.unaccepted", dialId: dial.id, playerId: me.id });
+        tx.emit({
+          type: "dial.unaccepted",
+          dialId: dial.id,
+          playerId: me.id,
+          at: ctx.now,
+        });
       return;
     }
 
@@ -428,8 +453,13 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
       if (!opponents(game).some((p) => p.id === me.id))
         fail("not_allowed", "only the other team votes");
       if (round().votes[me.id] !== cmd.side)
-        tx.emit({ type: "vote.cast", playerId: me.id, side: cmd.side });
-      autoAdvance(tx);
+        tx.emit({
+          type: "vote.cast",
+          playerId: me.id,
+          side: cmd.side,
+          at: ctx.now,
+        });
+      autoAdvance(tx, ctx.now);
       return;
 
     case "round.next":
@@ -444,11 +474,12 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
       phase("guessing", "voting");
       if (game.phase === "guessing") {
         for (const dial of Object.values(round().dials)) {
-          if (!dial.locked) tx.emit({ type: "dial.locked", dialId: dial.id });
+          if (!dial.locked)
+            tx.emit({ type: "dial.locked", dialId: dial.id, at: ctx.now });
         }
-        afterGuessing(tx);
+        afterGuessing(tx, ctx.now);
       } else {
-        reveal(tx);
+        reveal(tx, ctx.now);
       }
       return;
 
@@ -471,7 +502,7 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
       if (wasPsychic && inRound(tx.game) && tx.game.phase !== "reveal") {
         skipRound(tx, ctx);
       } else {
-        autoAdvance(tx);
+        autoAdvance(tx, ctx.now);
       }
       return;
     }
@@ -587,7 +618,11 @@ function startGame(tx: Tx, ctx: CommandContext) {
 function makeRound(
   game: GameState,
   input: { index: number; team: TeamId | null; catchUp: boolean; now: number },
-): { round: Round; psychicCursor: GameState["psychicCursor"] } {
+): {
+  round: Round;
+  psychicCursor: GameState["psychicCursor"];
+  wrapped: boolean;
+} {
   const pick =
     nextPsychic(game, input.team) ?? fail("invalid", "nobody can be psychic");
   const others = (
@@ -610,15 +645,20 @@ function makeRound(
       side: null,
       spectrum: null,
       spin: null,
+      spins: 0,
+      shroudOpen: false,
+      peeks: 0,
       clue: null,
       dials,
       votes: {},
       target: null,
       result: null,
+      log: [],
       catchUp: input.catchUp,
       startedAt: input.now,
     },
     psychicCursor: pick.psychicCursor,
+    wrapped: pick.wrapped,
   };
 }
 
@@ -634,7 +674,7 @@ function newDial(id: string, owners: string[]): DialState {
 }
 
 /** Lock dials whose active owners all accepted; move on when everything is locked. */
-export function autoAdvance(tx: Tx) {
+export function autoAdvance(tx: Tx, now: number) {
   const { game } = tx;
   if (!game.round) return;
   if (game.phase === "guessing") {
@@ -645,30 +685,30 @@ export function autoAdvance(tx: Tx) {
         owners.length > 0 &&
         owners.every((id) => dial.accepts.includes(id))
       ) {
-        tx.emit({ type: "dial.locked", dialId: dial.id });
+        tx.emit({ type: "dial.locked", dialId: dial.id, at: now });
       }
     }
-    if (allDialsLocked(tx.game)) afterGuessing(tx);
+    if (allDialsLocked(tx.game)) afterGuessing(tx, now);
   } else if (game.phase === "voting") {
     const voters = activeOpponents(game);
     if (voters.length === 0 || voters.every((p) => game.round!.votes[p.id])) {
-      reveal(tx);
+      reveal(tx, now);
     }
   }
 }
 
-function afterGuessing(tx: Tx) {
+function afterGuessing(tx: Tx, now: number) {
   if (
     tx.game.settings.mode === "teams" &&
     activeOpponents(tx.game).length > 0
   ) {
     tx.emit({ type: "phase.changed", phase: "voting" });
   } else {
-    reveal(tx);
+    reveal(tx, now);
   }
 }
 
-function reveal(tx: Tx) {
+function reveal(tx: Tx, now: number) {
   const game = tx.game;
   const round = game.round ?? fail("wrong_phase", "no round");
   const target = tx.secret.target ?? fail("invalid", "no target");
@@ -694,10 +734,15 @@ function reveal(tx: Tx) {
     deltas: {},
     goAgain: false,
     gameOver: null,
+    stats: computeRoundStats(round, target, now),
   };
   let scores = { ...game.scores };
   let suddenDeath = game.suddenDeath;
-  const lastRound = game.roundsPlayed + 1 >= game.settings.rounds;
+  // Co-op / FFA: the game ends when the last round's rotation completes,
+  // i.e. the next psychic would wrap around to the first player again.
+  const rotationDone = nextPsychic(game, null)?.wrapped ?? true;
+  const lastRound =
+    rotationDone && game.roundsPlayed + 1 >= game.settings.rounds;
 
   if (game.settings.mode === "teams") {
     const shared = round.dials.shared ?? fail("invalid", "no shared dial");
@@ -725,7 +770,7 @@ function reveal(tx: Tx) {
     result.deltas = { coop: points };
     scores.coop = (scores.coop ?? 0) + points;
     result.gameOver = lastRound
-      ? { winner: null, label: coopLabel(scores.coop, game.settings.rounds) }
+      ? { winner: null, label: coopLabel(scores.coop, game.history.length + 1) }
       : null;
   } else {
     const guesses: Record<string, number> = {};
@@ -772,7 +817,11 @@ function advanceRound(tx: Tx, ctx: CommandContext) {
     round: next.round,
     activeTeam: team,
     psychicCursor: next.psychicCursor,
-    roundsPlayed: game.roundsPlayed + 1,
+    // Teams count turns; the other modes count completed rotations.
+    roundsPlayed:
+      game.settings.mode === "teams" || next.wrapped
+        ? game.roundsPlayed + 1
+        : game.roundsPlayed,
     deckRemaining: game.deckRemaining,
   });
 }
@@ -811,10 +860,7 @@ export function finalStanding(game: GameState): GameOver {
   if (game.settings.mode === "coop") {
     return {
       winner: null,
-      label: coopLabel(
-        game.scores.coop ?? 0,
-        Math.max(1, game.roundsPlayed || game.settings.rounds),
-      ),
+      label: coopLabel(game.scores.coop ?? 0, Math.max(1, game.history.length)),
     };
   }
   const ranked = ranking(game.scores);

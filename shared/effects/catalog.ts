@@ -12,7 +12,9 @@ export type SoundPatch =
   | "boo"
   | "rimshot"
   | "fanfare"
-  | "crickets";
+  | "crickets"
+  | "celebrate"
+  | "newround";
 
 export type ScreenFx = "shake" | "flash" | "fog" | "spotlight";
 

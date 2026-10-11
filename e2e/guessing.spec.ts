@@ -47,6 +47,11 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
   await eve.page.getByTestId("accept-dial").click();
   await cid.page.getByTestId("accept-dial").click();
   await expect(cid.page.getByTestId("locked")).toBeVisible();
+  // Everyone gets a little confetti when the team agrees.
+  await expect(bob.page.getByTestId("effects-layer")).toHaveAttribute(
+    "data-celebration",
+    "lock",
+  );
   await expect(bob.page.getByTestId("panel")).toContainText("Left or right?");
   await expectDialNear(bob.page, "shared", 0.8);
 

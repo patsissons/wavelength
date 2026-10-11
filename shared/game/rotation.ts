@@ -23,17 +23,24 @@ function eligible(players: Player[]): Player[] {
 export function nextPsychic(
   state: GameState,
   team: TeamId | null,
-): { psychicId: string; psychicCursor: GameState["psychicCursor"] } | null {
+): {
+  psychicId: string;
+  psychicCursor: GameState["psychicCursor"];
+  /** The rotation wrapped around: everyone in the pool has had a turn. */
+  wrapped: boolean;
+} | null {
   const key = team ?? "all";
   const pool = eligible(
     team ? teamMembers(state, team) : playersInOrder(state),
   );
   if (pool.length === 0) return null;
   const cursor = state.psychicCursor[key];
-  const psychic = pool.find((p) => p.order > cursor) ?? pool[0]!;
+  const after = pool.find((p) => p.order > cursor);
+  const psychic = after ?? pool[0]!;
   return {
     psychicId: psychic.id,
     psychicCursor: { ...state.psychicCursor, [key]: psychic.order },
+    wrapped: after === undefined,
   };
 }
 

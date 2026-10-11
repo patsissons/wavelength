@@ -1,7 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { psychicTurn, startTeamsGame } from "./helpers";
+import {
+  flickWheel,
+  psychicTurn,
+  readTarget,
+  startTeamsGame,
+  tapWheel,
+} from "./helpers";
 
-test("the psychic draws, spins, peeks and gives a clue that everyone sees", async ({
+test("the psychic draws, spins (and re-spins), covers the wheel and gives a clue", async ({
   browser,
 }) => {
   const game = await startTeamsGame(browser);
@@ -13,6 +19,10 @@ test("the psychic draws, spins, peeks and gives a clue that everyone sees", asyn
     "Ann is drawing a card",
   );
   await expect(host.page.getByTestId("spectrum")).toContainText("?");
+  // Late arrivals can still be invited from inside the game.
+  await expect(bob.page.getByTestId("share-compact-code")).toHaveText(
+    game.code,
+  );
 
   await host.page.getByTestId("draw-card").click();
   await expect(host.page.getByTestId("card-side-0")).toBeVisible();
@@ -23,35 +33,48 @@ test("the psychic draws, spins, peeks and gives a clue that everyone sees", asyn
   );
   await expect(bob.page.getByTestId("spectrum")).not.toContainText("?");
 
-  // Non-psychics never receive a target
+  // Picking a side lifts the shroud for everyone so they can watch the spin;
+  // nobody but the psychic ever receives a target.
+  await expect(host.page.getByTestId("panel")).toContainText("Spin the wheel");
+  for (const { page } of [host, bob]) {
+    await expect(page.getByTestId("shroud")).toHaveAttribute(
+      "data-open",
+      "true",
+    );
+    await expect(page.getByTestId("wedge-4")).toHaveCount(0);
+  }
+  await expect(host.page.getByTestId("peek-toggle")).toHaveCount(0);
+
+  // A flick spins; the wedge lands in view on the psychic's board only.
+  await flickWheel(host.page);
+  await expect(host.page.getByTestId("wedge-4")).toBeVisible();
+  const first = await readTarget(host.page);
+  await expect(bob.page.getByTestId("panel")).toContainText("Ann is peeking");
+  await expect(bob.page.getByTestId("wedge-4")).toHaveCount(0);
+
+  // Tapping again re-spins to a fresh target.
+  await tapWheel(host.page);
+  await expect.poll(() => readTarget(host.page)).not.toBeCloseTo(first, 3);
+
+  // The handle covers the wheel; tapping the shroud lifts it again.
+  await host.page.getByTestId("shroud-handle").click();
   await expect(host.page.getByTestId("shroud")).not.toHaveAttribute(
     "data-open",
   );
-  await expect(host.page.getByTestId("peek-toggle")).toHaveCount(0);
-
-  await expect(host.page.getByTestId("panel")).toContainText("Spin the wheel");
-  const box = (await host.page.getByTestId("board").boundingBox())!;
-  const cx = box.x + box.width / 2;
-  const cy = box.y + box.height * (205 / 230);
-  const r = box.width * 0.4;
-  await host.page.mouse.move(cx - r * 0.7, cy - r * 0.7);
-  await host.page.mouse.down();
-  await host.page.mouse.move(cx, cy - r, { steps: 3 });
-  await host.page.mouse.move(cx + r * 0.7, cy - r * 0.7, { steps: 3 });
-  await host.page.mouse.up();
-
-  await expect(host.page.getByTestId("peek-toggle")).toBeEnabled();
+  await expect(bob.page.getByTestId("shroud")).not.toHaveAttribute("data-open");
   await expect(bob.page.getByTestId("panel")).toContainText(
     "Ann is thinking of a clue",
   );
-  await host.page.getByTestId("peek-toggle").click();
+  await host.page.getByTestId("shroud").click();
   await expect(host.page.getByTestId("shroud")).toHaveAttribute(
     "data-open",
     "true",
   );
   await expect(host.page.getByTestId("wedge-4")).toBeVisible();
-  await expect(bob.page.getByTestId("panel")).toContainText("Ann is peeking");
-  await expect(bob.page.getByTestId("wedge-4")).toHaveCount(0);
+  await host.page.getByTestId("peek-toggle").click();
+  await expect(host.page.getByTestId("shroud")).not.toHaveAttribute(
+    "data-open",
+  );
 
   await host.page.getByTestId("clue-input").fill("Pineapple on pizza");
   await host.page.getByTestId("submit-clue").click();
@@ -63,6 +86,14 @@ test("the psychic draws, spins, peeks and gives a clue that everyone sees", asyn
   );
   await expect(cid.page.getByTestId("dial-shared")).toBeVisible();
   await expect(bob.page.getByTestId("panel")).toContainText("is guessing");
+
+  // While they guess the psychic can peek; the guessers' shroud stays shut.
+  await host.page.getByTestId("peek-toggle").click();
+  await expect(host.page.getByTestId("shroud")).toHaveAttribute(
+    "data-open",
+    "true",
+  );
+  await expect(cid.page.getByTestId("shroud")).not.toHaveAttribute("data-open");
 
   await game.close();
 });

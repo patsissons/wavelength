@@ -121,6 +121,7 @@ function psychicTurn(
   const psychic = state.game.round!.psychicId;
   state = run(state, psychic, cmd("card.draw"));
   state = run(state, psychic, cmd("card.pickSide", { side: 1 }));
+  expect(state.game.round!.shroudOpen).toBe(true);
   state = run(state, psychic, cmd("spin.flick", { velocity: 20 }));
   const target = state.secret.target!;
   expect(lastPrivates[0]).toEqual({
@@ -129,6 +130,7 @@ function psychicTurn(
   });
   state = run(state, psychic, cmd("clue.submit", { clue }));
   expect(state.game.phase).toBe("guessing");
+  expect(state.game.round!.shroudOpen).toBe(false);
   return { state, target };
 }
 
@@ -396,10 +398,35 @@ describe("teams round", () => {
 
 /* ---------- co-op & ffa ---------- */
 
+/**
+ * Lock every dial on the target (a bullseye for everyone) and advance.
+ * Returns the state at the start of the next turn (or game over).
+ */
+function bullseyeTurn(state: ServerState): ServerState {
+  const { state: s, target } = psychicTurn(state);
+  state = s;
+  for (const dial of Object.values(state.game.round!.dials)) {
+    const owner = dial.owners[0]!;
+    state = run(
+      state,
+      owner,
+      cmd("dial.set", { dialId: dial.id, position: target }),
+    );
+    for (const id of dial.owners) {
+      // Away owners don't block the lock (and can't act once it locks).
+      if (state.game.players[id]?.away) continue;
+      if (state.game.round!.dials[dial.id]!.locked) break;
+      state = run(state, id, cmd("dial.accept", { dialId: dial.id }));
+    }
+  }
+  expect(state.game.phase).toBe("reveal");
+  return run(state, state.game.hostId, cmd("round.next"));
+}
+
 describe("co-op", () => {
   it("rotates psychics through everyone and ends with a label", () => {
     let { state } = setup("coop", ["Ann", "Bob", "Cid"]);
-    state = run(state, "p0", cmd("settings.update", { patch: { rounds: 2 } }));
+    state = run(state, "p0", cmd("settings.update", { patch: { rounds: 1 } }));
     state = run(state, "p0", cmd("game.start"));
     expect(state.game.scores).toEqual({ coop: 0 });
     expect(state.game.round!.dials.shared!.owners).toEqual(["p1", "p2"]);
@@ -415,8 +442,12 @@ describe("co-op", () => {
     state = run(state, "p2", cmd("dial.accept", { dialId: "shared" }));
     expect(state.game.phase).toBe("reveal"); // no voting in co-op
     expect(state.game.scores.coop).toBe(3);
+    // One round = everyone psychic once, so the game is not over yet.
+    expect(state.game.round!.result!.gameOver).toBeNull();
     state = run(state, "p0", cmd("round.next"));
     expect(state.game.round!.psychicId).toBe("p1");
+    expect(state.game.roundsPlayed).toBe(0);
+    expect(state.game.history).toHaveLength(1);
 
     ({ state, target } = psychicTurn(state));
     state = run(
@@ -427,12 +458,48 @@ describe("co-op", () => {
     state = run(state, "p0", cmd("dial.accept", { dialId: "shared" }));
     state = run(state, "p2", cmd("dial.accept", { dialId: "shared" }));
     expect(state.game.scores.coop).toBe(7);
-    expect(state.game.round!.result!.gameOver).toEqual({
-      winner: null,
-      label: "Telepathic",
-    });
+    expect(state.game.round!.result!.gameOver).toBeNull();
     state = run(state, "p1", cmd("round.next"));
+    expect(state.game.round!.psychicId).toBe("p2");
+
+    // Cid's turn closes the rotation: 11 of 12 → Galaxy brain.
+    state = bullseyeTurn(state);
     expect(state.game.phase).toBe("gameover");
+    expect(state.game.scores.coop).toBe(11);
+    expect(state.game.gameOver).toEqual({
+      winner: null,
+      label: "Galaxy brain",
+    });
+  });
+
+  it("plays rounds × players turns and skips away players in the rotation", () => {
+    let { state } = setup("coop", ["Ann", "Bob", "Cid"]);
+    state = run(state, "p0", cmd("settings.update", { patch: { rounds: 2 } }));
+    state = run(state, "p0", cmd("game.start"));
+    const psychics: string[] = [];
+    while (state.game.phase !== "gameover") {
+      psychics.push(state.game.round!.psychicId);
+      if (psychics.length === 4) {
+        // Cid drops out before the second round reaches them.
+        state = {
+          ...state,
+          game: applyEvents(state.game, [
+            {
+              type: "player.presence",
+              playerId: "p2",
+              connected: false,
+              away: true,
+              disconnectedAt: clock,
+            },
+          ]),
+        };
+      }
+      state = bullseyeTurn(state);
+      expect(psychics.length).toBeLessThan(10);
+    }
+    expect(psychics).toEqual(["p0", "p1", "p2", "p0", "p1"]);
+    expect(state.game.roundsPlayed).toBe(1);
+    expect(state.game.history).toHaveLength(5);
   });
 });
 
@@ -478,11 +545,11 @@ describe("free-for-all", () => {
     expect(deltas.p2).toBe(2);
     expect(deltas.p3).toBeDefined();
     expect(deltas.p0).toBe(Math.round((4 + 2 + deltas.p3!) / 3));
-    expect(state.game.round!.result!.gameOver).toEqual({
-      winner: "p1",
-      label: null,
-    });
+    // Three more psychic turns remain in this round.
+    expect(state.game.round!.result!.gameOver).toBeNull();
     state = run(state, "p0", cmd("round.next"));
+    expect(state.game.round!.psychicId).toBe("p1");
+    state = run(state, "p0", cmd("host.endGame"));
     expect(state.game.gameOver!.winner).toBe("p1");
   });
 });
@@ -566,5 +633,71 @@ describe("presence", () => {
     state = run(state, "p0", cmd("host.endGame"));
     expect(state.game.phase).toBe("gameover");
     expect(state.game.gameOver!.winner).toBe("left"); // left started on 1
+  });
+});
+
+describe("spin and shroud", () => {
+  it("lets the psychic re-spin until the clue and counts spins and peeks", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    state = run(state, "p0", cmd("game.start"));
+    expectError(
+      state,
+      "p0",
+      cmd("spin.flick", { velocity: 20 }),
+      "wrong_phase",
+    );
+    state = run(state, "p0", cmd("card.draw"));
+    state = run(state, "p0", cmd("card.pickSide", { side: 0 }));
+    expect(state.game.phase).toBe("spinning");
+    expect(state.game.round!.shroudOpen).toBe(true);
+
+    state = run(state, "p0", cmd("spin.flick", { velocity: 20 }));
+    expect(state.game.phase).toBe("clue");
+    const first = state.secret.target!;
+    const firstSpin = state.game.round!.spin!.id;
+    state = run(state, "p0", cmd("spin.flick", { velocity: -30 }));
+    expect(state.game.phase).toBe("clue");
+    expect(state.secret.target).not.toBe(first);
+    expect(state.game.round!.spin!.id).not.toBe(firstSpin);
+    expect(state.game.round!.spin!.direction).toBe(-1);
+    expect(state.game.round!.spins).toBe(2);
+    expect(lastPrivates[0]).toEqual({
+      playerId: "p0",
+      message: { type: "private", target: state.secret.target },
+    });
+
+    // Only the psychic touches the shroud; toggling to the same state is a no-op.
+    expectError(
+      state,
+      "p1",
+      cmd("shroud.toggle", { open: false }),
+      "not_allowed",
+    );
+    const version = state.game.version;
+    state = run(state, "p0", cmd("shroud.toggle", { open: true }));
+    expect(state.game.version).toBe(version);
+    state = run(state, "p0", cmd("shroud.toggle", { open: false }));
+    expect(state.game.round!.shroudOpen).toBe(false);
+    expect(state.game.round!.peeks).toBe(0);
+    state = run(state, "p0", cmd("shroud.toggle", { open: true }));
+    expect(state.game.round!.peeks).toBe(1);
+
+    state = run(state, "p0", cmd("clue.submit", { clue: "x" }));
+    expect(state.game.round!.shroudOpen).toBe(false);
+    expectError(
+      state,
+      "p0",
+      cmd("spin.flick", { velocity: 20 }),
+      "wrong_phase",
+    );
+    // Peeking while they guess is allowed and counted.
+    state = run(state, "p0", cmd("shroud.toggle", { open: true }));
+    expect(state.game.round!.peeks).toBe(2);
+    expectError(
+      state,
+      "p1",
+      cmd("shroud.toggle", { open: false }),
+      "not_allowed",
+    );
   });
 });

@@ -1,5 +1,5 @@
 import { Pencil } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { teamMembers } from "@shared/game/rotation";
 import { LIMITS } from "@shared/game/types";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { audio } from "@/lib/audio";
 import { saveIdentity, loadIdentity } from "@/lib/identity";
+import { usePrefs } from "@/lib/prefs";
 import { selectIsHost, useGameStore } from "@/lib/store";
 import { useCommand } from "@/lib/use-game-connection";
 import { EnableSound } from "./enable-sound";
@@ -32,6 +34,16 @@ export function Lounge() {
   const send = useCommand();
   const me = game.players[you.playerId];
   const count = Object.keys(game.players).length;
+  const unlocked = usePrefs((s) => s.soundUnlocked);
+  const muted = usePrefs((s) => s.muted);
+  const music = usePrefs((s) => s.music);
+
+  // A looping groove while everyone gathers: the easiest way to tell that
+  // sound really works on this phone.
+  useEffect(() => {
+    audio.setLoop(unlocked && !muted && music ? "lounge" : null);
+    return () => audio.setLoop(null);
+  }, [unlocked, muted, music]);
 
   let startBlocker: string | null = null;
   if (game.settings.mode === "teams") {
@@ -57,7 +69,7 @@ export function Lounge() {
             <span className="font-normal text-muted-foreground">
               {game.settings.mode === "teams"
                 ? ` · first to ${game.settings.targetScore}`
-                : ` · ${game.settings.rounds} rounds`}
+                : ` · ${game.settings.rounds} round${game.settings.rounds === 1 ? "" : "s"} · ${count} turn${count === 1 ? "" : "s"} each`}
             </span>
           </p>
         </div>

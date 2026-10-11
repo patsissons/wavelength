@@ -74,15 +74,27 @@ export async function psychicTurn(page: Page, clue: string) {
   await page.getByTestId("draw-card").click();
   await page.getByTestId("flip-card").click();
   await page.getByTestId("pick-side-1").click();
-  // The board only accepts a flick once the client has entered the spin phase.
+  // The board only accepts a spin once the client has entered the spin phase.
   await expect(page.getByTestId("panel")).toContainText("Spin the wheel");
-  await flickWheel(page);
-  await expect(page.getByTestId("peek-toggle")).toBeEnabled();
-  await page.getByTestId("peek-toggle").click();
   await expect(page.getByTestId("shroud")).toHaveAttribute("data-open", "true");
+  await tapWheel(page);
+  // The spin lands with the wedge in view (the shroud is already open).
+  await expect(page.getByTestId("wedge-4")).toBeVisible();
+  await expect(page.getByTestId("peek-toggle")).toBeEnabled();
   await page.getByTestId("clue-input").fill(clue);
   await page.getByTestId("submit-clue").click();
   await expect(page.getByTestId("clue")).toContainText(clue);
+  // Giving the clue covers the wheel again.
+  await expect(page.getByTestId("shroud")).not.toHaveAttribute("data-open");
+}
+
+/** A tap on the open wheel spins it with a random flick. */
+export async function tapWheel(page: Page) {
+  const box = (await page.getByTestId("board").boundingBox())!;
+  await page.mouse.click(
+    box.x + box.width / 2,
+    box.y + box.height * (205 / 230) - box.width * 0.3,
+  );
 }
 
 export async function flickWheel(page: Page) {
@@ -129,7 +141,7 @@ export async function expectDialNear(
 
 /**
  * Host + guests in a Co-op or FFA game with a fixed number of rounds, started.
- * The rounds slider is driven with the keyboard from its default of 7.
+ * The rounds slider is driven with the keyboard from its default of 2.
  */
 export async function startModeGame(
   browser: Browser,
@@ -145,17 +157,17 @@ export async function startModeGame(
   await host.page.getByTestId("open-settings").click();
   await host.page.getByTestId(`mode-${mode}`).click();
   // The Rounds slider only exists once the mode change has round-tripped.
-  await expect(host.page.getByTestId("rounds-value")).toHaveText("7");
+  await expect(host.page.getByTestId("rounds-value")).toHaveText("2");
   const thumb = host.page.getByRole("slider", { name: "Rounds" });
   await thumb.focus();
   // One step per round trip: each press is confirmed by the server.
-  for (let i = 7; i > rounds; i--) {
+  for (let i = 2; i > rounds; i--) {
     await host.page.keyboard.press("ArrowLeft");
     await expect(host.page.getByTestId("rounds-value")).toHaveText(
       String(i - 1),
     );
   }
-  for (let i = 7; i < rounds; i++) {
+  for (let i = 2; i < rounds; i++) {
     await host.page.keyboard.press("ArrowRight");
     await expect(host.page.getByTestId("rounds-value")).toHaveText(
       String(i + 1),
@@ -163,7 +175,7 @@ export async function startModeGame(
   }
   await host.page.keyboard.press("Escape");
   await expect(host.page.getByTestId("mode-label")).toContainText(
-    `${rounds} rounds`,
+    `${rounds} round`,
   );
   await host.page.getByTestId("start-game").click();
   await expect(host.page.getByTestId("score-header")).toBeVisible();

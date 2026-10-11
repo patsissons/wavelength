@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { dialsFor, roleOf } from "@shared/game/selectors";
 import { useGameStore } from "@/lib/store";
-import { EffectsBar } from "@/components/effects/effects-bar";
+import { EffectsBar, MuteToggle } from "@/components/effects/effects-bar";
+import { ShareStrip } from "@/components/lounge/share-card";
 import { BoardStage } from "./board-stage";
 import { GuesserPanel } from "./guesser-panel";
 import { HostControls } from "./host-controls";
@@ -15,10 +16,15 @@ import { SpectrumLabels } from "./spectrum-labels";
 export function RoundScreen() {
   const game = useGameStore((s) => s.game)!;
   const you = useGameStore((s) => s.you)!;
-  const peekingRemote = useGameStore((s) => s.live.psychicPeeking);
-  const [peeking, setPeeking] = useState(false);
   const [spinDone, setSpinDone] = useState(false);
+  const [lastSpin, setLastSpin] = useState<string | null>(null);
   const round = game.round!;
+  const spinId = round.spin?.id ?? null;
+  if (spinId !== lastSpin) {
+    // A new spin (or re-spin) is in flight until the board says it landed.
+    setLastSpin(spinId);
+    setSpinDone(false);
+  }
   const role = roleOf(game, you.playerId);
   const psychic = game.players[round.psychicId];
 
@@ -41,7 +47,6 @@ export function RoundScreen() {
       <BoardStage
         game={game}
         playerId={you.playerId}
-        peeking={peeking}
         onSpinDone={() => setSpinDone(true)}
       />
       {round.clue && (
@@ -57,8 +62,6 @@ export function RoundScreen() {
       ) : role === "psychic" ? (
         <PsychicPanel
           game={game}
-          peeking={peeking}
-          setPeeking={setPeeking}
           spinDone={spinDone || game.phase !== "clue" || round.spin === null}
         />
       ) : role === "guesser" &&
@@ -76,14 +79,27 @@ export function RoundScreen() {
           title={statusLine(
             game.phase,
             psychic?.name ?? "The psychic",
-            peekingRemote,
+            round.shroudOpen,
           )}
         />
       )}
-      {game.settings.effects && <EffectsBar role={role} />}
-      {game.hostId === you.playerId && (
-        <HostControls game={game} playerId={you.playerId} />
-      )}
+      <ShareStrip code={game.code} className="mt-auto" />
+      {/* Sticky toolbar: sound, effects, host. Nothing floats over content. */}
+      <div
+        className="sticky bottom-0 z-20 -mx-4 -mb-4 flex items-center gap-2 border-t border-border bg-background px-4 pt-2"
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1rem)" }}
+        data-testid="toolbar"
+      >
+        <MuteToggle />
+        {game.settings.effects ? (
+          <EffectsBar role={role} />
+        ) : (
+          <div className="flex-1" />
+        )}
+        {game.hostId === you.playerId && (
+          <HostControls game={game} playerId={you.playerId} />
+        )}
+      </div>
     </main>
   );
 }

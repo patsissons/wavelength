@@ -4,10 +4,11 @@ A mobile-first online version of the party game Wavelength. A host creates a
 game, players join from their phones with a short code, and the game keeps
 everyone in sync over WebSockets.
 
-The psychic draws a card from a pile, spins the wheel behind a shroud, peeks
-at the target, and gives a clue. Guessers turn a dial (shared or their own,
-depending on the mode) toward where they think the target lies. Everyone can
-fire sound and visual effects at everyone else.
+The psychic draws a card from a pile, spins the wheel (as often as they
+like), covers it with the shroud and gives a clue. Guessers turn a dial
+(shared or their own, depending on the mode) toward where they think the
+target lies. Everyone can fire sound and visual effects at everyone else,
+and the game ends with awards and stats.
 
 ## Modes
 
@@ -16,6 +17,9 @@ fire sound and visual effects at everyone else.
 - **Co-op**: everyone on one team, a fixed number of rounds, scored against
   benchmark labels.
 - **Free-for-all**: every guesser has their own dial and scores individually.
+
+In Co-op and Free-for-all a _round_ is one psychic turn per player, so a
+two-round game with four players is eight turns.
 
 ## Stack
 
@@ -61,13 +65,18 @@ phone (same network) to play.
 
 1. The host enters a name and taps **Host a game**; a four-letter code and a
    share link / QR appear in the lounge.
-2. Players open the link (or type the code), enter a name and land in the
-   lounge. In Teams mode they are auto-balanced and can tap a team to switch.
+2. Players open the link (or type the code next to their name on the home
+   page) and land in the lounge. In Teams mode they are auto-balanced and
+   can tap a team to switch. The code and QR stay visible during the game so
+   late arrivals can still join.
 3. The host picks the mode and settings (points to win, rounds, catch-up,
    custom spectra, effects) and starts the game.
-4. Each round the psychic draws a card off the pile, flips it to compare both
-   spectra, picks a side, flicks the shrouded wheel, peeks under the shroud
-   and types a clue (say it out loud too!).
+4. Each turn the psychic draws a card off the pile, flips it to compare both
+   spectra and picks a side. The shroud lifts and everyone watches the wheel;
+   the psychic taps or flicks it to spin (only their screen shows the
+   wedge) and can spin again until they like the target. Tapping the shroud
+   or its handle covers and uncovers the wheel; giving the clue (type it and
+   say it out loud) covers it automatically.
 5. Guessers turn the dial. On a shared dial anyone on the team can move it;
    the dial locks once every active teammate has accepted, and any move
    clears the accepts. In free-for-all each guesser has a private dial.
@@ -77,8 +86,16 @@ phone (same network) to play.
    and a 4 while behind grants another turn. First to the target wins; a tie
    at the target goes to sudden death.
 7. Anyone can fire effects (emoji bursts, confetti, sounds, screen shakes,
-   haptics) at the room; the psychic has their own set. Tap **Enable sound**
-   in the lounge once so iOS allows audio.
+   haptics) at the room; the psychic has their own set. Confetti falls on
+   every screen when a dial locks, and on the guessers' screens when they
+   score (a bullseye gets the full barrage). Tap **Enable sound** in the
+   lounge once so iOS allows audio; any later tap re-arms it, and sound
+   plays even with the iPhone ringer switch on silent. A looping lounge
+   groove (toggle in the lounge) makes it obvious when sound works; a chime
+   marks every new turn and a jingle plays for bullseyes and at game over.
+8. The game-over screen hands out awards (Sharpshooter, Saboteur, Quick
+   draw, Mind reader, Spin doctor and more), lists game-wide numbers, a
+   per-player table and every turn's clue and score.
 
 If a phone sleeps or the tab is backgrounded, the player keeps their seat:
 the client reconnects as soon as the page wakes, and the room only marks a
@@ -91,7 +108,8 @@ psychic has vanished.
 - `shared/` — pure, runtime-agnostic game logic used by both sides:
   `game/commands.ts` (command → events with all phase/role rules),
   `game/reducer.ts` (`applyEvent`, the single reducer), scoring, geometry,
-  the card deck, the effects catalog and the zod protocol schemas.
+  `game/stats.ts` (round stats, awards and facts), the card deck, the
+  effects catalog and the zod protocol schemas.
 - `worker/` — the Cloudflare Worker: `/api/*` (create / join / status via
   Durable Object RPC) and `/parties/game-room/:code` WebSockets. `GameRoom`
   is a hibernating partyserver Durable Object per game code; it applies

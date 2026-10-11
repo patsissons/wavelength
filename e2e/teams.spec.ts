@@ -29,6 +29,14 @@ test("a full Teams turn: bullseye scores 4, opponents vote, next turn rotates, h
   await expect(dee.page.getByTestId("vote-progress")).toContainText("1 of 2");
   await dee.page.getByTestId("vote-right").click();
 
+  // The guesser who hit the bullseye gets the full barrage; the psychic does not.
+  await expect(cid.page.getByTestId("effects-layer")).toHaveAttribute(
+    "data-celebration",
+    "score-4",
+  );
+  await expect(host.page.getByTestId("effects-layer")).not.toHaveAttribute(
+    "data-celebration",
+  );
   for (const { page } of [host, bob, cid, dee]) {
     await expect(page.getByTestId("reveal")).toBeVisible();
     await expect(page.getByTestId("points")).toHaveText("+4");
@@ -60,6 +68,17 @@ test("a full Teams turn: bullseye scores 4, opponents vote, next turn rotates, h
     await expect(page.getByTestId("game-over")).toBeVisible();
     await expect(page.getByTestId("winner")).toContainText("Left Brain wins");
   }
+  // End-of-game stats: Cid hit the bullseye in the only turn played.
+  await expect(bob.page.getByTestId("award-sharpshooter")).toHaveAttribute(
+    "data-player-name",
+    "Cid",
+  );
+  await expect(bob.page.getByTestId("award-mindreader")).toHaveAttribute(
+    "data-player-name",
+    "Ann",
+  );
+  await expect(bob.page.getByTestId("player-stats")).toContainText("Cid");
+  await expect(bob.page.getByTestId("turns")).toContainText("Pineapple");
   await expect(bob.page.getByTestId("play-again")).toHaveCount(0);
   await host.page.getByTestId("play-again").click();
   await expect(bob.page.getByTestId("waiting")).toBeVisible();

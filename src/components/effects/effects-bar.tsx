@@ -10,10 +10,44 @@ import { cn } from "@/lib/utils";
 
 const COOLDOWN_MS = 1000;
 
+/** Mute / "tap for sound" button; lives in the round toolbar. */
+export function MuteToggle() {
+  const muted = usePrefs((s) => s.muted);
+  const unlocked = usePrefs((s) => s.soundUnlocked);
+  const setMuted = usePrefs((s) => s.setMuted);
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="relative"
+      aria-label={
+        muted ? "Unmute sounds" : unlocked ? "Mute sounds" : "Tap for sound"
+      }
+      title={!muted && !unlocked ? "Tap to enable sound" : undefined}
+      aria-pressed={muted}
+      onClick={() => {
+        // The document-level gesture listener in lib/audio.ts unlocks on
+        // this tap too; the dot just tells the player sound is not on yet.
+        setMuted(!muted);
+        if (muted) void audio.unlock();
+      }}
+      data-testid="mute-toggle"
+      data-unlocked={unlocked || undefined}
+    >
+      {muted ? <VolumeX /> : <Volume2 />}
+      {!muted && !unlocked && (
+        <span
+          className="absolute top-1 right-1 size-2 rounded-full bg-primary"
+          aria-hidden
+        />
+      )}
+    </Button>
+  );
+}
+
+/** Horizontal scroller of the effects this role may send. */
 export function EffectsBar({ role }: { role: Role }) {
   const send = useCommand();
-  const muted = usePrefs((s) => s.muted);
-  const setMuted = usePrefs((s) => s.setMuted);
   const [cooling, setCooling] = useState<Record<string, boolean>>({});
   const [limited, setLimited] = useState(false);
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -34,23 +68,10 @@ export function EffectsBar({ role }: { role: Role }) {
 
   return (
     <section
-      className="flex items-center gap-2"
+      className="flex min-w-0 flex-1 items-center"
       data-testid="effects-bar"
       data-limited={limited || undefined}
     >
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={muted ? "Unmute sounds" : "Mute sounds"}
-        aria-pressed={muted}
-        onClick={() => {
-          setMuted(!muted);
-          if (muted) void audio.unlock();
-        }}
-        data-testid="mute-toggle"
-      >
-        {muted ? <VolumeX /> : <Volume2 />}
-      </Button>
       <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-1 [scrollbar-width:none]">
         {effectsFor(role).map((e) => (
           <button

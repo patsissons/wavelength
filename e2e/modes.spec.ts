@@ -60,7 +60,7 @@ test("co-op: everyone shares a dial, no voting, one psychic turn each per round"
     await expect(page.getByTestId("winner")).toHaveText("Galaxy brain");
   }
   await expect(host.page.getByTestId("awards")).toBeVisible();
-  await expect(host.page.getByTestId("turns").locator("li")).toHaveCount(3);
+  await expect(host.page.getByTestId("turn")).toHaveCount(3);
   await game.close();
 });
 

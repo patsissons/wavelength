@@ -79,6 +79,17 @@ test("a full Teams turn: bullseye scores 4, opponents vote, next turn rotates, h
   );
   await expect(bob.page.getByTestId("player-stats")).toContainText("Cid");
   await expect(bob.page.getByTestId("turns")).toContainText("Pineapple");
+  // Play by play: every player's part in the turn.
+  const turn = bob.page.getByTestId("turn").first();
+  await expect(turn.getByTestId("turn-best")).toHaveText("4");
+  await expect(turn.getByTestId("turn-vote")).toContainText("split the vote");
+  const line = (name: string) =>
+    turn.locator(`[data-testid=turn-players] [data-player-name=${name}]`);
+  await expect(line("Ann")).toHaveAttribute("data-role", "psychic");
+  await expect(line("Cid")).toContainText("+4");
+  await expect(line("Bob")).toHaveAttribute("data-role", /^called/);
+  await expect(line("Dee")).toHaveAttribute("data-role", /^called/);
+  await expect(turn.locator("[data-testid^=strip-marker-]")).toHaveCount(1);
   await expect(bob.page.getByTestId("play-again")).toHaveCount(0);
   await host.page.getByTestId("play-again").click();
   await expect(bob.page.getByTestId("waiting")).toBeVisible();

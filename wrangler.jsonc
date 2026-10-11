@@ -19,6 +19,13 @@
   },
   "workers_dev": true,
   "routes": [{ "pattern": "wavelength.lgtm.page", "custom_domain": true }],
+  // PR previews via `wrangler preview` (see .github/workflows/preview.yml).
+  // Previews inherit no bindings or vars; each gets its own DO namespace.
+  "previews": {
+    "durable_objects": {
+      "bindings": [{ "name": "GameRoom", "class_name": "GameRoom" }],
+    },
+  },
   "env": {
     // Deterministic, fast e2e runs (see playwright.config.ts).
     "e2e": {

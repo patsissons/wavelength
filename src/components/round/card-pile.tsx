@@ -2,7 +2,6 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import type { Card, Spectrum } from "@shared/game/types";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 /** A stack of face-down cards; dragging or tapping the top card draws it. */
 export function CardPile({
@@ -74,10 +73,13 @@ export function CardFlip({
   const [side, setSide] = useState<0 | 1>(0);
   const face = (s: 0 | 1, spectrum: Spectrum) => (
     <div
-      className={cn(
-        "absolute inset-0 flex flex-col justify-between rounded-2xl border-2 border-primary/50 bg-card p-4 [backface-visibility:hidden]",
-        s === 1 && "[transform:rotateY(180deg)]",
-      )}
+      className="absolute inset-0 flex flex-col justify-between rounded-2xl border-2 border-primary/50 bg-card p-4"
+      // Inline so the 3D transforms can't be dropped by utility merging.
+      style={{
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
+        transform: s === 1 ? "rotateY(180deg)" : "rotateY(0deg)",
+      }}
       data-testid={`card-side-${s}`}
       aria-hidden={side !== s}
     >
@@ -101,11 +103,12 @@ export function CardFlip({
   );
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="h-56 w-44 [perspective:1000px]">
+      <div className="h-56 w-44" style={{ perspective: "1000px" }}>
         <AnimatePresence>
           <motion.div
             key={card.id}
-            className="relative size-full [transform-style:preserve-3d]"
+            className="relative size-full"
+            style={{ transformStyle: "preserve-3d" }}
             initial={reduced ? false : { y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1, rotateY: side === 1 ? 180 : 0 }}
             transition={{ duration: reduced ? 0 : 0.45 }}

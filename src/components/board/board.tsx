@@ -97,7 +97,7 @@ export function Board({
           <path d={windowPath(R + 2)} />
         </clipPath>
         <radialGradient id="board-glow" cx="50%" cy="100%" r="80%">
-          <stop offset="0%" stopColor="var(--color-wheel)" />
+          <stop offset="0%" stopColor="var(--wheel)" />
           <stop offset="100%" stopColor="var(--color-background)" />
         </radialGradient>
       </defs>
@@ -142,7 +142,7 @@ export function Board({
                 <g key={i} data-testid={`wedge-${s.score}`}>
                   <path
                     d={sectorPath(s.p0, s.p1, INNER, R - 4)}
-                    fill={`var(--color-wedge-${s.score})`}
+                    fill={`var(--wedge-${s.score})`}
                     stroke="var(--color-background)"
                     strokeWidth={2}
                   />
@@ -175,7 +175,7 @@ export function Board({
       >
         <path
           d={windowPath(SHROUD_R)}
-          fill="var(--color-shroud)"
+          fill="var(--shroud)"
           stroke="var(--color-border)"
           strokeWidth={2}
         />

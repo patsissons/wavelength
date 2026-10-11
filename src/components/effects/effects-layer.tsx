@@ -2,7 +2,12 @@ import confetti from "canvas-confetti";
 import { useEffect, useRef, useState } from "react";
 import { effectById, type ScreenFx } from "@shared/effects/catalog";
 import { audio } from "@/lib/audio";
-import { effectBus, type EffectPayload } from "@/lib/effect-bus";
+import {
+  celebrationBus,
+  effectBus,
+  type Celebration,
+  type EffectPayload,
+} from "@/lib/effect-bus";
 import { vibrate } from "@/lib/haptics";
 import { usePrefs } from "@/lib/prefs";
 import { useGameStore } from "@/lib/store";
@@ -17,6 +22,7 @@ const MAX_GLYPHS = 40;
 export function EffectsLayer() {
   const layer = useRef<HTMLDivElement | null>(null);
   const [fx, setFx] = useState<{ kind: ScreenFx; key: number } | null>(null);
+  const [celebration, setCelebration] = useState<string | null>(null);
 
   useEffect(() => {
     return effectBus.subscribe((effect) => {
@@ -51,10 +57,23 @@ export function EffectsLayer() {
   }, []);
 
   useEffect(() => {
+    return celebrationBus.subscribe((c) => {
+      setCelebration(c.kind === "lock" ? "lock" : `score-${c.points}`);
+      celebrate(c, usePrefs.getState().reduceEffects);
+    });
+  }, []);
+
+  useEffect(() => {
     if (!fx) return;
     const t = setTimeout(() => setFx(null), fx.kind === "flash" ? 500 : 2200);
     return () => clearTimeout(t);
   }, [fx]);
+
+  useEffect(() => {
+    if (!celebration) return;
+    const t = setTimeout(() => setCelebration(null), 3000);
+    return () => clearTimeout(t);
+  }, [celebration]);
 
   return (
     <div
@@ -62,6 +81,7 @@ export function EffectsLayer() {
       className="pointer-events-none fixed inset-0 z-50 overflow-hidden"
       aria-hidden
       data-testid="effects-layer"
+      data-celebration={celebration ?? undefined}
     >
       {fx && fx.kind !== "shake" && (
         <div
@@ -72,6 +92,94 @@ export function EffectsLayer() {
       )}
     </div>
   );
+}
+
+/**
+ * Confetti scaled to the moment: a modest puff when the dial locks, more
+ * for 2 and 3 points, and an absurd barrage with shaking and haptics for
+ * a bullseye. "Reduce effects" trims it to a single small burst.
+ */
+function celebrate(c: Celebration, reduce: boolean) {
+  const common = { disableForReducedMotion: true, zIndex: 60 } as const;
+  if (reduce) {
+    void confetti({
+      ...common,
+      particleCount: 60,
+      spread: 70,
+      origin: { y: 0.7 },
+    });
+    audio.play("ding");
+    return;
+  }
+  if (c.kind === "lock") {
+    void confetti({
+      ...common,
+      particleCount: 80,
+      spread: 70,
+      origin: { y: 0.75 },
+    });
+    audio.play("ding");
+    vibrate(30);
+    return;
+  }
+  if (c.points === 2) {
+    void confetti({
+      ...common,
+      particleCount: 120,
+      spread: 80,
+      origin: { y: 0.7 },
+    });
+    audio.play("ding");
+    vibrate(40);
+    return;
+  }
+  if (c.points === 3) {
+    for (const x of [0.15, 0.85]) {
+      void confetti({
+        ...common,
+        particleCount: 125,
+        angle: x < 0.5 ? 60 : 120,
+        spread: 60,
+        origin: { x, y: 0.75 },
+      });
+    }
+    audio.play("fanfare");
+    vibrate([60, 40, 60]);
+    return;
+  }
+  // Bullseye: 2.5 s of staggered cannons from both sides and the middle.
+  audio.play("fanfare");
+  vibrate([80, 40, 80, 40, 160]);
+  shake();
+  setTimeout(shake, 600);
+  const end = Date.now() + 2500;
+  const tick = () => {
+    void confetti({
+      ...common,
+      particleCount: 90,
+      angle: 60,
+      spread: 70,
+      startVelocity: 55,
+      origin: { x: 0, y: 0.8 },
+    });
+    void confetti({
+      ...common,
+      particleCount: 90,
+      angle: 120,
+      spread: 70,
+      startVelocity: 55,
+      origin: { x: 1, y: 0.8 },
+    });
+    void confetti({
+      ...common,
+      particleCount: 60,
+      spread: 360,
+      startVelocity: 35,
+      origin: { x: 0.5, y: 0.4 },
+    });
+    if (Date.now() < end) setTimeout(tick, 250);
+  };
+  tick();
 }
 
 function burst(

@@ -1,8 +1,10 @@
 import { create } from "zustand";
 import { applyEvent } from "@shared/game/reducer";
+import { activeOwners, allDialsLocked } from "@shared/game/selectors";
 import { PROTOCOL_VERSION, type GameState } from "@shared/game/types";
+import type { GameEvent } from "@shared/protocol/events";
 import type { ErrorCode, ServerMessage } from "@shared/protocol/messages";
-import { effectBus } from "./effect-bus";
+import { celebrationBus, effectBus } from "./effect-bus";
 
 export type ConnStatus = "connecting" | "open" | "reconnecting" | "closed";
 
@@ -72,6 +74,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         if (message.version <= game.version) return; // duplicate
         if (message.version !== game.version + 1) return "gap";
         const next = applyEvent(game, message.event);
+        celebrate(game, next, message.event, get().you?.playerId ?? null);
         if (
           message.event.type === "dial.set" ||
           message.event.type === "dial.locked"
@@ -150,6 +153,37 @@ export const useGameStore = create<GameStore>((set, get) => ({
       outdated: false,
     }),
 }));
+
+/**
+ * Confetti moments derived from events: a dial locking because every
+ * active owner accepted (not a host force-lock), and this player's own
+ * wedge score at the reveal.
+ */
+function celebrate(
+  before: GameState,
+  after: GameState,
+  event: GameEvent,
+  playerId: string | null,
+) {
+  if (event.type === "dial.locked") {
+    const dial = before.round?.dials[event.dialId];
+    if (!dial) return;
+    const owners = activeOwners(before, dial);
+    const unanimous =
+      owners.length > 0 && owners.every((id) => dial.accepts.includes(id));
+    if (!unanimous) return;
+    if (dial.id === "shared" || allDialsLocked(after)) {
+      celebrationBus.emit({ kind: "lock" });
+    }
+  } else if (event.type === "round.revealed" && playerId) {
+    const mine = Object.values(event.result.dials).find((d) =>
+      d.owners.includes(playerId),
+    );
+    if (mine && mine.wedge >= 2) {
+      celebrationBus.emit({ kind: "score", points: mine.wedge as 2 | 3 | 4 });
+    }
+  }
+}
 
 /* ---------- selectors ---------- */
 

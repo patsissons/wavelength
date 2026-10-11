@@ -1,5 +1,7 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createGame } from "@shared/game/commands";
+import type { RoundResult } from "@shared/game/types";
+import { celebrationBus } from "./effect-bus";
 import { useGameStore } from "./store";
 
 const game = createGame({
@@ -135,6 +137,101 @@ describe("store.receive", () => {
     expect(useGameStore.getState().game?.round?.dials.shared?.position).toBe(
       0.2,
     );
+  });
+
+  it("celebrates a unanimous lock and this player's own score", () => {
+    const seen = vi.fn();
+    const unsubscribe = celebrationBus.subscribe(seen);
+    const s = useGameStore.getState();
+    const p2 = { ...game.players.p1!, id: "p2", name: "Bob", order: 1 };
+    const dial = {
+      id: "shared",
+      owners: ["p2"],
+      position: 0.5,
+      movedBy: "p2",
+      accepts: ["p2"],
+      locked: false,
+    };
+    const started = {
+      ...game,
+      phase: "guessing" as const,
+      players: { ...game.players, p2 },
+      round: {
+        index: 0,
+        psychicId: "p1",
+        psychicTeam: null,
+        card: null,
+        side: null,
+        spectrum: null,
+        spin: null,
+        spins: 1,
+        shroudOpen: false,
+        peeks: 0,
+        clue: "x",
+        dials: { shared: dial },
+        votes: {},
+        target: null,
+        result: null,
+        catchUp: false,
+        startedAt: 0,
+      },
+    };
+    s.receive({
+      type: "snapshot",
+      state: started,
+      you: { playerId: "p2", target: null },
+    });
+    s.receive({
+      type: "event",
+      version: 1,
+      event: { type: "dial.locked", dialId: "shared" },
+    });
+    expect(seen).toHaveBeenLastCalledWith({ kind: "lock" });
+
+    // A host force-lock (nobody accepted) is not a celebration.
+    s.receive({
+      type: "snapshot",
+      state: {
+        ...started,
+        round: {
+          ...started.round,
+          dials: { shared: { ...dial, accepts: [] } },
+        },
+      },
+      you: { playerId: "p2", target: null },
+    });
+    s.receive({
+      type: "event",
+      version: 1,
+      event: { type: "dial.locked", dialId: "shared" },
+    });
+    expect(seen).toHaveBeenCalledTimes(1);
+
+    const result: RoundResult = {
+      roundIndex: 0,
+      psychicId: "p1",
+      psychicTeam: null,
+      spectrum: { left: "a", right: "b" },
+      clue: "x",
+      target: 0.5,
+      dials: { shared: { position: 0.5, wedge: 4, owners: ["p2"] } },
+      vote: null,
+      deltas: { coop: 4 },
+      goAgain: false,
+      gameOver: null,
+    };
+    s.receive({
+      type: "event",
+      version: 2,
+      event: {
+        type: "round.revealed",
+        result,
+        scores: { coop: 4 },
+        suddenDeath: false,
+      },
+    });
+    expect(seen).toHaveBeenLastCalledWith({ kind: "score", points: 4 });
+    unsubscribe();
   });
 
   it("flags an outdated client when the server protocol is newer", () => {

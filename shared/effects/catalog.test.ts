@@ -20,6 +20,15 @@ describe("effects catalog", () => {
     expect(effectsFor("spectator").map((e) => e.id)).toContain("crickets");
   });
 
+  it("gives every reaction a sound and offers the unicorn and ghost to all", () => {
+    expect(effectById("laugh")?.sound).toBe("laugh");
+    expect(effectById("thinking")?.sound).toBe("hmm");
+    for (const id of ["unicorn", "ghost"]) {
+      expect(effectById(id)?.roles).toEqual(["any"]);
+      expect(effectById(id)?.sound).toBeDefined();
+    }
+  });
+
   it("authorises by role, existence and the effects setting", () => {
     const { game } = createGame({
       code: "BCDF",

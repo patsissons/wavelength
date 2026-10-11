@@ -29,6 +29,9 @@ class FakeAudioContext {
   resume = vi.fn(async () => {
     this.state = "running";
   });
+  suspend = vi.fn(async () => {
+    this.state = "suspended";
+  });
   createBuffer = vi.fn(() => ({
     sampleRate: this.sampleRate,
     getChannelData: () => new Float32Array(8),
@@ -141,6 +144,44 @@ describe("audio manager", () => {
     await new Promise((r) => setTimeout(r, 150));
     expect(audio.loop).toBeNull();
     usePrefs.getState().setMuted(false);
+  });
+
+  it("goes quiet while the tab is hidden or unfocused and resumes after", async () => {
+    const { audio } = await load();
+    expect(await audio.unlock()).toBe(true);
+    const ctx = FakeAudioContext.instances[0]!;
+    const el = document.querySelector<HTMLAudioElement>(
+      "[data-testid=audio-keepalive]",
+    )!;
+    const pause = vi.fn();
+    Object.defineProperty(el, "pause", { value: pause, configurable: true });
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "hidden",
+      configurable: true,
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(audio.inBackground).toBe(true);
+    expect(ctx.suspend).toHaveBeenCalled();
+    expect(pause).toHaveBeenCalled();
+    expect(ctx.state).toBe("suspended");
+    // Nothing plays and no tap re-arms it while hidden.
+    ctx.started.length = 0;
+    audio.play("ding");
+    document.body.dispatchEvent(new Event("click", { bubbles: true }));
+    expect(ctx.started.length).toBe(0);
+    expect(ctx.resume).toHaveBeenCalledTimes(1); // only the unlock
+
+    Object.defineProperty(document, "visibilityState", {
+      value: "visible",
+      configurable: true,
+    });
+    vi.spyOn(document, "hasFocus").mockReturnValue(true);
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(audio.inBackground).toBe(false);
+    await vi.waitFor(() => expect(ctx.state).toBe("running"));
+    audio.play("ding");
+    expect(ctx.started.length).toBeGreaterThan(0);
   });
 
   it("any tap re-unlocks a context that is not running", async () => {

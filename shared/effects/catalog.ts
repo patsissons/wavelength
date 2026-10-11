@@ -14,7 +14,10 @@ export type SoundPatch =
   | "fanfare"
   | "crickets"
   | "celebrate"
-  | "newround";
+  | "newround"
+  | "laugh"
+  | "hmm"
+  | "sparkle";
 
 export type ScreenFx = "shake" | "flash" | "fog" | "spotlight";
 
@@ -128,6 +131,7 @@ export const EFFECTS: ReadonlyArray<EffectDef> = [
     roles: ["guesser"],
     burst: { glyphs: ["🤔", "💭"], count: 8 },
     fx: "fog",
+    sound: "hmm",
   },
   {
     id: "brainblast",
@@ -179,6 +183,7 @@ export const EFFECTS: ReadonlyArray<EffectDef> = [
     icon: "😂",
     roles: ["any"],
     burst: { glyphs: ["😂", "🤣"], count: 12 },
+    sound: "laugh",
   },
   {
     id: "heart",
@@ -187,6 +192,26 @@ export const EFFECTS: ReadonlyArray<EffectDef> = [
     roles: ["any"],
     burst: { glyphs: ["❤️", "💖", "💛"], count: 14 },
     sound: "ding",
+  },
+  {
+    id: "unicorn",
+    label: "Magical",
+    icon: "🦄",
+    roles: ["any"],
+    burst: { glyphs: ["🦄", "🌈", "✨"], count: 14 },
+    confetti: true,
+    sound: "sparkle",
+    haptic: [30, 30, 60],
+  },
+  {
+    id: "ghost",
+    label: "Boo!",
+    icon: "👻",
+    roles: ["any"],
+    burst: { glyphs: ["👻"], count: 10 },
+    fx: "fog",
+    sound: "boo",
+    haptic: [80, 40, 80],
   },
   {
     id: "wow",

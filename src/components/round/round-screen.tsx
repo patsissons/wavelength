@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { dialsFor, roleOf } from "@shared/game/selectors";
 import { useGameStore } from "@/lib/store";
-import { EffectsBar } from "@/components/effects/effects-bar";
+import { EffectsBar, MuteToggle } from "@/components/effects/effects-bar";
 import { ShareStrip } from "@/components/lounge/share-card";
 import { BoardStage } from "./board-stage";
 import { GuesserPanel } from "./guesser-panel";
@@ -81,11 +81,23 @@ export function RoundScreen() {
           )}
         />
       )}
-      {game.settings.effects && <EffectsBar role={role} />}
       <ShareStrip code={game.code} className="mt-auto" />
-      {game.hostId === you.playerId && (
-        <HostControls game={game} playerId={you.playerId} />
-      )}
+      {/* Sticky toolbar: sound, effects, host. Nothing floats over content. */}
+      <div
+        className="sticky bottom-0 z-20 -mx-4 -mb-4 flex items-center gap-2 border-t border-border bg-background px-4 pt-2"
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1rem)" }}
+        data-testid="toolbar"
+      >
+        <MuteToggle />
+        {game.settings.effects ? (
+          <EffectsBar role={role} />
+        ) : (
+          <div className="flex-1" />
+        )}
+        {game.hostId === you.playerId && (
+          <HostControls game={game} playerId={you.playerId} />
+        )}
+      </div>
     </main>
   );
 }

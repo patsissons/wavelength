@@ -15,6 +15,19 @@ test("effects reach every player, respect roles and are rate limited", async ({
   await expect(cid.page.getByTestId("effect-drumroll")).toHaveCount(0);
   await expect(bob.page.getByTestId("effect-heckle")).toBeVisible();
 
+  // The host button shares the toolbar with the effects; nothing overlaps.
+  const hostBox = (await host.page.getByTestId("host-controls").boundingBox())!;
+  const effectsBox = (await host.page
+    .getByTestId("effects-bar")
+    .boundingBox())!;
+  expect(effectsBox.x + effectsBox.width).toBeLessThanOrEqual(hostBox.x + 1);
+  for (const id of ["drumroll", "heart"]) {
+    const button = host.page.getByTestId(`effect-${id}`);
+    await button.scrollIntoViewIfNeeded();
+    const box = (await button.boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(hostBox.x + 1);
+  }
+
   // Cid applauds; everyone (including Cid) sees the burst with the sender's name.
   await cid.page.getByTestId("effect-applause").click();
   for (const { page } of [host, bob, cid]) {

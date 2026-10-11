@@ -89,7 +89,7 @@ export function EffectsBar({ role }: { role: Role }) {
       data-testid="effects-bar"
       data-limited={limited || undefined}
     >
-      <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-1 [scrollbar-width:none]">
+      <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto overflow-y-hidden overscroll-x-contain py-1 [scrollbar-width:none]">
         {effectsFor(role).map((e) => (
           <button
             key={e.id}

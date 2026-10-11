@@ -46,6 +46,21 @@ test("screens keep an edge margin and the toolbar stays inside the viewport", as
   // Still true once the round is in full swing.
   await psychicTurn(host.page, "Banana");
   await expectPageFits(host.page);
+  // The player strip and the effects tray scroll sideways only; a bare
+  // overflow-x would let iOS rubber-band them up and down.
+  for (const id of ["presence", "effects-bar"]) {
+    const overflow = await host.page
+      .getByTestId(id)
+      .locator(
+        "xpath=descendant-or-self::*[contains(@class, 'overflow-x-auto')]",
+      )
+      .first()
+      .evaluate((el) => {
+        const cs = getComputedStyle(el);
+        return `${cs.overflowX}/${cs.overflowY}`;
+      });
+    expect(overflow).toBe("auto/hidden");
+  }
   const again = (await host.page.getByTestId("host-controls").boundingBox())!;
   expect(again.x + again.width).toBeLessThanOrEqual(width - 16);
   await game.close();

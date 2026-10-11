@@ -10,6 +10,10 @@
     // API and game-room WebSocket routes always hit the Worker first.
     "run_worker_first": ["/api/*", "/parties/*"],
   },
+  "durable_objects": {
+    "bindings": [{ "name": "GameRoom", "class_name": "GameRoom" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }],
   "observability": {
     "enabled": true,
   },
@@ -20,6 +24,10 @@
       "vars": {
         "GAME_SEED": "e2e",
         "GRACE_MS": "3000",
+      },
+      // durable_objects is not inherited by environments.
+      "durable_objects": {
+        "bindings": [{ "name": "GameRoom", "class_name": "GameRoom" }],
       },
     },
   },

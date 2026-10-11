@@ -85,12 +85,24 @@ test("the psychic draws, spins (and re-spins), covers the wheel and gives a clue
     "data-open",
   );
 
-  // The flat wedge strip above the clue input mirrors the board's target.
-  await expect(host.page.getByTestId("wedge-strip")).toHaveAttribute(
-    "data-target",
-    third.toFixed(4),
+  // The flat wedge strip above the clue input mirrors the board's target,
+  // and so does the spectrum bar at the top; guessers get a plain gradient.
+  const panelStrip = host.page.getByTestId("panel").getByTestId("wedge-strip");
+  const topStrip = host.page.getByTestId("spectrum").getByTestId("wedge-strip");
+  for (const strip of [panelStrip, topStrip]) {
+    await expect(strip).toHaveAttribute("data-target", third.toFixed(4));
+    await expect(strip.getByTestId("strip-wedge-4")).toBeVisible();
+  }
+  await expect(host.page.getByTestId("spectrum")).toHaveAttribute(
+    "data-known",
+    "true",
   );
-  await expect(host.page.getByTestId("strip-wedge-4")).toBeVisible();
+  const bobStrip = bob.page.getByTestId("spectrum").getByTestId("wedge-strip");
+  await expect(bobStrip).toHaveAttribute("data-fill", "gradient");
+  await expect(bobStrip).not.toHaveAttribute("data-target");
+  await expect(bob.page.getByTestId("spectrum")).not.toHaveAttribute(
+    "data-known",
+  );
   await host.page.getByTestId("clue-input").fill("Pineapple on pizza");
   await host.page.getByTestId("submit-clue").click();
   await expect(bob.page.getByTestId("clue")).toContainText(

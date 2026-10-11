@@ -31,4 +31,43 @@ describe("WedgeStrip", () => {
     expect(screen.getByText("B")).toBeInTheDocument();
     expect(screen.queryByText("Cold")).toBeNull();
   });
+
+  it("draws a gradient when the target is unknown and asked for one", () => {
+    render(<WedgeStrip target={null} spectrum={null} fill="gradient" />);
+    const strip = screen.getByTestId("wedge-strip");
+    expect(strip).toHaveAttribute("data-fill", "gradient");
+    expect(strip).not.toHaveAttribute("data-target");
+    expect(strip.querySelector("linearGradient")).not.toBeNull();
+    expect(screen.queryByTestId("strip-wedge-4")).toBeNull();
+  });
+
+  it("keeps the wheel colour (no gradient) once the target is known", () => {
+    render(<WedgeStrip target={0.5} spectrum={null} fill="gradient" />);
+    const strip = screen.getByTestId("wedge-strip");
+    expect(strip).not.toHaveAttribute("data-fill");
+    expect(strip.querySelector("linearGradient")).toBeNull();
+    expect(screen.getAllByTestId("strip-wedge-4")).toHaveLength(1);
+  });
+
+  it("trims the viewBox to the bar when nothing sits above or below it", () => {
+    const { rerender } = render(<WedgeStrip target={0.5} spectrum={null} />);
+    const height = () =>
+      Number(
+        screen
+          .getByTestId("wedge-strip")
+          .getAttribute("viewBox")!
+          .split(" ")[3],
+      );
+    const bare = height();
+    rerender(<WedgeStrip target={0.5} spectrum={spectrum} />);
+    expect(height()).toBeGreaterThan(bare);
+    rerender(
+      <WedgeStrip
+        target={0.5}
+        spectrum={null}
+        markers={[{ id: "a", position: 0.1, color: "red" }]}
+      />,
+    );
+    expect(height()).toBeGreaterThan(bare);
+  });
 });

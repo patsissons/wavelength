@@ -98,6 +98,9 @@
   --wedge-2: oklch(0.62 0.15 40);
   --wheel: oklch(0.3 0.06 290);
   --shroud: oklch(0.38 0.07 300);
+  /* The spectrum bar while the target is a mystery: magenta to cyan. */
+  --spectrum-left: oklch(0.62 0.2 340);
+  --spectrum-right: oklch(0.7 0.14 210);
 }
 
 @layer base {

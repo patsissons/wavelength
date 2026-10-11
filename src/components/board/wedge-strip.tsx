@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { SEGMENT, wedgeSectors } from "@shared/game/geometry";
 import type { Spectrum } from "@shared/game/types";
 import { cn } from "@/lib/utils";
@@ -22,34 +23,61 @@ const x = (position: number) => PAD + position * (W - 2 * PAD);
  * The spectrum flattened into a bar: the scoring wedge (2/3/4) around the
  * target and optional markers for dial positions. Small enough to sit
  * above a text input with the keyboard open, or inside a turn summary.
+ *
+ * Without a target the bar is either the bare wheel (`fill="wheel"`, the
+ * psychic waiting for a spin) or a left-to-right gradient
+ * (`fill="gradient"`, a guesser who is not allowed to know). The viewBox
+ * shrinks to the bar itself when nothing is drawn above or below it.
  */
 export function WedgeStrip({
   target,
   spectrum,
   markers = [],
+  fill = "wheel",
   className,
 }: {
   target: number | null;
   spectrum: Spectrum | null;
   markers?: StripMarker[];
+  fill?: "wheel" | "gradient";
   className?: string;
 }) {
+  const gradientId = useId();
+  const svgLabels = spectrum !== null && markers.length === 0;
+  const above = markers.length > 0;
+  const below = svgLabels || markers.some((m) => m.label);
+  const top = above ? 0 : BAR_Y - 1;
+  const bottom = below ? H : BAR_Y + BAR_H + 1;
+  const gradient = target === null && fill === "gradient";
   return (
     <svg
-      viewBox={`0 0 ${W} ${H}`}
+      viewBox={`0 ${top} ${W} ${bottom - top}`}
       className={cn("block w-full", className)}
       role="img"
-      aria-label="Where the points are on the spectrum"
+      aria-label={
+        gradient
+          ? "The spectrum, target unknown"
+          : "Where the points are on the spectrum"
+      }
       data-testid="wedge-strip"
       data-target={target === null ? undefined : target.toFixed(4)}
+      data-fill={gradient ? "gradient" : undefined}
     >
+      {gradient && (
+        <defs>
+          <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stopColor="var(--spectrum-left)" />
+            <stop offset="1" stopColor="var(--spectrum-right)" />
+          </linearGradient>
+        </defs>
+      )}
       <rect
         x={PAD}
         y={BAR_Y}
         width={W - 2 * PAD}
         height={BAR_H}
         rx={BAR_H / 2}
-        fill="var(--wheel)"
+        fill={gradient ? `url(#${gradientId})` : "var(--wheel)"}
         stroke="var(--color-border)"
       />
       {target !== null &&
@@ -111,7 +139,7 @@ export function WedgeStrip({
           )}
         </g>
       ))}
-      {spectrum && markers.length === 0 && (
+      {svgLabels && (
         <>
           <text
             x={PAD}

@@ -83,9 +83,12 @@ phone (same network) to play.
    the psychic taps or flicks it to spin (only their screen shows the
    wedge) and can spin again until they like the target (up to the spins
    setting). Tapping the shroud or its handle covers and uncovers the
-   wheel; the clue panel shows the wedge as a flat strip so it stays in
-   view with the keyboard up, and giving the clue (type it and say it out
-   loud) covers the wheel automatically.
+   wheel. The spectrum bar at the top of everyone's screen carries both
+   ends of the spectrum; on the psychic's screen it shows the scoring wedge
+   once the wheel lands (everyone else sees a plain gradient until the
+   reveal), and the clue panel repeats the wedge as a flat strip so it
+   stays in view with the keyboard up. Giving the clue (type it and say it
+   out loud) covers the wheel automatically.
 5. Guessers turn the dial. On a shared dial anyone on the team can move it
    (it wears the colour of whoever moved it last); the dial locks once
    every active teammate has accepted, and any move clears the accepts.
@@ -102,8 +105,10 @@ phone (same network) to play.
    and a 4 while behind grants another turn. First to the target wins; a tie
    at the target goes to sudden death.
 7. Anyone can fire effects (emoji bursts, confetti, sounds, screen shakes,
-   haptics) at the room; the psychic has their own set. Tapping a player's
-   name pokes them (their screen shakes with a boing). Confetti falls on
+   haptics) at the room; the psychic has their own set, and the ⏳ **Tick
+   tock** (a clock under a little waiting tune) tells whoever is dawdling
+   to get on with it. Tapping a player's name pokes them (their screen
+   shakes with a boing). Confetti falls on
    every screen when a dial locks, and on the guessers' screens when they
    score (a bullseye gets the full barrage). Tap **Enable sound** in the
    lounge once so iOS allows audio; any later tap re-arms it, and sound

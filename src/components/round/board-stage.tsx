@@ -1,6 +1,6 @@
 import { useReducedMotion } from "motion/react";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { roleOf } from "@shared/game/selectors";
+import { roleOf, spinsRemaining } from "@shared/game/selectors";
 import type { GameState } from "@shared/game/types";
 import { Board, type BoardDial } from "@/components/board/board";
 import { useSpinAnimation } from "@/components/board/use-spin";
@@ -95,7 +95,8 @@ export function BoardStage({
     round.clue === null &&
     (phase === "spinning" || phase === "clue") &&
     round.shroudOpen &&
-    done;
+    done &&
+    spinsRemaining(game) !== 0;
   const canToggleShroud =
     isPsychic &&
     !revealed &&

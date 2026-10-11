@@ -35,6 +35,7 @@ export type GameEvent =
       round: Round;
       activeTeam: TeamId | null;
       psychicCursor: { left: number; right: number; all: number };
+      psychicStart: { left: number; right: number; all: number };
       scores: Record<string, number>;
       deckRemaining: number;
     }

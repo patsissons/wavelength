@@ -64,6 +64,7 @@ function reduce(state: GameState, event: GameEvent): GameState {
         round: event.round,
         activeTeam: event.activeTeam,
         psychicCursor: event.psychicCursor,
+        psychicStart: event.psychicStart,
         scores: event.scores,
         deckRemaining: event.deckRemaining,
         roundsPlayed: 0,

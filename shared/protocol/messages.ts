@@ -32,6 +32,8 @@ export const SettingsPatchSchema = z
     psychicScoring: z.enum(["none", "average"]),
     catchUp: z.boolean(),
     firstTeam: z.enum(["left", "right", "random"]),
+    firstPsychic: z.enum(["random", "order"]),
+    maxSpins: z.number().int().min(0).max(LIMITS.maxSpins),
     customSpectra: z.array(SpectrumSchema).max(LIMITS.customSpectraMax),
     useBuiltInDeck: z.boolean(),
     effects: z.boolean(),

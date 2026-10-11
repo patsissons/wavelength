@@ -15,6 +15,7 @@ import {
   nextColor,
   nextPsychic,
   playersInOrder,
+  rotationStart,
   smallerTeam,
   teamMembers,
 } from "./rotation";
@@ -145,6 +146,7 @@ export function createGame(input: {
       players: { [host.id]: host },
       activeTeam: null,
       psychicCursor: { left: -1, right: -1, all: -1 },
+      psychicStart: { left: -1, right: -1, all: -1 },
       scores: {},
       round: null,
       roundsPlayed: 0,
@@ -372,6 +374,8 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
       phase("spinning", "clue");
       psychic();
       if (round().clue !== null) fail("invalid", "the clue is already given");
+      const max = game.settings.maxSpins;
+      if (max > 0 && round().spins >= max) fail("invalid", "no spins left");
       const target = randomTarget(ctx.random);
       tx.secret = { ...tx.secret, target };
       tx.emit({
@@ -595,9 +599,22 @@ function startGame(tx: Tx, ctx: CommandContext) {
     for (const id of Object.keys(game.players)) scores[id] = 0;
   }
 
+  // Each pool's rotation opens with a random player (or the first to join).
+  const pick = game.settings.firstPsychic;
+  const cursor = { left: -1, right: -1, all: -1 };
+  const start = { left: -1, right: -1, all: -1 };
+  for (const key of ["left", "right", "all"] as const) {
+    if ((key === "all") !== (activeTeam === null)) continue;
+    const pool =
+      key === "all" ? playersInOrder(tx.game) : teamMembers(tx.game, key);
+    const opening = rotationStart(pool, pick, ctx.random);
+    cursor[key] = opening.cursor;
+    start[key] = opening.start;
+  }
   const base: GameState = {
     ...tx.game,
-    psychicCursor: { left: -1, right: -1, all: -1 },
+    psychicCursor: cursor,
+    psychicStart: start,
   };
   const next = makeRound(base, {
     index: 0,
@@ -610,6 +627,7 @@ function startGame(tx: Tx, ctx: CommandContext) {
     round: next.round,
     activeTeam,
     psychicCursor: next.psychicCursor,
+    psychicStart: start,
     scores,
     deckRemaining: deckRemaining(deck),
   });

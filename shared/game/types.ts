@@ -3,7 +3,7 @@
  * secret target lives in the server-only `SecretState` until reveal.
  */
 
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 export type Mode = "teams" | "coop" | "ffa";
 export type TeamId = "left" | "right";
@@ -57,6 +57,10 @@ export interface Settings {
   /** Teams: a 4-point turn while behind grants another turn. */
   catchUp: boolean;
   firstTeam: TeamId | "random";
+  /** Who opens the rotation: a random player or the first to join. */
+  firstPsychic: "random" | "order";
+  /** Wheel spins allowed per turn; 0 = unlimited. */
+  maxSpins: number;
   /** Host-entered extra spectra, mixed into the deck. */
   customSpectra: Spectrum[];
   useBuiltInDeck: boolean;
@@ -219,6 +223,11 @@ export interface GameState {
   /** Psychic rotation: join `order` of the last psychic per pool (-1 = none). */
   psychicCursor: { left: number; right: number; all: number };
   /**
+   * Join `order` of the player who opened each pool's rotation (-1 = none).
+   * A rotation is complete when the cursor passes this order again.
+   */
+  psychicStart: { left: number; right: number; all: number };
+  /**
    * Scores keyed by "left"/"right" (teams), "coop" (co-op) or player id
    * (ffa).
    */
@@ -250,6 +259,8 @@ export const DEFAULT_SETTINGS: Settings = {
   psychicScoring: "average",
   catchUp: true,
   firstTeam: "random",
+  firstPsychic: "random",
+  maxSpins: 3,
   customSpectra: [],
   useBuiltInDeck: true,
   effects: true,
@@ -265,6 +276,7 @@ export const LIMITS = {
   maxTargetScore: 20,
   minRounds: 1,
   maxRounds: 10,
+  maxSpins: 10,
 } as const;
 
 export function otherTeam(team: TeamId): TeamId {

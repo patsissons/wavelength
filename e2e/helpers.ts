@@ -60,6 +60,12 @@ export async function startTeamsGame(
   }
   await host.page.getByTestId("open-settings").click();
   await host.page.getByRole("button", { name: "Left Brain" }).click();
+  // Tests know who is up: pin the rotation to join order.
+  await host.page.getByTestId("first-psychic-order").click();
+  await expect(host.page.getByTestId("first-psychic-order")).toHaveAttribute(
+    "data-variant",
+    "default",
+  );
   await host.page.keyboard.press("Escape");
   await expect(host.page.getByTestId("start-game")).toBeEnabled();
   await host.page.getByTestId("start-game").click();
@@ -156,6 +162,11 @@ export async function startModeGame(
   }
   await host.page.getByTestId("open-settings").click();
   await host.page.getByTestId(`mode-${mode}`).click();
+  await host.page.getByTestId("first-psychic-order").click();
+  await expect(host.page.getByTestId("first-psychic-order")).toHaveAttribute(
+    "data-variant",
+    "default",
+  );
   // The Rounds slider only exists once the mode change has round-tripped.
   await expect(host.page.getByTestId("rounds-value")).toHaveText("2");
   const thumb = host.page.getByRole("slider", { name: "Rounds" });

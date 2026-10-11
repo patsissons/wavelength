@@ -1,6 +1,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import type { GameState } from "@shared/game/types";
 import { Button } from "@/components/ui/button";
+import { spinsRemaining } from "@shared/game/selectors";
 import { useCommand } from "@/lib/use-game-connection";
 import { useState } from "react";
 import { CardFlip, CardPile } from "./card-pile";
@@ -24,6 +25,7 @@ export function PsychicPanel({
   };
   const toggleShroud = () =>
     send({ type: "shroud.toggle", open: !round.shroudOpen });
+  const spinsLeft = spinsRemaining(game);
 
   switch (game.phase) {
     case "drawing":
@@ -57,7 +59,9 @@ export function PsychicPanel({
           title={spinDone ? "Give a clue" : "Spinning…"}
           hint={
             round.shroudOpen
-              ? "Not happy with the target? Tap the wheel to spin again. Otherwise cover it and give your clue: one idea, on the spectrum, no numbers."
+              ? spinsLeft === 0
+                ? "No spins left. Cover the wheel and give your clue: one idea, on the spectrum, no numbers."
+                : `Not happy with the target? Tap the wheel to spin again (${spinsLeft === null ? "as often as you like" : `${spinsLeft} left`}). Otherwise cover it and give your clue: one idea, on the spectrum, no numbers.`
               : "Tap the shroud to peek again, or give your clue: one idea, on the spectrum, no numbers."
           }
         >

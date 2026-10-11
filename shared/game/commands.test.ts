@@ -101,9 +101,18 @@ function setup(
     };
     ids.push(id);
   });
-  if (mode !== "teams") {
-    state = run(state, "p0", cmd("settings.update", { patch: { mode } }));
-  }
+  // Tests pin the rotation to join order; random openings are covered
+  // separately at the end of the file (they consume the shared RNG).
+  state = run(
+    state,
+    "p0",
+    cmd("settings.update", {
+      patch:
+        mode === "teams"
+          ? { firstPsychic: "order" }
+          : { mode, firstPsychic: "order" },
+    }),
+  );
   for (const id of ids) {
     state = {
       ...state,
@@ -699,5 +708,80 @@ describe("spin and shroud", () => {
       cmd("shroud.toggle", { open: false }),
       "not_allowed",
     );
+  });
+});
+
+describe("rotation openings and spin limits", () => {
+  it("caps spins per turn and allows unlimited with 0", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    state = run(
+      state,
+      "p0",
+      cmd("settings.update", { patch: { maxSpins: 2 } }),
+    );
+    state = run(state, "p0", cmd("game.start"));
+    state = run(state, "p0", cmd("card.draw"));
+    state = run(state, "p0", cmd("card.pickSide", { side: 0 }));
+    state = run(state, "p0", cmd("spin.flick", { velocity: 10 }));
+    state = run(state, "p0", cmd("spin.flick", { velocity: 10 }));
+    expect(state.game.round!.spins).toBe(2);
+    expectError(state, "p0", cmd("spin.flick", { velocity: 10 }), "invalid");
+
+    ({ state } = setup("coop", ["Ann", "Bob"]));
+    state = run(
+      state,
+      "p0",
+      cmd("settings.update", { patch: { maxSpins: 0 } }),
+    );
+    state = run(state, "p0", cmd("game.start"));
+    state = run(state, "p0", cmd("card.draw"));
+    state = run(state, "p0", cmd("card.pickSide", { side: 0 }));
+    for (let i = 0; i < 12; i++) {
+      state = run(state, "p0", cmd("spin.flick", { velocity: 10 }));
+    }
+    expect(state.game.round!.spins).toBe(12);
+  });
+
+  it("opens the rotation with a random psychic and still gives everyone one turn per round", () => {
+    const seen = new Set<string>();
+    for (let attempt = 0; attempt < 12; attempt++) {
+      let { state } = setup("ffa", ["Ann", "Bob", "Cid"]);
+      state = run(
+        state,
+        "p0",
+        cmd("settings.update", {
+          patch: { firstPsychic: "random", rounds: 2 },
+        }),
+      );
+      state = run(state, "p0", cmd("game.start"));
+      const first = state.game.round!.psychicId;
+      seen.add(first);
+      expect(state.game.psychicStart.all).toBe(
+        state.game.players[first]!.order,
+      );
+      const order: string[] = [];
+      for (let turn = 0; turn < 6; turn++) {
+        order.push(state.game.round!.psychicId);
+        const lastRound = turn === 5;
+        ({ state } = psychicTurn(state));
+        for (const [id, dial] of Object.entries(state.game.round!.dials)) {
+          if (!dial.locked)
+            state = run(state, id, cmd("dial.accept", { dialId: id }));
+        }
+        expect(state.game.phase).toBe("reveal");
+        expect(state.game.round!.result!.gameOver !== null).toBe(lastRound);
+        state = run(state, "p0", cmd("round.next"));
+        if (!lastRound) {
+          // Round 1 is over exactly after every player had a turn.
+          expect(state.game.roundsPlayed).toBe(turn >= 2 ? 1 : 0);
+        }
+      }
+      expect(state.game.phase).toBe("gameover");
+      // Everyone was psychic twice, in join order from the random start.
+      const ids = ["p0", "p1", "p2"];
+      const k = ids.indexOf(first);
+      expect(order).toEqual([0, 1, 2, 3, 4, 5].map((i) => ids[(k + i) % 3]));
+    }
+    expect(seen.size).toBeGreaterThan(1);
   });
 });

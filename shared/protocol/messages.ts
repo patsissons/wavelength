@@ -50,7 +50,6 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
     dialId: DialId,
     position: Position,
   }),
-  z.object({ type: z.literal("shroud"), open: z.boolean() }),
   // lobby
   withCmd({ type: z.literal("settings.update"), patch: SettingsPatchSchema }),
   withCmd({ type: z.literal("team.join"), team: TeamIdSchema }),
@@ -66,6 +65,7 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("spin.flick"),
     velocity: z.number().min(-60).max(60),
   }),
+  withCmd({ type: z.literal("shroud.toggle"), open: z.boolean() }),
   withCmd({
     type: z.literal("clue.submit"),
     clue: z.string().trim().min(1).max(LIMITS.clueMax),
@@ -111,8 +111,7 @@ export type ErrorCode =
 
 export type Ephemeral =
   | { kind: "dial.live"; dialId: string; position: number; by: string }
-  | { kind: "effect"; effectId: string; from: string; nonce: string }
-  | { kind: "shroud"; open: boolean; by: string };
+  | { kind: "effect"; effectId: string; from: string; nonce: string };
 
 export type ServerMessage =
   | {

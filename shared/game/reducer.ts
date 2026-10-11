@@ -76,13 +76,28 @@ function reduce(state: GameState, event: GameEvent): GameState {
       return updateRound(state, { card: event.card }, event.deckRemaining);
 
     case "side.picked":
-      return updateRound(state, { side: event.side, spectrum: event.spectrum });
+      // The shroud swings open so the psychic (and the room) can watch the spin.
+      return updateRound(state, {
+        side: event.side,
+        spectrum: event.spectrum,
+        shroudOpen: true,
+      });
 
     case "spin.started":
-      return updateRound(state, { spin: event.spin });
+      return updateRound(state, {
+        spin: event.spin,
+        spins: (state.round?.spins ?? 0) + 1,
+      });
+
+    case "shroud.toggled":
+      return updateRound(state, {
+        shroudOpen: event.open,
+        peeks: (state.round?.peeks ?? 0) + (event.open ? 1 : 0),
+      });
 
     case "clue.submitted":
-      return updateRound(state, { clue: event.clue });
+      // Giving the clue covers the wheel again; the psychic can peek later.
+      return updateRound(state, { clue: event.clue, shroudOpen: false });
 
     case "dial.set":
       return updateDial(state, event.dialId, (dial) => ({

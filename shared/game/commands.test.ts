@@ -121,6 +121,7 @@ function psychicTurn(
   const psychic = state.game.round!.psychicId;
   state = run(state, psychic, cmd("card.draw"));
   state = run(state, psychic, cmd("card.pickSide", { side: 1 }));
+  expect(state.game.round!.shroudOpen).toBe(true);
   state = run(state, psychic, cmd("spin.flick", { velocity: 20 }));
   const target = state.secret.target!;
   expect(lastPrivates[0]).toEqual({
@@ -129,6 +130,7 @@ function psychicTurn(
   });
   state = run(state, psychic, cmd("clue.submit", { clue }));
   expect(state.game.phase).toBe("guessing");
+  expect(state.game.round!.shroudOpen).toBe(false);
   return { state, target };
 }
 
@@ -566,5 +568,71 @@ describe("presence", () => {
     state = run(state, "p0", cmd("host.endGame"));
     expect(state.game.phase).toBe("gameover");
     expect(state.game.gameOver!.winner).toBe("left"); // left started on 1
+  });
+});
+
+describe("spin and shroud", () => {
+  it("lets the psychic re-spin until the clue and counts spins and peeks", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    state = run(state, "p0", cmd("game.start"));
+    expectError(
+      state,
+      "p0",
+      cmd("spin.flick", { velocity: 20 }),
+      "wrong_phase",
+    );
+    state = run(state, "p0", cmd("card.draw"));
+    state = run(state, "p0", cmd("card.pickSide", { side: 0 }));
+    expect(state.game.phase).toBe("spinning");
+    expect(state.game.round!.shroudOpen).toBe(true);
+
+    state = run(state, "p0", cmd("spin.flick", { velocity: 20 }));
+    expect(state.game.phase).toBe("clue");
+    const first = state.secret.target!;
+    const firstSpin = state.game.round!.spin!.id;
+    state = run(state, "p0", cmd("spin.flick", { velocity: -30 }));
+    expect(state.game.phase).toBe("clue");
+    expect(state.secret.target).not.toBe(first);
+    expect(state.game.round!.spin!.id).not.toBe(firstSpin);
+    expect(state.game.round!.spin!.direction).toBe(-1);
+    expect(state.game.round!.spins).toBe(2);
+    expect(lastPrivates[0]).toEqual({
+      playerId: "p0",
+      message: { type: "private", target: state.secret.target },
+    });
+
+    // Only the psychic touches the shroud; toggling to the same state is a no-op.
+    expectError(
+      state,
+      "p1",
+      cmd("shroud.toggle", { open: false }),
+      "not_allowed",
+    );
+    const version = state.game.version;
+    state = run(state, "p0", cmd("shroud.toggle", { open: true }));
+    expect(state.game.version).toBe(version);
+    state = run(state, "p0", cmd("shroud.toggle", { open: false }));
+    expect(state.game.round!.shroudOpen).toBe(false);
+    expect(state.game.round!.peeks).toBe(0);
+    state = run(state, "p0", cmd("shroud.toggle", { open: true }));
+    expect(state.game.round!.peeks).toBe(1);
+
+    state = run(state, "p0", cmd("clue.submit", { clue: "x" }));
+    expect(state.game.round!.shroudOpen).toBe(false);
+    expectError(
+      state,
+      "p0",
+      cmd("spin.flick", { velocity: 20 }),
+      "wrong_phase",
+    );
+    // Peeking while they guess is allowed and counted.
+    state = run(state, "p0", cmd("shroud.toggle", { open: true }));
+    expect(state.game.round!.peeks).toBe(2);
+    expectError(
+      state,
+      "p1",
+      cmd("shroud.toggle", { open: false }),
+      "not_allowed",
+    );
   });
 });

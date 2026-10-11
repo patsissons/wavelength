@@ -37,8 +37,10 @@ export interface BoardProps {
     onMove: (position: number) => void;
     onEnd: (position: number) => void;
   };
-  /** When set, the shrouded wheel can be flicked. */
+  /** When set, the wheel can be tapped or flicked to spin. */
   spin?: { enabled: boolean; onFlick: (velocity: number) => void };
+  /** When set, tapping the shroud (or its handle when open) fires this. */
+  onShroudTap?: () => void;
   /** Extra SVG content drawn above the dials. */
   children?: ReactNode;
   className?: string;
@@ -55,6 +57,7 @@ export function Board({
   dials,
   drag,
   spin,
+  onShroudTap,
   children,
   className,
 }: BoardProps) {
@@ -77,6 +80,7 @@ export function Board({
       ? dragHandlers
       : {};
   const interactive = spin?.enabled || drag?.enabled;
+  const shroudHandlers = useTap(onShroudTap);
 
   return (
     <svg
@@ -167,11 +171,15 @@ export function Board({
       <g
         data-testid="shroud"
         data-open={shroudOpen || undefined}
-        className="transition-transform duration-500 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none"
+        className={cn(
+          "transition-transform duration-500 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none",
+          onShroudTap && "cursor-pointer",
+        )}
         style={{
           transformOrigin: `${CX}px ${CY}px`,
           transform: `rotate(${shroudOpen ? 180 : 0}deg)`,
         }}
+        {...shroudHandlers}
       >
         <path
           d={windowPath(SHROUD_R)}
@@ -200,6 +208,38 @@ export function Board({
           opacity={0.7}
         />
       </g>
+
+      {/* when open, the shroud is below the baseline: this handle covers it */}
+      {shroudOpen && onShroudTap && (
+        <g
+          data-testid="shroud-handle"
+          className="cursor-pointer"
+          {...shroudHandlers}
+        >
+          <rect
+            x={CX - 70}
+            y={CY + 3}
+            width={140}
+            height={22}
+            rx={11}
+            fill="var(--color-card)"
+            stroke="var(--color-border)"
+            strokeWidth={1.5}
+          />
+          <text
+            x={CX}
+            y={CY + 14}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize={10}
+            fontWeight={700}
+            letterSpacing={2}
+            fill="var(--color-muted-foreground)"
+          >
+            ▲ TAP TO COVER
+          </text>
+        </g>
+      )}
 
       {/* dials */}
       {dials.map((dial) => (
@@ -257,6 +297,37 @@ function Needle({ dial }: { dial: BoardDial }) {
       )}
     </g>
   );
+}
+
+/**
+ * Pointer handlers that fire `onTap` for a press without much movement and
+ * keep the event away from the board's spin/drag handlers.
+ */
+function useTap(onTap?: () => void) {
+  const start = useRef<{ x: number; y: number; t: number } | null>(null);
+  if (!onTap) return {};
+  return {
+    onPointerDown: (event: React.PointerEvent<SVGElement>) => {
+      event.stopPropagation();
+      start.current = {
+        x: event.clientX,
+        y: event.clientY,
+        t: event.timeStamp,
+      };
+    },
+    onPointerUp: (event: React.PointerEvent<SVGElement>) => {
+      event.stopPropagation();
+      const s = start.current;
+      start.current = null;
+      if (!s) return;
+      const moved = Math.hypot(event.clientX - s.x, event.clientY - s.y);
+      if (moved <= 12 && event.timeStamp - s.t <= 600) onTap();
+    },
+    onPointerCancel: (event: React.PointerEvent<SVGElement>) => {
+      event.stopPropagation();
+      start.current = null;
+    },
+  };
 }
 
 /** Half-disc above the baseline through C with the given radius. */

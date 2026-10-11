@@ -13,18 +13,29 @@ import { playerColor } from "@/lib/utils";
 const MOVE_THROTTLE_MS = 50;
 
 /**
+ * The psychic's wedge is anchored to the spin it belongs to: the server
+ * sends the private target before the spin event, and the board only adopts
+ * a new target together with its spin, starting the animation from the angle
+ * that shows the previous wedge position so a re-spin visibly travels from
+ * the old target to the new one.
+ */
+interface Anchor {
+  spinId: string | null;
+  target: number | null;
+  from: number;
+}
+
+/**
  * Connects the Board to game state: which dials to show, who may drag,
  * whether the wedge is visible, the shroud, and the spin animation.
  */
 export function BoardStage({
   game,
   playerId,
-  peeking,
   onSpinDone,
 }: {
   game: GameState;
   playerId: string;
-  peeking: boolean;
   onSpinDone?: () => void;
 }) {
   const target = useGameStore((s) => s.you?.target ?? null);
@@ -36,22 +47,59 @@ export function BoardStage({
   const round = game.round!;
   const role = roleOf(game, playerId);
   const isPsychic = role === "psychic";
-  const [spinFrom, setSpinFrom] = useState(0);
   const lastMove = useRef(0);
 
-  const { angle, done } = useSpinAnimation(round.spin, spinFrom, {
-    reducedMotion: reduced,
-    onDone: onSpinDone,
-    onTick: () => {
-      audio.play("tick", 0.6);
-      vibrate(8);
+  const [anchor, setAnchor] = useState<Anchor>(() => ({
+    spinId: round.spin?.id ?? null,
+    target: isPsychic ? target : null,
+    from: 0,
+  }));
+  const spinId = round.spin?.id ?? null;
+  if (anchor.spinId !== spinId && (!isPsychic || target !== null || !spinId)) {
+    // Derived state: adopt the new spin (and, for the psychic, its target).
+    const next = isPsychic && spinId ? target : null;
+    setAnchor({
+      spinId,
+      target: next,
+      from:
+        next !== null && anchor.target !== null
+          ? Math.PI * (next - anchor.target)
+          : 0,
+    });
+  }
+
+  const { angle, done } = useSpinAnimation(
+    anchor.spinId === spinId ? round.spin : null,
+    anchor.from,
+    {
+      reducedMotion: reduced,
+      onDone: onSpinDone,
+      onTick: () => {
+        audio.play("tick", 0.6);
+        vibrate(8);
+      },
     },
-  });
+  );
 
   const phase = game.phase;
   const revealed = phase === "reveal";
-  const showTarget = revealed ? round.target : isPsychic ? target : null;
-  const shroudOpen = revealed || (isPsychic && peeking && done);
+  const showTarget = revealed ? round.target : isPsychic ? anchor.target : null;
+  // Everyone watches the wheel while it is being spun; only the psychic
+  // sees it open afterwards (their peeks), and everyone sees the reveal.
+  const shroudOpen =
+    revealed ||
+    (round.shroudOpen &&
+      (isPsychic || phase === "spinning" || phase === "clue"));
+  const canSpin =
+    isPsychic &&
+    round.clue === null &&
+    (phase === "spinning" || phase === "clue") &&
+    round.shroudOpen &&
+    done;
+  const canToggleShroud =
+    isPsychic &&
+    !revealed &&
+    ["spinning", "clue", "guessing", "voting"].includes(phase);
 
   const myDial = useMemo(
     () =>
@@ -124,11 +172,14 @@ export function BoardStage({
 
   const onFlick = useCallback(
     (velocity: number) => {
-      setSpinFrom(0);
       void send({ type: "spin.flick", velocity });
     },
     [send],
   );
+
+  const onShroudTap = useCallback(() => {
+    void send({ type: "shroud.toggle", open: !round.shroudOpen });
+  }, [send, round.shroudOpen]);
 
   return (
     <Board
@@ -137,7 +188,8 @@ export function BoardStage({
       shroudOpen={shroudOpen}
       dials={dials}
       drag={{ enabled: canDrag, onMove, onEnd }}
-      spin={{ enabled: isPsychic && phase === "spinning", onFlick }}
+      spin={{ enabled: canSpin, onFlick }}
+      onShroudTap={canToggleShroud ? onShroudTap : undefined}
     />
   );
 }

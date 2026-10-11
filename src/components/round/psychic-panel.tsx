@@ -1,24 +1,20 @@
 import { Eye, EyeOff } from "lucide-react";
 import type { GameState } from "@shared/game/types";
 import { Button } from "@/components/ui/button";
-import { useCommand, useConnection } from "@/lib/use-game-connection";
+import { useCommand } from "@/lib/use-game-connection";
 import { useState } from "react";
 import { CardFlip, CardPile } from "./card-pile";
 import { ClueInput } from "./clue-input";
 
 export function PsychicPanel({
   game,
-  peeking,
-  setPeeking,
   spinDone,
 }: {
   game: GameState;
-  peeking: boolean;
-  setPeeking: (open: boolean) => void;
+  /** The latest spin has landed (clue input and re-spins wait for it). */
   spinDone: boolean;
 }) {
   const send = useCommand();
-  const { sendEphemeral } = useConnection();
   const [busy, setBusy] = useState(false);
   const round = game.round!;
   const run = async (command: Parameters<typeof send>[0]) => {
@@ -26,11 +22,8 @@ export function PsychicPanel({
     await send(command);
     setBusy(false);
   };
-  const togglePeek = () => {
-    const next = !peeking;
-    setPeeking(next);
-    sendEphemeral({ type: "shroud", open: next });
-  };
+  const toggleShroud = () =>
+    send({ type: "shroud.toggle", open: !round.shroudOpen });
 
   switch (game.phase) {
     case "drawing":
@@ -55,18 +48,22 @@ export function PsychicPanel({
       return (
         <Panel
           title="Spin the wheel"
-          hint="Flick the shrouded wheel to randomize the target. Keep it hidden from the others!"
+          hint="Tap or flick the wheel to spin it. Keep your screen to yourself!"
         />
       );
     case "clue":
       return (
         <Panel
-          title="Peek, then give a clue"
-          hint="Open the shroud to see the target. Your clue must be one idea, on the spectrum, no numbers."
+          title={spinDone ? "Give a clue" : "Spinning…"}
+          hint={
+            round.shroudOpen
+              ? "Not happy with the target? Tap the wheel to spin again. Otherwise cover it and give your clue: one idea, on the spectrum, no numbers."
+              : "Tap the shroud to peek again, or give your clue: one idea, on the spectrum, no numbers."
+          }
         >
-          <PeekButton
-            peeking={peeking}
-            onToggle={togglePeek}
+          <ShroudButton
+            open={round.shroudOpen}
+            onToggle={toggleShroud}
             disabled={!spinDone}
           />
           <ClueInput
@@ -79,7 +76,7 @@ export function PsychicPanel({
     case "voting":
       return (
         <Panel title="Poker face" hint="They're guessing. Don't react!">
-          <PeekButton peeking={peeking} onToggle={togglePeek} />
+          <ShroudButton open={round.shroudOpen} onToggle={toggleShroud} />
         </Panel>
       );
     default:
@@ -87,28 +84,28 @@ export function PsychicPanel({
   }
 }
 
-function PeekButton({
-  peeking,
+function ShroudButton({
+  open,
   onToggle,
   disabled,
 }: {
-  peeking: boolean;
+  open: boolean;
   onToggle: () => void;
   disabled?: boolean;
 }) {
   return (
     <Button
       type="button"
-      variant={peeking ? "default" : "secondary"}
+      variant={open ? "default" : "secondary"}
       size="lg"
       className="h-12 w-full"
       onClick={onToggle}
       disabled={disabled}
       data-testid="peek-toggle"
-      aria-pressed={peeking}
+      aria-pressed={open}
     >
-      {peeking ? <EyeOff /> : <Eye />}{" "}
-      {peeking ? "Close the shroud" : "Peek at the target"}
+      {open ? <EyeOff /> : <Eye />}{" "}
+      {open ? "Cover the target" : "Peek at the target"}
     </Button>
   );
 }

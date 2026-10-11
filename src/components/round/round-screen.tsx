@@ -16,10 +16,15 @@ import { SpectrumLabels } from "./spectrum-labels";
 export function RoundScreen() {
   const game = useGameStore((s) => s.game)!;
   const you = useGameStore((s) => s.you)!;
-  const peekingRemote = useGameStore((s) => s.live.psychicPeeking);
-  const [peeking, setPeeking] = useState(false);
   const [spinDone, setSpinDone] = useState(false);
+  const [lastSpin, setLastSpin] = useState<string | null>(null);
   const round = game.round!;
+  const spinId = round.spin?.id ?? null;
+  if (spinId !== lastSpin) {
+    // A new spin (or re-spin) is in flight until the board says it landed.
+    setLastSpin(spinId);
+    setSpinDone(false);
+  }
   const role = roleOf(game, you.playerId);
   const psychic = game.players[round.psychicId];
 
@@ -42,7 +47,6 @@ export function RoundScreen() {
       <BoardStage
         game={game}
         playerId={you.playerId}
-        peeking={peeking}
         onSpinDone={() => setSpinDone(true)}
       />
       {round.clue && (
@@ -58,8 +62,6 @@ export function RoundScreen() {
       ) : role === "psychic" ? (
         <PsychicPanel
           game={game}
-          peeking={peeking}
-          setPeeking={setPeeking}
           spinDone={spinDone || game.phase !== "clue" || round.spin === null}
         />
       ) : role === "guesser" &&
@@ -77,7 +79,7 @@ export function RoundScreen() {
           title={statusLine(
             game.phase,
             psychic?.name ?? "The psychic",
-            peekingRemote,
+            round.shroudOpen,
           )}
         />
       )}

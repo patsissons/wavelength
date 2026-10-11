@@ -320,16 +320,6 @@ export class GameRoom extends Server<Env> {
         );
         return;
       }
-      case "shroud":
-        if (game.round?.psychicId !== playerId) return;
-        this.#broadcast(
-          {
-            type: "ephemeral",
-            payload: { kind: "shroud", open: message.open, by: playerId },
-          },
-          [connection.id],
-        );
-        return;
     }
   }
 
@@ -386,17 +376,19 @@ export class GameRoom extends Server<Env> {
   ) {
     const state = this.#state;
     if (!state) return;
+    // Privates go first: the psychic's board anchors the wedge to the spin
+    // it belongs to, so the target must be known before the spin event.
+    for (const { playerId, message } of privates) {
+      for (const connection of this.getConnections(tagFor(playerId))) {
+        this.#send(connection, message);
+      }
+    }
     let game = state.game;
     for (const event of events) {
       game = applyEvent(game, event);
       this.#broadcast({ type: "event", version: game.version, event }, without);
     }
     this.#state = { ...state, game };
-    for (const { playerId, message } of privates) {
-      for (const connection of this.getConnections(tagFor(playerId))) {
-        this.#send(connection, message);
-      }
-    }
   }
 
   #sendSnapshot(connection: Connection, playerId: string) {

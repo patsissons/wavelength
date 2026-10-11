@@ -79,11 +79,6 @@ describe("store.receive", () => {
       position: 0.3,
       by: "p2",
     });
-    s.receive({
-      type: "ephemeral",
-      payload: { kind: "shroud", open: true, by: "p1" },
-    });
-    expect(useGameStore.getState().live.psychicPeeking).toBe(true);
     s.receive({ type: "error", code: "rate_limited", message: "slow" });
     expect(useGameStore.getState().error?.code).toBe("rate_limited");
   });
@@ -100,6 +95,9 @@ describe("store.receive", () => {
         side: null,
         spectrum: null,
         spin: null,
+        spins: 0,
+        shroudOpen: false,
+        peeks: 0,
         clue: null,
         dials: {
           shared: {

@@ -74,15 +74,27 @@ export async function psychicTurn(page: Page, clue: string) {
   await page.getByTestId("draw-card").click();
   await page.getByTestId("flip-card").click();
   await page.getByTestId("pick-side-1").click();
-  // The board only accepts a flick once the client has entered the spin phase.
+  // The board only accepts a spin once the client has entered the spin phase.
   await expect(page.getByTestId("panel")).toContainText("Spin the wheel");
-  await flickWheel(page);
-  await expect(page.getByTestId("peek-toggle")).toBeEnabled();
-  await page.getByTestId("peek-toggle").click();
   await expect(page.getByTestId("shroud")).toHaveAttribute("data-open", "true");
+  await tapWheel(page);
+  // The spin lands with the wedge in view (the shroud is already open).
+  await expect(page.getByTestId("wedge-4")).toBeVisible();
+  await expect(page.getByTestId("peek-toggle")).toBeEnabled();
   await page.getByTestId("clue-input").fill(clue);
   await page.getByTestId("submit-clue").click();
   await expect(page.getByTestId("clue")).toContainText(clue);
+  // Giving the clue covers the wheel again.
+  await expect(page.getByTestId("shroud")).not.toHaveAttribute("data-open");
+}
+
+/** A tap on the open wheel spins it with a random flick. */
+export async function tapWheel(page: Page) {
+  const box = (await page.getByTestId("board").boundingBox())!;
+  await page.mouse.click(
+    box.x + box.width / 2,
+    box.y + box.height * (205 / 230) - box.width * 0.3,
+  );
 }
 
 export async function flickWheel(page: Page) {

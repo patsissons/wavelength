@@ -364,8 +364,11 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
     }
 
     case "spin.flick": {
-      phase("spinning");
+      // Re-spins are allowed until the clue is given; each one draws a
+      // fresh target.
+      phase("spinning", "clue");
       psychic();
+      if (round().clue !== null) fail("invalid", "the clue is already given");
       const target = randomTarget(ctx.random);
       tx.secret = { ...tx.secret, target };
       tx.emit({
@@ -376,13 +379,21 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
           startedAt: ctx.now,
         },
       });
-      tx.emit({ type: "phase.changed", phase: "clue" });
+      if (game.phase === "spinning")
+        tx.emit({ type: "phase.changed", phase: "clue" });
       tx.privates.push({
         playerId: me.id,
         message: { type: "private", target },
       });
       return;
     }
+
+    case "shroud.toggle":
+      phase("spinning", "clue", "guessing", "voting");
+      psychic();
+      if (round().shroudOpen !== cmd.open)
+        tx.emit({ type: "shroud.toggled", open: cmd.open, at: ctx.now });
+      return;
 
     case "clue.submit":
       phase("clue");
@@ -610,6 +621,9 @@ function makeRound(
       side: null,
       spectrum: null,
       spin: null,
+      spins: 0,
+      shroudOpen: false,
+      peeks: 0,
       clue: null,
       dials,
       votes: {},

@@ -11,8 +11,6 @@ export interface LiveState {
   dials: Record<string, { position: number; by: string }>;
   /** This device's dial while dragging; wins over everything visually. */
   localDial: { dialId: string; position: number } | null;
-  /** The psychic is currently peeking under the shroud. */
-  psychicPeeking: boolean;
 }
 
 export interface GameError {
@@ -34,7 +32,6 @@ export interface GameStore {
   receive: (message: ServerMessage) => "gap" | undefined;
   setConn: (status: ConnStatus) => void;
   setLocalDial: (dial: LiveState["localDial"]) => void;
-  setPeeking: (peeking: boolean) => void;
   clearError: () => void;
   reset: () => void;
 }
@@ -42,7 +39,6 @@ export interface GameStore {
 const emptyLive = (): LiveState => ({
   dials: {},
   localDial: null,
-  psychicPeeking: false,
 });
 
 const ROUND_RESETS = new Set([
@@ -121,8 +117,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
               },
             },
           }));
-        } else if (payload.kind === "shroud") {
-          set((s) => ({ live: { ...s.live, psychicPeeking: payload.open } }));
         } else {
           effectBus.emit(payload);
         }
@@ -145,8 +139,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setConn: (conn) => set({ conn }),
   setLocalDial: (localDial) => set((s) => ({ live: { ...s.live, localDial } })),
-  setPeeking: (psychicPeeking) =>
-    set((s) => ({ live: { ...s.live, psychicPeeking } })),
   clearError: () => set({ error: null }),
   reset: () =>
     set({

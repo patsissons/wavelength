@@ -3,7 +3,7 @@
  * secret target lives in the server-only `SecretState` until reveal.
  */
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 export type Mode = "teams" | "coop" | "ffa";
 export type TeamId = "left" | "right";
@@ -121,6 +121,12 @@ export interface Round {
   side: 0 | 1 | null;
   spectrum: Spectrum | null;
   spin: Spin | null;
+  /** Times the wheel has been spun this round (re-spins allowed until the clue). */
+  spins: number;
+  /** The psychic's shroud: open from the side pick until the clue, then toggled. */
+  shroudOpen: boolean;
+  /** Explicit peeks (shroud opened by the psychic) this round. */
+  peeks: number;
   clue: string | null;
   dials: Record<string, DialState>;
   /** Teams: opposing players' left/right calls. */

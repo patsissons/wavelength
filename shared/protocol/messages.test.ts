@@ -8,7 +8,7 @@ describe("parseClientMessage", () => {
     const messages = [
       { type: "resync" },
       { type: "dial.move", dialId: "shared", position: 0.25 },
-      { type: "shroud", open: true },
+      { type: "shroud.toggle", cmdId, open: true },
       { cmdId, type: "settings.update", patch: { mode: "coop", rounds: 5 } },
       { cmdId, type: "team.join", team: "left" },
       { cmdId, type: "player.rename", name: "  Pat " },
@@ -67,7 +67,7 @@ describe("parseClientMessage", () => {
       JSON.stringify({ cmdId, type: "game.start" }),
     );
     const eph = parseClientMessage(
-      JSON.stringify({ type: "shroud", open: false }),
+      JSON.stringify({ type: "dial.move", dialId: "shared", position: 0.5 }),
     );
     expect(cmd.ok && isCommand(cmd.message)).toBe(true);
     expect(eph.ok && isCommand(eph.message)).toBe(false);

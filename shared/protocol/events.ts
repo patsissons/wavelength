@@ -41,6 +41,7 @@ export type GameEvent =
   | { type: "card.drawn"; card: Card; deckRemaining: number }
   | { type: "side.picked"; side: 0 | 1; spectrum: Spectrum }
   | { type: "spin.started"; spin: Spin }
+  | { type: "shroud.toggled"; open: boolean; at: number }
   | { type: "clue.submitted"; clue: string }
   | { type: "dial.set"; dialId: string; position: number; by: string }
   | { type: "dial.accepted"; dialId: string; playerId: string }

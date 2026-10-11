@@ -3,7 +3,10 @@ import { dialsFor, roleOf } from "@shared/game/selectors";
 import { useGameStore } from "@/lib/store";
 import { BoardStage } from "./board-stage";
 import { GuesserPanel } from "./guesser-panel";
+import { HostControls } from "./host-controls";
+import { OpponentPanel } from "./opponent-panel";
 import { PsychicPanel, Panel } from "./psychic-panel";
+import { RevealPanel } from "./reveal-panel";
 import { ScoreHeader } from "./score-header";
 import { SpectrumLabels } from "./spectrum-labels";
 
@@ -35,7 +38,9 @@ export function RoundScreen() {
           “{round.clue}”
         </p>
       )}
-      {role === "psychic" ? (
+      {game.phase === "reveal" && round.result ? (
+        <RevealPanel game={game} playerId={you.playerId} />
+      ) : role === "psychic" ? (
         <PsychicPanel
           game={game}
           peeking={peeking}
@@ -49,6 +54,9 @@ export function RoundScreen() {
           playerId={you.playerId}
           dial={dialsFor(game, you.playerId)[0]!}
         />
+      ) : role === "opponent" &&
+        (game.phase === "guessing" || game.phase === "voting") ? (
+        <OpponentPanel game={game} playerId={you.playerId} />
       ) : (
         <Panel
           title={statusLine(
@@ -57,6 +65,9 @@ export function RoundScreen() {
             peekingRemote,
           )}
         />
+      )}
+      {game.hostId === you.playerId && (
+        <HostControls game={game} playerId={you.playerId} />
       )}
     </main>
   );

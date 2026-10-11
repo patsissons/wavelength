@@ -115,6 +115,7 @@ export function Board({
         <g
           transform={`rotate(${rotation.toFixed(3)} ${CX} ${CY})`}
           data-testid="disc"
+          data-target={target === null ? undefined : target.toFixed(4)}
         >
           {Array.from({ length: TICK_COUNT }, (_, i) => {
             const angle = (i / TICK_COUNT) * Math.PI * 2;

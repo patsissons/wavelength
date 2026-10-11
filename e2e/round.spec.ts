@@ -62,7 +62,7 @@ test("the psychic draws, spins, peeks and gives a clue that everyone sees", asyn
     "Pineapple on pizza",
   );
   await expect(cid.page.getByTestId("dial-shared")).toBeVisible();
-  await expect(bob.page.getByTestId("panel")).toContainText("Guessing time");
+  await expect(bob.page.getByTestId("panel")).toContainText("is guessing");
 
   await game.close();
 });

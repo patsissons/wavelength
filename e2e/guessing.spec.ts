@@ -18,7 +18,7 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
   await expect(cid.page.getByTestId("accept-dial")).toBeVisible();
   await expect(eve.page.getByTestId("accept-dial")).toBeVisible();
   await expect(bob.page.getByTestId("accept-dial")).toHaveCount(0);
-  await expect(bob.page.getByTestId("panel")).toContainText("Guessing time");
+  await expect(bob.page.getByTestId("panel")).toContainText("is guessing");
 
   // Cid drags; everyone sees the needle move
   await dragDial(cid.page, 0.2);

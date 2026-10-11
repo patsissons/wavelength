@@ -144,6 +144,9 @@ export function HostSettings({ settings }: { settings: Settings }) {
                 Rounds:{" "}
                 <strong data-testid="rounds-value">{settings.rounds}</strong>
               </Label>
+              <p className="text-sm text-muted-foreground">
+                Everyone is the psychic once per round.
+              </p>
               <SettingSlider
                 min={LIMITS.minRounds}
                 max={LIMITS.maxRounds}

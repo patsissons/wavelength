@@ -1,14 +1,17 @@
 import { expect, test } from "@playwright/test";
 import { dragDial, psychicTurn, readTarget, startModeGame } from "./helpers";
 
-test("co-op: everyone shares a dial, no voting, benchmark label at the end", async ({
+test("co-op: everyone shares a dial, no voting, one psychic turn each per round", async ({
   browser,
 }) => {
-  const game = await startModeGame(browser, "coop", 2, ["Bob", "Cid"]);
+  const game = await startModeGame(browser, "coop", 1, ["Bob", "Cid"]);
   const { host } = game;
   const [bob, cid] = game.guests as [typeof host, typeof host];
 
-  // Round 1: Ann is the psychic, Bob and Cid share the dial.
+  // Turn 1: Ann is the psychic, Bob and Cid share the dial.
+  await expect(host.page.getByTestId("score-header")).toContainText(
+    "Round 1 of 1 · Turn 1",
+  );
   await psychicTurn(host.page, "Marmite");
   const target1 = await readTarget(host.page);
   await dragDial(bob.page, target1);
@@ -21,20 +24,31 @@ test("co-op: everyone shares a dial, no voting, benchmark label at the end", asy
   await expect(host.page.getByTestId("points")).toHaveText("+4");
   await expect(cid.page.getByTestId("score-coop")).toContainText("4");
   await expect(cid.page.getByTestId("vote-left")).toHaveCount(0);
+  await expect(host.page.getByTestId("game-over-pending")).toHaveCount(0);
 
-  // Round 2: Bob is the psychic; the psychic may advance.
+  // Turn 2: Bob is the psychic; the psychic may advance.
   await host.page.getByTestId("next-round").click();
   await expect(bob.page.getByTestId("draw-card")).toBeVisible();
   await expect(host.page.getByTestId("score-header")).toContainText(
-    "Round 2 of 2",
+    "Round 1 of 1 · Turn 2",
   );
   await psychicTurn(bob.page, "Crocs");
   const target2 = await readTarget(bob.page);
   await dragDial(host.page, target2);
   await host.page.getByTestId("accept-dial").click();
   await cid.page.getByTestId("accept-dial").click();
-  await expect(bob.page.getByTestId("game-over-pending")).toBeVisible();
+  await expect(bob.page.getByTestId("reveal")).toBeVisible();
   await bob.page.getByTestId("next-round").click();
+
+  // Turn 3: Cid closes the round and the game.
+  await expect(cid.page.getByTestId("draw-card")).toBeVisible();
+  await psychicTurn(cid.page, "Pickles");
+  const target3 = await readTarget(cid.page);
+  await dragDial(bob.page, target3);
+  await bob.page.getByTestId("accept-dial").click();
+  await host.page.getByTestId("accept-dial").click();
+  await expect(cid.page.getByTestId("game-over-pending")).toBeVisible();
+  await cid.page.getByTestId("next-round").click();
   for (const { page } of [host, bob, cid]) {
     await expect(page.getByTestId("game-over")).toBeVisible();
     await expect(page.getByTestId("winner")).toHaveText("Galaxy brain");
@@ -80,7 +94,15 @@ test("free-for-all: private dials, individual scores and a winner", async ({
     "+2",
   );
 
+  // A round is one psychic turn per player: Bob is up next, not game over.
   await host.page.getByTestId("next-round").click();
+  await expect(bob.page.getByTestId("draw-card")).toBeVisible();
+  await expect(cid.page.getByTestId("score-header")).toContainText(
+    "Round 1 of 1 · Turn 2",
+  );
+  // The host calls it early; Bob leads.
+  await host.page.getByTestId("host-controls").click();
+  await host.page.getByTestId("end-game").click();
   await expect(cid.page.getByTestId("winner")).toContainText("Bob wins");
   await game.close();
 });

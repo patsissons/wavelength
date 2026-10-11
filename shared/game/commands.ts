@@ -598,7 +598,11 @@ function startGame(tx: Tx, ctx: CommandContext) {
 function makeRound(
   game: GameState,
   input: { index: number; team: TeamId | null; catchUp: boolean; now: number },
-): { round: Round; psychicCursor: GameState["psychicCursor"] } {
+): {
+  round: Round;
+  psychicCursor: GameState["psychicCursor"];
+  wrapped: boolean;
+} {
   const pick =
     nextPsychic(game, input.team) ?? fail("invalid", "nobody can be psychic");
   const others = (
@@ -633,6 +637,7 @@ function makeRound(
       startedAt: input.now,
     },
     psychicCursor: pick.psychicCursor,
+    wrapped: pick.wrapped,
   };
 }
 
@@ -711,7 +716,11 @@ function reveal(tx: Tx) {
   };
   let scores = { ...game.scores };
   let suddenDeath = game.suddenDeath;
-  const lastRound = game.roundsPlayed + 1 >= game.settings.rounds;
+  // Co-op / FFA: the game ends when the last round's rotation completes,
+  // i.e. the next psychic would wrap around to the first player again.
+  const rotationDone = nextPsychic(game, null)?.wrapped ?? true;
+  const lastRound =
+    rotationDone && game.roundsPlayed + 1 >= game.settings.rounds;
 
   if (game.settings.mode === "teams") {
     const shared = round.dials.shared ?? fail("invalid", "no shared dial");
@@ -739,7 +748,7 @@ function reveal(tx: Tx) {
     result.deltas = { coop: points };
     scores.coop = (scores.coop ?? 0) + points;
     result.gameOver = lastRound
-      ? { winner: null, label: coopLabel(scores.coop, game.settings.rounds) }
+      ? { winner: null, label: coopLabel(scores.coop, game.history.length + 1) }
       : null;
   } else {
     const guesses: Record<string, number> = {};
@@ -786,7 +795,11 @@ function advanceRound(tx: Tx, ctx: CommandContext) {
     round: next.round,
     activeTeam: team,
     psychicCursor: next.psychicCursor,
-    roundsPlayed: game.roundsPlayed + 1,
+    // Teams count turns; the other modes count completed rotations.
+    roundsPlayed:
+      game.settings.mode === "teams" || next.wrapped
+        ? game.roundsPlayed + 1
+        : game.roundsPlayed,
     deckRemaining: game.deckRemaining,
   });
 }
@@ -825,10 +838,7 @@ export function finalStanding(game: GameState): GameOver {
   if (game.settings.mode === "coop") {
     return {
       winner: null,
-      label: coopLabel(
-        game.scores.coop ?? 0,
-        Math.max(1, game.roundsPlayed || game.settings.rounds),
-      ),
+      label: coopLabel(game.scores.coop ?? 0, Math.max(1, game.history.length)),
     };
   }
   const ranked = ranking(game.scores);

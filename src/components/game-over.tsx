@@ -23,7 +23,7 @@ export function GameOver() {
     sub = `${game.scores.left ?? 0} – ${game.scores.right ?? 0}`;
   } else if (mode === "coop") {
     headline = over.label ?? "Game over";
-    sub = `${game.scores.coop ?? 0} of ${game.settings.rounds * 4} points`;
+    sub = `${game.scores.coop ?? 0} of ${game.history.length * 4} points`;
   } else {
     headline = over.winner
       ? `${game.players[over.winner]?.name ?? "Someone"} wins!`

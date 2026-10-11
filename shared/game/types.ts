@@ -50,7 +50,7 @@ export interface Settings {
   mode: Mode;
   /** Teams: points to win. */
   targetScore: number;
-  /** Co-op / FFA: number of rounds. */
+  /** Co-op / FFA: number of rounds; a round is one psychic turn per player. */
   rounds: number;
   /** FFA: does the psychic score the guessers' average? */
   psychicScoring: "none" | "average";
@@ -165,7 +165,10 @@ export interface GameState {
    */
   scores: Record<string, number>;
   round: Round | null;
-  /** Completed rounds (co-op / ffa round limit). */
+  /**
+   * Teams: completed turns. Co-op / FFA: completed rounds, where a round is
+   * one psychic turn per player (`history.length` counts the turns).
+   */
   roundsPlayed: number;
   history: RoundResult[];
   suddenDeath: boolean;
@@ -184,7 +187,7 @@ export const PLAYER_COLORS = 12;
 export const DEFAULT_SETTINGS: Settings = {
   mode: "teams",
   targetScore: 10,
-  rounds: 7,
+  rounds: 2,
   psychicScoring: "average",
   catchUp: true,
   firstTeam: "random",
@@ -202,7 +205,7 @@ export const LIMITS = {
   minTargetScore: 5,
   maxTargetScore: 20,
   minRounds: 1,
-  maxRounds: 30,
+  maxRounds: 10,
 } as const;
 
 export function otherTeam(team: TeamId): TeamId {

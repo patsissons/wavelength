@@ -141,7 +141,7 @@ export async function expectDialNear(
 
 /**
  * Host + guests in a Co-op or FFA game with a fixed number of rounds, started.
- * The rounds slider is driven with the keyboard from its default of 7.
+ * The rounds slider is driven with the keyboard from its default of 2.
  */
 export async function startModeGame(
   browser: Browser,
@@ -157,17 +157,17 @@ export async function startModeGame(
   await host.page.getByTestId("open-settings").click();
   await host.page.getByTestId(`mode-${mode}`).click();
   // The Rounds slider only exists once the mode change has round-tripped.
-  await expect(host.page.getByTestId("rounds-value")).toHaveText("7");
+  await expect(host.page.getByTestId("rounds-value")).toHaveText("2");
   const thumb = host.page.getByRole("slider", { name: "Rounds" });
   await thumb.focus();
   // One step per round trip: each press is confirmed by the server.
-  for (let i = 7; i > rounds; i--) {
+  for (let i = 2; i > rounds; i--) {
     await host.page.keyboard.press("ArrowLeft");
     await expect(host.page.getByTestId("rounds-value")).toHaveText(
       String(i - 1),
     );
   }
-  for (let i = 7; i < rounds; i++) {
+  for (let i = 2; i < rounds; i++) {
     await host.page.keyboard.press("ArrowRight");
     await expect(host.page.getByTestId("rounds-value")).toHaveText(
       String(i + 1),
@@ -175,7 +175,7 @@ export async function startModeGame(
   }
   await host.page.keyboard.press("Escape");
   await expect(host.page.getByTestId("mode-label")).toContainText(
-    `${rounds} rounds`,
+    `${rounds} round`,
   );
   await host.page.getByTestId("start-game").click();
   await expect(host.page.getByTestId("score-header")).toBeVisible();

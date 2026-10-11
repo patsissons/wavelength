@@ -57,7 +57,7 @@ export function Lounge() {
             <span className="font-normal text-muted-foreground">
               {game.settings.mode === "teams"
                 ? ` · first to ${game.settings.targetScore}`
-                : ` · ${game.settings.rounds} rounds`}
+                : ` · ${game.settings.rounds} round${game.settings.rounds === 1 ? "" : "s"} · ${count} turn${count === 1 ? "" : "s"} each`}
             </span>
           </p>
         </div>

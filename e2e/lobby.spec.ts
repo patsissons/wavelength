@@ -67,3 +67,28 @@ test("host changes the mode and a reload keeps the seat", async ({
 
   await Promise.all([host.context.close(), bob.context.close()]);
 });
+
+test("a code typed on the home page joins with the entered name", async ({
+  browser,
+}) => {
+  const host = await hostGame(browser, "Ann");
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto("/");
+  await page.getByLabel("Your name").fill("Bob");
+
+  // A wrong code stays on the home page with a toast.
+  await page.getByLabel("Have a code?").fill("ZZZZ");
+  await page.getByTestId("join-with-code").click();
+  await expect(page.getByText("No game with that code.")).toBeVisible();
+  await expect(page).toHaveURL("/");
+
+  // The right code skips the join screen entirely.
+  await page.getByLabel("Have a code?").fill(host.code.toLowerCase());
+  await page.getByTestId("join-with-code").click();
+  await expect(page).toHaveURL(`/game/${host.code}`);
+  await expect(playerRow(page, "Bob")).toContainText("(you)");
+  await expect(playerRow(host.page, "Bob")).toBeVisible();
+
+  await Promise.all([host.context.close(), context.close()]);
+});

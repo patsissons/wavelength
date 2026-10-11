@@ -5,18 +5,19 @@ import { LIMITS } from "@shared/game/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@/lib/api";
-import { lastName, saveIdentity } from "@/lib/identity";
+import { ApiError, api } from "@/lib/api";
+import { lastName, loadIdentity, saveIdentity } from "@/lib/identity";
 
 export function Home() {
   const navigate = useNavigate();
   const [name, setName] = useState(lastName);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const trimmed = name.trim();
+  const normalized = code.toUpperCase().replace(/[^A-Z]/g, "");
 
   const host = async (event: FormEvent) => {
     event.preventDefault();
-    const trimmed = name.trim();
     if (!trimmed) return;
     setBusy(true);
     try {
@@ -30,11 +31,36 @@ export function Home() {
     }
   };
 
-  const join = (event: FormEvent) => {
+  // Joining with a code uses the same name field, so there is no second
+  // "enter your name" screen; /join/:code remains for shared links.
+  const join = async (event: FormEvent) => {
     event.preventDefault();
-    const normalized = code.toUpperCase().replace(/[^A-Z]/g, "");
     if (normalized.length !== 4) return;
-    navigate(`/join/${normalized}`);
+    if (loadIdentity(normalized)) {
+      navigate(`/game/${normalized}`);
+      return;
+    }
+    if (!trimmed) {
+      toast.error("Enter your name first.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const joined = await api.joinGame(normalized, trimmed);
+      saveIdentity(normalized, { ...joined, name: trimmed });
+      navigate(`/game/${normalized}`);
+    } catch (err) {
+      const code = err instanceof ApiError ? err.code : "request_failed";
+      toast.error(
+        code === "room_full"
+          ? "That game is full."
+          : code === "no_game"
+            ? "No game with that code."
+            : "Couldn't join. Try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -62,7 +88,7 @@ export function Home() {
           type="submit"
           size="lg"
           className="h-12 text-base"
-          disabled={busy || !name.trim()}
+          disabled={busy || !trimmed}
         >
           Host a game
         </Button>
@@ -87,11 +113,15 @@ export function Home() {
             variant="secondary"
             size="lg"
             className="h-12"
-            disabled={code.replace(/[^A-Za-z]/g, "").length !== 4}
+            disabled={busy || normalized.length !== 4 || !trimmed}
+            data-testid="join-with-code"
           >
             Join
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground">
+          Uses the name above. Got a link instead? Just open it.
+        </p>
       </form>
     </main>
   );

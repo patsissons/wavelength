@@ -101,14 +101,12 @@ export function HostSettings({ settings }: { settings: Settings }) {
                 <Label>
                   Points to win: <strong>{settings.targetScore}</strong>
                 </Label>
-                <Slider
+                <SettingSlider
                   min={LIMITS.minTargetScore}
                   max={LIMITS.maxTargetScore}
-                  step={1}
-                  value={[settings.targetScore]}
-                  onValueCommit={([v]) =>
-                    v !== undefined && patch({ targetScore: v })
-                  }
+                  value={settings.targetScore}
+                  onCommit={(v) => patch({ targetScore: v })}
+                  label="Points to win"
                 />
               </fieldset>
               <Row
@@ -146,12 +144,12 @@ export function HostSettings({ settings }: { settings: Settings }) {
                 Rounds:{" "}
                 <strong data-testid="rounds-value">{settings.rounds}</strong>
               </Label>
-              <Slider
+              <SettingSlider
                 min={LIMITS.minRounds}
                 max={LIMITS.maxRounds}
-                step={1}
-                value={[settings.rounds]}
-                onValueCommit={([v]) => v !== undefined && patch({ rounds: v })}
+                value={settings.rounds}
+                onCommit={(v) => patch({ rounds: v })}
+                label="Rounds"
               />
             </fieldset>
           )}
@@ -229,5 +227,42 @@ function Row({
       </div>
       {children}
     </div>
+  );
+}
+
+/**
+ * A slider that follows the finger locally and only sends the value when
+ * the interaction ends, then snaps to whatever the server confirms.
+ */
+function SettingSlider({
+  min,
+  max,
+  value,
+  onCommit,
+  label,
+}: {
+  min: number;
+  max: number;
+  value: number;
+  onCommit: (value: number) => void;
+  label: string;
+}) {
+  const [local, setLocal] = useState(value);
+  const [confirmed, setConfirmed] = useState(value);
+  if (confirmed !== value) {
+    // The server confirmed a new value: adopt it (derived-state pattern).
+    setConfirmed(value);
+    setLocal(value);
+  }
+  return (
+    <Slider
+      min={min}
+      max={max}
+      step={1}
+      value={[local]}
+      aria-label={label}
+      onValueChange={([v]) => v !== undefined && setLocal(v)}
+      onValueCommit={([v]) => v !== undefined && onCommit(v)}
+    />
   );
 }

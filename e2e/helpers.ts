@@ -126,3 +126,55 @@ export async function expectDialNear(
     })
     .toBeLessThanOrEqual(tolerance);
 }
+
+/**
+ * Host + guests in a Co-op or FFA game with a fixed number of rounds, started.
+ * The rounds slider is driven with the keyboard from its default of 7.
+ */
+export async function startModeGame(
+  browser: Browser,
+  mode: "coop" | "ffa",
+  rounds: number,
+  guestNames: string[],
+) {
+  const host = await hostGame(browser, "Ann");
+  const guests: Client[] = [];
+  for (const name of guestNames) {
+    guests.push(await joinGame(browser, host.code, name));
+  }
+  await host.page.getByTestId("open-settings").click();
+  await host.page.getByTestId(`mode-${mode}`).click();
+  // The Rounds slider only exists once the mode change has round-tripped.
+  await expect(host.page.getByTestId("rounds-value")).toHaveText("7");
+  const thumb = host.page.getByRole("slider", { name: "Rounds" });
+  await thumb.focus();
+  // One step per round trip: each press is confirmed by the server.
+  for (let i = 7; i > rounds; i--) {
+    await host.page.keyboard.press("ArrowLeft");
+    await expect(host.page.getByTestId("rounds-value")).toHaveText(
+      String(i - 1),
+    );
+  }
+  for (let i = 7; i < rounds; i++) {
+    await host.page.keyboard.press("ArrowRight");
+    await expect(host.page.getByTestId("rounds-value")).toHaveText(
+      String(i + 1),
+    );
+  }
+  await host.page.keyboard.press("Escape");
+  await expect(host.page.getByTestId("mode-label")).toContainText(
+    `${rounds} rounds`,
+  );
+  await host.page.getByTestId("start-game").click();
+  await expect(host.page.getByTestId("score-header")).toBeVisible();
+  const all = [host, ...guests];
+  const close = () => Promise.all(all.map((c) => c.context.close()));
+  return { host, guests, all, code: host.code, close };
+}
+
+export async function readTarget(page: Page): Promise<number> {
+  const raw = await page.getByTestId("disc").getAttribute("data-target");
+  const target = Number(raw);
+  expect(target).toBeGreaterThan(0);
+  return target;
+}

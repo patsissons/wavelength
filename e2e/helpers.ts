@@ -45,10 +45,14 @@ export function playerRow(page: Page, name: string) {
   return page.locator(`[data-testid="player"][data-player-name="${name}"]`);
 }
 
-/** Host + three guests in a Teams game, started. Ann/Cid left, Bob/Dee right. */
+/**
+ * Host + three guests in a Teams game, started. Ann/Cid left, Bob/Dee right.
+ * `avatars` maps a player name to a catalog avatar id picked in the lounge.
+ */
 export async function startTeamsGame(
   browser: Browser,
   extraNames: string[] = [],
+  avatars: Record<string, string> = {},
 ) {
   const host = await hostGame(browser, "Ann");
   const bob = await joinGame(browser, host.code, "Bob");
@@ -57,6 +61,15 @@ export async function startTeamsGame(
   const extras: Client[] = [];
   for (const name of extraNames) {
     extras.push(await joinGame(browser, host.code, name));
+  }
+  for (const client of [host, bob, cid, dee, ...extras]) {
+    const id = avatars[client.name];
+    if (!id) continue;
+    await client.page.getByTestId("open-avatar").click();
+    await client.page.getByTestId(`avatar-${id}`).click();
+    await expect(
+      playerRow(client.page, client.name).locator(`[data-avatar=${id}]`),
+    ).toBeVisible();
   }
   await host.page.getByTestId("open-settings").click();
   await host.page.getByRole("button", { name: "Left Brain" }).click();

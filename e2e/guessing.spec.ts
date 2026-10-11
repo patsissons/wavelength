@@ -10,7 +10,9 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
   browser,
 }) => {
   // Ann, Cid, Eve on the left; Bob, Dee on the right. Ann is the psychic.
-  const game = await startTeamsGame(browser, ["Eve"]);
+  const game = await startTeamsGame(browser, ["Eve"], {
+    Eve: "dancing-unicorn",
+  });
   const { host, bob, cid } = game;
   const eve = game.extras[0]!;
   await psychicTurn(host.page, "Banana");
@@ -20,7 +22,8 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
   await expect(bob.page.getByTestId("accept-dial")).toHaveCount(0);
   await expect(bob.page.getByTestId("panel")).toContainText("is guessing");
 
-  // Cid drags; everyone sees the needle move, wearing Cid's colour.
+  // Cid drags; everyone sees the needle move, wearing Cid's colour and
+  // Cid's monogram on the knob (Cid has no avatar).
   await dragDial(cid.page, 0.2);
   await expectDialNear(bob.page, "shared", 0.2);
   await expectDialNear(eve.page, "shared", 0.2);
@@ -28,6 +31,9 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
     "data-by",
     "Cid",
   );
+  await expect(
+    eve.page.getByTestId("dial-shared").getByTestId("pip-initial"),
+  ).toHaveText("C");
 
   // Cid accepts → 1 of 2 (and a tick on Cid's pill); Eve moves → reset
   await cid.page.getByTestId("accept-dial").click();
@@ -49,6 +55,12 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
     "data-by",
     "Eve",
   );
+  // The knob now wears Eve's animated character.
+  await expect(
+    cid.page
+      .getByTestId("dial-shared")
+      .locator("[data-testid=pip-figure][data-avatar-id=dancing-unicorn]"),
+  ).toBeAttached();
   await expect(cid.page.getByTestId("accept-dial")).toHaveAttribute(
     "aria-pressed",
     "false",

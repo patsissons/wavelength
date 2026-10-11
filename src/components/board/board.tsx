@@ -9,6 +9,8 @@ import {
   sectorPath,
   wedgeSectors,
 } from "@shared/game/geometry";
+import type { AvatarRender } from "@/components/avatar/avatar";
+import { SvgAvatar } from "@/components/avatar/svg-avatar";
 import { cn } from "@/lib/utils";
 import { useDialDrag } from "./use-dial-drag";
 import { useSpinDrag } from "./use-spin";
@@ -19,6 +21,8 @@ export interface BoardDial {
   color: string;
   /** Name of whoever moved it last (shown in tests / tooltips). */
   by?: string;
+  /** Avatar of the owner (or last mover) drawn on the knob. */
+  avatar?: AvatarRender;
   /** Larger needle with a grab knob. */
   emphasized?: boolean;
   locked?: boolean;
@@ -266,6 +270,7 @@ function Needle({ dial }: { dial: BoardDial }) {
   const tip = positionToPoint(dial.position, R * 0.9);
   const knob = positionToPoint(dial.position, R + 2);
   const big = dial.emphasized;
+  const r = big ? 20 : 11;
   return (
     <g
       data-testid={`dial-${dial.id}`}
@@ -286,18 +291,43 @@ function Needle({ dial }: { dial: BoardDial }) {
       <circle
         cx={knob.x}
         cy={knob.y}
-        r={big ? 20 : 11}
+        r={r}
         fill={dial.color}
         stroke="var(--color-background)"
         strokeWidth={3}
       />
-      {dial.locked && (
-        <circle
-          cx={knob.x}
-          cy={knob.y}
-          r={big ? 8 : 5}
-          fill="var(--color-background)"
-        />
+      {dial.avatar ? (
+        <>
+          <SvgAvatar render={dial.avatar} cx={knob.x} cy={knob.y} r={r} />
+          {dial.locked && (
+            // A padlock pin on the knob's shoulder keeps the avatar visible.
+            <g data-testid="pip-lock">
+              <circle
+                cx={knob.x + r * 0.7}
+                cy={knob.y + r * 0.7}
+                r={big ? 7 : 4.5}
+                fill="var(--color-background)"
+                stroke={dial.color}
+                strokeWidth={2}
+              />
+              <circle
+                cx={knob.x + r * 0.7}
+                cy={knob.y + r * 0.7}
+                r={big ? 3 : 2}
+                fill={dial.color}
+              />
+            </g>
+          )}
+        </>
+      ) : (
+        dial.locked && (
+          <circle
+            cx={knob.x}
+            cy={knob.y}
+            r={big ? 8 : 5}
+            fill="var(--color-background)"
+          />
+        )
       )}
     </g>
   );

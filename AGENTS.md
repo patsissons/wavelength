@@ -99,6 +99,16 @@ Commit in small, modular units (one logical change per commit).
 - Player initials go through `firstGrapheme` (Intl.Segmenter): never
   `charAt(0)` a name, it splits emoji.
 - Effects must never leak the target (no warmer/colder for the psychic).
+- **Easter eggs are client-only and never touch the game.** They live in
+  `src/lib/eggs/` (registry = the console menu, the single list of what
+  exists; triggers; session-scoped modes in `sessionStorage`) and render
+  through the global `EggsLayer`. No egg reads `you.target` or anything
+  derived from it. Magic clues react to the public `clue.submitted` event
+  so every client reacts identically without a new message; the one
+  room-wide egg (Konami) is a `hidden` catalog effect sent through the
+  normal `effect.send` command, so it stays validated and rate-limited and
+  needs no protocol bump. Every egg collapses under "Reduce effects"
+  (`<html data-egg-reduce>`). Add an entry to `EGGS` for anything new.
 
 ## Gotchas
 

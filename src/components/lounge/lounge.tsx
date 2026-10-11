@@ -1,5 +1,6 @@
-import { Pencil } from "lucide-react";
+import { LogOut, Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { teamMembers } from "@shared/game/rotation";
 import { LIMITS } from "@shared/game/types";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export function Lounge() {
   const you = useGameStore((s) => s.you)!;
   const isHost = useGameStore(selectIsHost);
   const send = useCommand();
+  const navigate = useNavigate();
   const me = game.players[you.playerId];
   const count = Object.keys(game.players).length;
   const unlocked = usePrefs((s) => s.soundUnlocked);
@@ -57,6 +59,18 @@ export function Lounge() {
 
   return (
     <main className="safe-x safe-top mx-auto flex min-h-dvh w-full max-w-md flex-col gap-4 pb-28">
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-black tracking-tight">Lounge</h1>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/")}
+          data-testid="leave-game"
+          title="Back to the home screen; your seat stays open"
+        >
+          <LogOut /> Leave
+        </Button>
+      </div>
       <ShareCard code={game.code} />
 
       <section className="flex items-center justify-between rounded-2xl bg-card px-4 py-3">

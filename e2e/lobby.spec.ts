@@ -92,3 +92,20 @@ test("a code typed on the home page joins with the entered name", async ({
 
   await Promise.all([host.context.close(), context.close()]);
 });
+
+test("a player can leave the lounge for the home screen and come back", async ({
+  browser,
+}) => {
+  const host = await hostGame(browser, "Ann");
+  const bob = await joinGame(browser, host.code, "Bob");
+  await bob.page.getByTestId("leave-game").click();
+  await expect(bob.page).toHaveURL("/");
+  await expect(
+    bob.page.getByRole("button", { name: "Host a game" }),
+  ).toBeVisible();
+  // The seat is kept: the same code brings Bob straight back.
+  await bob.page.goto(`/game/${host.code}`);
+  await expect(playerRow(bob.page, "Bob")).toContainText("(you)");
+  await host.context.close();
+  await bob.context.close();
+});

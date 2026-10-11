@@ -68,6 +68,17 @@ test("a full Teams turn: bullseye scores 4, opponents vote, next turn rotates, h
     await expect(page.getByTestId("game-over")).toBeVisible();
     await expect(page.getByTestId("winner")).toContainText("Left Brain wins");
   }
+  // End-of-game stats: Cid hit the bullseye in the only turn played.
+  await expect(bob.page.getByTestId("award-sharpshooter")).toHaveAttribute(
+    "data-player-name",
+    "Cid",
+  );
+  await expect(bob.page.getByTestId("award-mindreader")).toHaveAttribute(
+    "data-player-name",
+    "Ann",
+  );
+  await expect(bob.page.getByTestId("player-stats")).toContainText("Cid");
+  await expect(bob.page.getByTestId("turns")).toContainText("Pineapple");
   await expect(bob.page.getByTestId("play-again")).toHaveCount(0);
   await host.page.getByTestId("play-again").click();
   await expect(bob.page.getByTestId("waiting")).toBeVisible();

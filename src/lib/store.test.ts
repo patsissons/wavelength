@@ -114,6 +114,7 @@ describe("store.receive", () => {
         votes: {},
         target: null,
         result: null,
+        log: [],
         catchUp: false,
         startedAt: 0,
       },
@@ -131,7 +132,13 @@ describe("store.receive", () => {
     s.receive({
       type: "event",
       version: 1,
-      event: { type: "dial.set", dialId: "shared", position: 0.2, by: "p2" },
+      event: {
+        type: "dial.set",
+        dialId: "shared",
+        position: 0.2,
+        by: "p2",
+        at: 1,
+      },
     });
     expect(useGameStore.getState().live.dials.shared).toBeUndefined();
     expect(useGameStore.getState().game?.round?.dials.shared?.position).toBe(
@@ -172,6 +179,7 @@ describe("store.receive", () => {
         votes: {},
         target: null,
         result: null,
+        log: [],
         catchUp: false,
         startedAt: 0,
       },
@@ -184,7 +192,7 @@ describe("store.receive", () => {
     s.receive({
       type: "event",
       version: 1,
-      event: { type: "dial.locked", dialId: "shared" },
+      event: { type: "dial.locked", dialId: "shared", at: 1 },
     });
     expect(seen).toHaveBeenLastCalledWith({ kind: "lock" });
 
@@ -203,7 +211,7 @@ describe("store.receive", () => {
     s.receive({
       type: "event",
       version: 1,
-      event: { type: "dial.locked", dialId: "shared" },
+      event: { type: "dial.locked", dialId: "shared", at: 1 },
     });
     expect(seen).toHaveBeenCalledTimes(1);
 
@@ -219,6 +227,17 @@ describe("store.receive", () => {
       deltas: { coop: 4 },
       goAgain: false,
       gameOver: null,
+      stats: {
+        durationMs: 0,
+        drawMs: null,
+        pickMs: null,
+        clueMs: null,
+        guessMs: null,
+        spins: 1,
+        peeks: 0,
+        clueLength: 1,
+        players: {},
+      },
     };
     s.receive({
       type: "event",

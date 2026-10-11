@@ -84,6 +84,63 @@ export interface DialState {
   locked: boolean;
 }
 
+/** Timed actions within a round; the raw material for the stats. */
+export type RoundLogEntry =
+  | { t: "draw"; at: number }
+  | { t: "side"; at: number }
+  | { t: "spin"; at: number }
+  | { t: "shroud"; at: number; open: boolean }
+  | { t: "clue"; at: number }
+  | {
+      t: "move";
+      at: number;
+      by: string;
+      dialId: string;
+      from: number;
+      to: number;
+    }
+  | { t: "accept"; at: number; by: string; dialId: string }
+  | { t: "unaccept"; at: number; by: string; dialId: string }
+  | { t: "lock"; at: number; dialId: string }
+  | { t: "vote"; at: number; by: string; side: Side };
+
+export interface PlayerRoundStats {
+  moves: number;
+  /** Sum of |to − from| in spectrum units (1 = the whole dial). */
+  travel: number;
+  /** Moves that brought the dial closer to / further from the target. */
+  toward: number;
+  away: number;
+  /** Σ wedge(to) − wedge(from) over their moves. */
+  pointsSwing: number;
+  /** Closest any of their moves got to the target, in spectrum units. */
+  closest: number | null;
+  /** From the clue to their first move. */
+  firstMoveMs: number | null;
+  firstMover: boolean;
+  /** They made the last move on a dial that then locked. */
+  finalMover: boolean;
+  accepts: number;
+  unaccepts: number;
+  /** Their accept was the one that locked the dial. */
+  lastAccepter: boolean;
+  vote: "correct" | "wrong" | null;
+}
+
+export interface RoundStats {
+  durationMs: number;
+  drawMs: number | null;
+  pickMs: number | null;
+  /** From the last spin to the clue. */
+  clueMs: number | null;
+  /** From the clue to the last lock. */
+  guessMs: number | null;
+  spins: number;
+  peeks: number;
+  clueLength: number;
+  players: Record<string, PlayerRoundStats>;
+}
+
 export interface VoteResult {
   left: number;
   right: number;
@@ -111,6 +168,7 @@ export interface RoundResult {
   goAgain: boolean;
   /** Decided at reveal; applied when the round advances. */
   gameOver: GameOver | null;
+  stats: RoundStats;
 }
 
 export interface Round {
@@ -134,6 +192,7 @@ export interface Round {
   /** Only populated from reveal onward. */
   target: number | null;
   result: RoundResult | null;
+  log: RoundLogEntry[];
   /** This round was granted by the catch-up rule. */
   catchUp: boolean;
   startedAt: number;

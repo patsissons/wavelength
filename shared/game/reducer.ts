@@ -1,5 +1,5 @@
 import type { GameEvent } from "../protocol/events";
-import type { DialState, GameState, Round } from "./types";
+import type { DialState, GameState, Round, RoundLogEntry } from "./types";
 
 /**
  * Apply one event to the public game state. Pure: returns a new state and
@@ -73,7 +73,11 @@ function reduce(state: GameState, event: GameEvent): GameState {
       };
 
     case "card.drawn":
-      return updateRound(state, { card: event.card }, event.deckRemaining);
+      return updateRound(
+        state,
+        { card: event.card, log: logged(state, { t: "draw", at: event.at }) },
+        event.deckRemaining,
+      );
 
     case "side.picked":
       // The shroud swings open so the psychic (and the room) can watch the spin.
@@ -81,51 +85,89 @@ function reduce(state: GameState, event: GameEvent): GameState {
         side: event.side,
         spectrum: event.spectrum,
         shroudOpen: true,
+        log: logged(state, { t: "side", at: event.at }),
       });
 
     case "spin.started":
       return updateRound(state, {
         spin: event.spin,
         spins: (state.round?.spins ?? 0) + 1,
+        log: logged(state, { t: "spin", at: event.spin.startedAt }),
       });
 
     case "shroud.toggled":
       return updateRound(state, {
         shroudOpen: event.open,
         peeks: (state.round?.peeks ?? 0) + (event.open ? 1 : 0),
+        log: logged(state, { t: "shroud", at: event.at, open: event.open }),
       });
 
     case "clue.submitted":
       // Giving the clue covers the wheel again; the psychic can peek later.
-      return updateRound(state, { clue: event.clue, shroudOpen: false });
+      return updateRound(state, {
+        clue: event.clue,
+        shroudOpen: false,
+        log: logged(state, { t: "clue", at: event.at }),
+      });
 
-    case "dial.set":
-      return updateDial(state, event.dialId, (dial) => ({
-        ...dial,
-        position: event.position,
-        movedBy: event.by,
-        accepts: [],
-      }));
+    case "dial.set": {
+      const from = state.round?.dials[event.dialId]?.position ?? 0.5;
+      return updateDial(
+        state,
+        event.dialId,
+        (dial) => ({
+          ...dial,
+          position: event.position,
+          movedBy: event.by,
+          accepts: [],
+        }),
+        {
+          t: "move",
+          at: event.at,
+          by: event.by,
+          dialId: event.dialId,
+          from,
+          to: event.position,
+        },
+      );
+    }
 
     case "dial.accepted":
-      return updateDial(state, event.dialId, (dial) => ({
-        ...dial,
-        accepts: dial.accepts.includes(event.playerId)
-          ? dial.accepts
-          : [...dial.accepts, event.playerId],
-      }));
+      return updateDial(
+        state,
+        event.dialId,
+        (dial) => ({
+          ...dial,
+          accepts: dial.accepts.includes(event.playerId)
+            ? dial.accepts
+            : [...dial.accepts, event.playerId],
+        }),
+        { t: "accept", at: event.at, by: event.playerId, dialId: event.dialId },
+      );
 
     case "dial.unaccepted":
-      return updateDial(state, event.dialId, (dial) => ({
-        ...dial,
-        accepts: dial.accepts.filter((id) => id !== event.playerId),
-      }));
+      return updateDial(
+        state,
+        event.dialId,
+        (dial) => ({
+          ...dial,
+          accepts: dial.accepts.filter((id) => id !== event.playerId),
+        }),
+        {
+          t: "unaccept",
+          at: event.at,
+          by: event.playerId,
+          dialId: event.dialId,
+        },
+      );
 
     case "dial.locked":
-      return updateDial(state, event.dialId, (dial) => ({
-        ...dial,
-        locked: true,
-      }));
+      return updateDial(
+        state,
+        event.dialId,
+        (dial) => ({ ...dial, locked: true }),
+        { t: "lock", at: event.at, dialId: event.dialId },
+      );
 
     case "phase.changed":
       return { ...state, phase: event.phase };
@@ -133,6 +175,12 @@ function reduce(state: GameState, event: GameEvent): GameState {
     case "vote.cast":
       return updateRound(state, {
         votes: { ...(state.round?.votes ?? {}), [event.playerId]: event.side },
+        log: logged(state, {
+          t: "vote",
+          at: event.at,
+          by: event.playerId,
+          side: event.side,
+        }),
       });
 
     case "round.revealed":
@@ -206,6 +254,7 @@ function updateDial(
   state: GameState,
   dialId: string,
   update: (dial: DialState) => DialState,
+  entry?: RoundLogEntry,
 ): GameState {
   const dial = state.round?.dials[dialId];
   if (!state.round || !dial) return state;
@@ -214,8 +263,13 @@ function updateDial(
     round: {
       ...state.round,
       dials: { ...state.round.dials, [dialId]: update(dial) },
+      log: entry ? [...state.round.log, entry] : state.round.log,
     },
   };
+}
+
+function logged(state: GameState, entry: RoundLogEntry): RoundLogEntry[] {
+  return [...(state.round?.log ?? []), entry];
 }
 
 function removePlayerFromRound(round: Round, playerId: string): Round {

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { audio } from "@/lib/audio";
 import { vibrate } from "@/lib/haptics";
 import { usePrefs } from "@/lib/prefs";
+import { requestWakeLock } from "@/lib/wake-lock";
 
 /** iOS only plays audio after a tap: this is that tap. Also tests haptics. */
 export function EnableSound() {
@@ -20,6 +21,7 @@ export function EnableSound() {
           className="h-12"
           data-testid="enable-sound"
           onClick={async () => {
+            void requestWakeLock();
             const ok = await audio.unlock();
             if (ok) {
               setMuted(false);

@@ -138,4 +138,14 @@ describe("store.receive", () => {
       0.2,
     );
   });
+
+  it("flags an outdated client when the server protocol is newer", () => {
+    const s = useGameStore.getState();
+    s.receive({
+      type: "snapshot",
+      state: { ...game, protocolVersion: game.protocolVersion + 1 },
+      you: { playerId: "p1", target: null },
+    });
+    expect(useGameStore.getState().outdated).toBe(true);
+  });
 });

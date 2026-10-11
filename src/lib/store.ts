@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { applyEvent } from "@shared/game/reducer";
-import type { GameState } from "@shared/game/types";
+import { PROTOCOL_VERSION, type GameState } from "@shared/game/types";
 import type { ErrorCode, ServerMessage } from "@shared/protocol/messages";
 import { effectBus } from "./effect-bus";
 
@@ -28,6 +28,8 @@ export interface GameStore {
   conn: ConnStatus;
   live: LiveState;
   error: GameError | null;
+  /** The server runs a newer protocol than this bundle. */
+  outdated: boolean;
   /** Handle a server message; returns "gap" when a resync is required. */
   receive: (message: ServerMessage) => "gap" | undefined;
   setConn: (status: ConnStatus) => void;
@@ -56,6 +58,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   conn: "connecting",
   live: emptyLive(),
   error: null,
+  outdated: false,
 
   receive(message) {
     switch (message.type) {
@@ -64,6 +67,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           game: message.state,
           you: message.you,
           live: emptyLive(),
+          outdated: message.state.protocolVersion > PROTOCOL_VERSION,
         });
         return;
       case "event": {
@@ -151,6 +155,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       conn: "connecting",
       live: emptyLive(),
       error: null,
+      outdated: false,
     }),
 }));
 

@@ -17,7 +17,8 @@ export type SoundPatch =
   | "newround"
   | "laugh"
   | "hmm"
-  | "sparkle";
+  | "sparkle"
+  | "poke";
 
 export type ScreenFx = "shake" | "flash" | "fog" | "spotlight";
 

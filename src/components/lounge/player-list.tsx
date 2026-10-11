@@ -6,6 +6,7 @@ import { PlayerAvatar } from "@/components/player-avatar";
 import { Button } from "@/components/ui/button";
 import { selectIsHost, useGameStore } from "@/lib/store";
 import { useCommand } from "@/lib/use-game-connection";
+import { usePoke } from "@/lib/use-poke";
 import { cn } from "@/lib/utils";
 
 export function PlayerList() {
@@ -15,6 +16,7 @@ export function PlayerList() {
   const send = useCommand();
   const players = playersInOrder(game);
   const teams = game.settings.mode === "teams";
+  const poke = usePoke();
 
   const column = (team: TeamId | null) => (
     <ul
@@ -35,18 +37,29 @@ export function PlayerList() {
             data-away={p.away || undefined}
             data-connected={p.connected || undefined}
           >
-            <PlayerAvatar player={p} size="sm" />
-            <span
-              className={cn(
-                "min-w-0 flex-1 truncate text-sm",
-                p.away && "text-muted-foreground line-through",
-              )}
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default"
+              onClick={() => poke?.(p.id)}
+              disabled={!poke || p.id === you.playerId}
+              title={
+                poke && p.id !== you.playerId ? `Poke ${p.name}` : undefined
+              }
+              data-testid="poke"
             >
-              {p.name}
-              {p.id === you.playerId && (
-                <span className="text-muted-foreground"> (you)</span>
-              )}
-            </span>
+              <PlayerAvatar player={p} size="sm" />
+              <span
+                className={cn(
+                  "min-w-0 flex-1 truncate text-sm",
+                  p.away && "text-muted-foreground line-through",
+                )}
+              >
+                {p.name}
+                {p.id === you.playerId && (
+                  <span className="text-muted-foreground"> (you)</span>
+                )}
+              </span>
+            </button>
             {p.id === game.hostId && (
               <Crown className="size-4 text-primary" aria-label="host" />
             )}

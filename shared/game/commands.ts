@@ -1,4 +1,5 @@
 import type { DeckState } from "../deck/deck";
+import { canSendEffect } from "../effects/catalog";
 import { buildDeck, deckRemaining, drawCard } from "../deck/deck";
 import type { GameEvent } from "../protocol/events";
 import type {
@@ -150,6 +151,7 @@ export function createGame(input: {
       scores: {},
       round: null,
       roundsPlayed: 0,
+      effectTally: {},
       history: [],
       suddenDeath: false,
       gameOver: null,
@@ -532,7 +534,34 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
       return;
 
     case "effect.send":
-      // Relayed by the room as an ephemeral; nothing to persist.
+      // The room relays the effect itself as an ephemeral (after its rate
+      // limit); the game only keeps the tally.
+      if (!canSendEffect(game, me.id, cmd.effectId)) {
+        fail(
+          "not_allowed",
+          game.settings.effects
+            ? "that effect isn't yours to send"
+            : "effects are off",
+        );
+      }
+      tx.emit({
+        type: "effect.sent",
+        by: me.id,
+        effectId: cmd.effectId,
+        to: null,
+      });
+      return;
+
+    case "poke.send":
+      if (!game.settings.effects) fail("not_allowed", "effects are off");
+      if (cmd.playerId === me.id) fail("invalid", "you can't poke yourself");
+      if (!game.players[cmd.playerId]) fail("invalid", "no such player");
+      tx.emit({
+        type: "effect.sent",
+        by: me.id,
+        effectId: "poke",
+        to: cmd.playerId,
+      });
       return;
   }
 }

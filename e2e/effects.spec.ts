@@ -37,6 +37,28 @@ test("effects reach every player, respect roles and are rate limited", async ({
     await expect(page.getByTestId("effect-from").first()).toHaveText("Cid");
   }
 
+  // Cid pokes Bob by tapping his name: Bob's screen reacts, everyone sees it.
+  await expect(
+    cid.page.locator(
+      "[data-testid=presence-player][data-player-name=Cid] [data-testid=poke]",
+    ),
+  ).toBeDisabled();
+  await cid.page
+    .locator(
+      "[data-testid=presence-player][data-player-name=Bob] [data-testid=poke]",
+    )
+    .click();
+  await expect(bob.page.getByTestId("effects-layer")).toHaveAttribute(
+    "data-poked-by",
+    "Cid",
+  );
+  await expect(
+    host.page.locator("[data-testid=effect-burst][data-effect=poke]").first(),
+  ).toBeAttached();
+  await expect(host.page.getByTestId("effects-layer")).not.toHaveAttribute(
+    "data-poked-by",
+  );
+
   // Spamming trips the server rate limit (3 burst, then ~1 per 1.5s).
   for (const id of ["laugh", "heart", "wow", "confident", "left", "right"]) {
     await cid.page.getByTestId(`effect-${id}`).click();

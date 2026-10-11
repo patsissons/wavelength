@@ -807,3 +807,48 @@ describe("free-for-all sweep", () => {
     expect(state.game.scores.p0).toBe(6);
   });
 });
+
+describe("reactions and pokes", () => {
+  it("tallies effects and pokes per player and validates them", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    state = run(state, "p0", cmd("effect.send", { effectId: "applause" }));
+    state = run(state, "p0", cmd("effect.send", { effectId: "applause" }));
+    state = run(state, "p1", cmd("poke.send", { playerId: "p0" }));
+    expect(state.game.effectTally).toEqual({
+      p0: { applause: 2, poked: 1 },
+      p1: { poke: 1 },
+    });
+    expectError(
+      state,
+      "p0",
+      cmd("effect.send", { effectId: "drumroll" }),
+      "not_allowed",
+    );
+    expectError(state, "p0", cmd("poke.send", { playerId: "p0" }), "invalid");
+    expectError(state, "p0", cmd("poke.send", { playerId: "zz" }), "invalid");
+    // The tally is per game: starting a game clears the lobby chatter.
+    state = run(state, "p0", cmd("game.start"));
+    expect(state.game.effectTally).toEqual({});
+  });
+
+  it("refuses reactions when effects are off", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    state = run(
+      state,
+      "p0",
+      cmd("settings.update", { patch: { effects: false } }),
+    );
+    expectError(
+      state,
+      "p1",
+      cmd("poke.send", { playerId: "p0" }),
+      "not_allowed",
+    );
+    expectError(
+      state,
+      "p1",
+      cmd("effect.send", { effectId: "applause" }),
+      "not_allowed",
+    );
+  });
+});

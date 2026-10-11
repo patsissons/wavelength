@@ -101,12 +101,15 @@ export function GameOver() {
 /** Awards, numbers and a per-player table computed from the round history. */
 function Stats() {
   const game = useGameStore((s) => s.game)!;
-  const { history, players, settings } = game;
+  const { history, players, settings, effectTally } = game;
   const awards = useMemo(
-    () => gameAwards(history, players, settings.mode),
-    [history, players, settings.mode],
+    () => gameAwards(history, players, settings.mode, effectTally),
+    [history, players, settings.mode, effectTally],
   );
-  const facts = useMemo(() => gameFacts(history, players), [history, players]);
+  const facts = useMemo(
+    () => gameFacts(history, players, effectTally),
+    [history, players, effectTally],
+  );
   const totals = useMemo(
     () => playerTotals(history, players),
     [history, players],

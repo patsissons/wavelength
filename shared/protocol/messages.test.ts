@@ -29,6 +29,7 @@ describe("parseClientMessage", () => {
       { cmdId, type: "host.endGame" },
       { cmdId, type: "game.playAgain" },
       { cmdId, type: "effect.send", effectId: "applause" },
+      { cmdId, type: "poke.send", playerId: "p2" },
     ];
     for (const message of messages) {
       const parsed = parseClientMessage(JSON.stringify(message));

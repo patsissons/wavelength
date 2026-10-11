@@ -321,7 +321,26 @@ describe("gameAwards / gameFacts", () => {
     expect(by.spindoctor!.playerId).toBe("ann");
     expect(by.peeker!.playerId).toBe("ann");
     expect(by.oracle).toBeUndefined(); // not teams
+    expect(by.hype).toBeUndefined(); // no reactions without a tally
     expect(gameAwards([], players, "ffa")).toEqual([]);
+  });
+
+  it("awards reactions and pokes from the tally", () => {
+    const tally = {
+      ann: { applause: 2, laugh: 1, poke: 3 },
+      bob: { ghost: 1, poked: 2 },
+      cid: { poked: 1 },
+    };
+    const awards = gameAwards(history, players, "coop", tally);
+    const by = Object.fromEntries(awards.map((a) => [a.id, a]));
+    expect(by.hype!.playerId).toBe("ann");
+    expect(by.hype!.value).toBe("3 reactions");
+    expect(by.pest!.playerId).toBe("ann");
+    expect(by.punchingbag!.playerId).toBe("bob");
+    const facts = gameFacts(history, players, tally);
+    const f = Object.fromEntries(facts.map((x) => [x.id, x.value]));
+    expect(f.reactions).toBe("4 sent · favourite 👏");
+    expect(f.pokes).toBe("3");
   });
 
   it("summarises the game in facts", () => {

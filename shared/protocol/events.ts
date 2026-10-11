@@ -71,6 +71,7 @@ export type GameEvent =
       deckRemaining: number;
     }
   | { type: "game.over"; gameOver: GameOver }
+  | { type: "effect.sent"; by: string; effectId: string; to: string | null }
   | { type: "game.reset"; scores: Record<string, number> };
 
 export type GameEventType = GameEvent["type"];

@@ -769,6 +769,27 @@ const PATCHES: Record<SoundPatch, Patch> = {
       });
     }
   },
+  poke: (ctx, out, v) => {
+    // A springy "boing": a fast pitch drop with a wobbling tail.
+    tone(ctx, out, {
+      type: "square",
+      from: 900,
+      to: 220,
+      start: 0,
+      duration: 0.12,
+      gain: 0.18 * v,
+    });
+    for (let i = 0; i < 5; i++) {
+      tone(ctx, out, {
+        type: "triangle",
+        from: 300 - i * 25,
+        to: 240 - i * 25,
+        start: 0.1 + i * 0.08,
+        duration: 0.09,
+        gain: (0.18 - i * 0.03) * v,
+      });
+    }
+  },
   crickets: (ctx, out, v) => {
     for (let i = 0; i < 6; i++) {
       tone(ctx, out, {

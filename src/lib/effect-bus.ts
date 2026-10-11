@@ -1,6 +1,6 @@
 import type { Ephemeral } from "@shared/protocol/messages";
 
-export type EffectPayload = Extract<Ephemeral, { kind: "effect" }>;
+export type EffectPayload = Extract<Ephemeral, { kind: "effect" | "poke" }>;
 
 /** Tiny pub/sub decoupled from React state. */
 class Bus<T> {

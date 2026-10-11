@@ -240,6 +240,11 @@ export interface GameState {
    * one psychic turn per player (`history.length` counts the turns).
    */
   roundsPlayed: number;
+  /**
+   * Reactions sent this game: player id → effect id → count. Pokes count
+   * as "poke" for the sender and "poked" for the target.
+   */
+  effectTally: Record<string, Record<string, number>>;
   history: RoundResult[];
   suddenDeath: boolean;
   gameOver: GameOver | null;

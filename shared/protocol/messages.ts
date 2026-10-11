@@ -90,6 +90,7 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("effect.send"),
     effectId: z.string().min(1).max(40),
   }),
+  withCmd({ type: z.literal("poke.send"), playerId: PlayerId }),
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -113,7 +114,8 @@ export type ErrorCode =
 
 export type Ephemeral =
   | { kind: "dial.live"; dialId: string; position: number; by: string }
-  | { kind: "effect"; effectId: string; from: string; nonce: string };
+  | { kind: "effect"; effectId: string; from: string; nonce: string }
+  | { kind: "poke"; from: string; to: string; nonce: string };
 
 export type ServerMessage =
   | {

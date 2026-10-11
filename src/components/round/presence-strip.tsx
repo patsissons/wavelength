@@ -1,6 +1,7 @@
 import { playersInOrder } from "@shared/game/rotation";
 import type { GameState } from "@shared/game/types";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { usePoke } from "@/lib/use-poke";
 import { cn } from "@/lib/utils";
 
 /** Compact row of everyone in the game with connection state. */
@@ -12,6 +13,7 @@ export function PresenceStrip({
   playerId: string;
 }) {
   const psychicId = game.round?.psychicId;
+  const poke = usePoke();
   return (
     <ul className="flex flex-wrap gap-1.5" data-testid="presence">
       {playersInOrder(game).map((p) => (
@@ -34,15 +36,24 @@ export function PresenceStrip({
                 : `${p.name} is reconnecting`
           }
         >
-          <PlayerAvatar player={p} size="sm" />
-          <span
-            className={cn(
-              "max-w-20 truncate",
-              p.id === playerId && "font-semibold",
-            )}
+          <button
+            type="button"
+            className="flex items-center gap-1 disabled:cursor-default"
+            onClick={() => poke?.(p.id)}
+            disabled={!poke || p.id === playerId}
+            aria-label={poke && p.id !== playerId ? `Poke ${p.name}` : p.name}
+            data-testid="poke"
           >
-            {p.name}
-          </span>
+            <PlayerAvatar player={p} size="sm" />
+            <span
+              className={cn(
+                "max-w-20 truncate",
+                p.id === playerId && "font-semibold",
+              )}
+            >
+              {p.name}
+            </span>
+          </button>
           {!p.connected && (
             <span
               className={cn(

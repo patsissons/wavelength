@@ -1,3 +1,4 @@
+import { effectById } from "../effects/catalog";
 import { SEGMENT } from "./geometry";
 import { sideOfTarget, wedgeScore } from "./scoring";
 import type {
@@ -233,10 +234,32 @@ const deg = (v: number) => `${Math.round(v * DEG)}°`;
  * Fun superlatives for the end screen. Each award only appears when the
  * data supports it; ties go to whoever joined first.
  */
+/** Reactions a player sent (pokes included, "poked" excluded). */
+export function reactionsSent(tally: Record<string, number> | undefined) {
+  let count = 0;
+  for (const [id, n] of Object.entries(tally ?? {})) {
+    if (id !== "poked") count += n;
+  }
+  return count;
+}
+
+/** The reaction a player sent most, if any. */
+export function favouriteReaction(
+  tally: Record<string, number> | undefined,
+): { id: string; count: number } | null {
+  let best: { id: string; count: number } | null = null;
+  for (const [id, count] of Object.entries(tally ?? {})) {
+    if (id === "poked" || id === "poke") continue;
+    if (!best || count > best.count) best = { id, count };
+  }
+  return best;
+}
+
 export function gameAwards(
   history: ReadonlyArray<RoundResult>,
   players: Record<string, Player>,
   mode: Mode,
+  tally: Record<string, Record<string, number>> = {},
 ): Award[] {
   const totals = playerTotals(history, players);
   const awards: Award[] = [];
@@ -443,6 +466,36 @@ export function gameAwards(
     (t) => `${t.peeks} ${t.peeks === 1 ? "peek" : "peeks"}`,
     (s) => s >= 1,
   );
+  pick(
+    "hype",
+    "📣",
+    "Hype machine",
+    totals,
+    (t) => reactionsSent(tally[t.id]) - (tally[t.id]?.poke ?? 0),
+    "max",
+    (t) => `${reactionsSent(tally[t.id]) - (tally[t.id]?.poke ?? 0)} reactions`,
+    (s) => s >= 3,
+  );
+  pick(
+    "pest",
+    "👉",
+    "Pest",
+    totals,
+    (t) => tally[t.id]?.poke ?? 0,
+    "max",
+    (t) => `${tally[t.id]?.poke ?? 0} pokes`,
+    (s) => s >= 2,
+  );
+  pick(
+    "punchingbag",
+    "🥊",
+    "Punching bag",
+    totals,
+    (t) => tally[t.id]?.poked ?? 0,
+    "max",
+    (t) => `poked ${tally[t.id]?.poked ?? 0} times`,
+    (s) => s >= 2,
+  );
   if (mode === "teams") {
     pick(
       "oracle",
@@ -467,6 +520,7 @@ export interface Fact {
 export function gameFacts(
   history: ReadonlyArray<RoundResult>,
   players: Record<string, Player>,
+  tally: Record<string, Record<string, number>> = {},
 ): Fact[] {
   if (history.length === 0) return [];
   const facts: Fact[] = [];
@@ -535,6 +589,27 @@ export function gameFacts(
       value: `${deg(Math.max(0, closestMiss))} outside the wedge`,
     });
   }
+  const reactions: Record<string, number> = {};
+  let pokes = 0;
+  for (const mine of Object.values(tally)) {
+    for (const [id, n] of Object.entries(mine)) {
+      if (id === "poked") continue;
+      if (id === "poke") pokes += n;
+      else reactions[id] = (reactions[id] ?? 0) + n;
+    }
+  }
+  const sent = Object.values(reactions).reduce((a, b) => a + b, 0);
+  if (sent > 0) {
+    const top = Object.entries(reactions).sort((a, b) => b[1] - a[1])[0]!;
+    facts.push({
+      id: "reactions",
+      label: "Reactions",
+      value: `${sent} sent · favourite ${effectIcon(top[0])}`,
+    });
+  }
+  if (pokes > 0) {
+    facts.push({ id: "pokes", label: "Pokes", value: `${pokes}` });
+  }
   if (longest && history.length > 1) {
     facts.push({
       id: "longest",
@@ -550,4 +625,10 @@ export function gameFacts(
     });
   }
   return facts;
+}
+
+/** The emoji shown for a reaction id (the effect's icon, or 👉 for pokes). */
+export function effectIcon(id: string): string {
+  if (id === "poke") return "👉";
+  return effectById(id)?.icon ?? "✨";
 }

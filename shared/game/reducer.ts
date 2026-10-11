@@ -71,6 +71,7 @@ function reduce(state: GameState, event: GameEvent): GameState {
         history: [],
         suddenDeath: false,
         gameOver: null,
+        effectTally: {},
       };
 
     case "card.drawn":
@@ -210,6 +211,12 @@ function reduce(state: GameState, event: GameEvent): GameState {
     case "game.over":
       return { ...state, phase: "gameover", gameOver: event.gameOver };
 
+    case "effect.sent": {
+      let tally = tallied(state.effectTally, event.by, event.effectId);
+      if (event.to) tally = tallied(tally, event.to, "poked");
+      return { ...state, effectTally: tally };
+    }
+
     case "game.reset":
       return {
         ...state,
@@ -266,6 +273,18 @@ function updateDial(
       dials: { ...state.round.dials, [dialId]: update(dial) },
       log: entry ? [...state.round.log, entry] : state.round.log,
     },
+  };
+}
+
+function tallied(
+  tally: GameState["effectTally"],
+  playerId: string,
+  effectId: string,
+): GameState["effectTally"] {
+  const mine = tally[playerId] ?? {};
+  return {
+    ...tally,
+    [playerId]: { ...mine, [effectId]: (mine[effectId] ?? 0) + 1 },
   };
 }
 

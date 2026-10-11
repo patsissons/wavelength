@@ -13,7 +13,7 @@ import { usePrefs } from "./prefs";
  * session becomes "playback" and Web Audio is audible again. `unlock()`
  * therefore also starts a looping, inaudible <audio> element.
  */
-export type LoopName = "lounge";
+export type LoopName = "lounge" | "disco";
 
 class AudioManager {
   #ctx: AudioContext | null = null;
@@ -222,6 +222,14 @@ class AudioManager {
 }
 
 export const audio = new AudioManager();
+
+/** Every synthesised patch and loop, for the jukebox egg. */
+export function soundNames(): { patches: SoundPatch[]; loops: LoopName[] } {
+  return {
+    patches: Object.keys(PATCHES) as SoundPatch[],
+    loops: Object.keys(LOOPS) as LoopName[],
+  };
+}
 
 /** One second of 8 kHz, 8-bit silence as a WAV data URI (~8 KB). */
 const SILENT_WAV = (() => {
@@ -457,8 +465,79 @@ const E3 = 164.81;
 const CHORD_EM7 = [329.63, 392, 493.88, 587.33];
 const CHORD_A7 = [440, 554.37, 659.25, 783.99];
 
-/** Two bars of a laid-back funk groove at 104 BPM. */
+// A minor for the disco: bass octaves and a two-chord vamp
+const A1 = 55;
+const A2_ = 110;
+const C2 = 65.41;
+const F2 = 87.31;
+const G2_ = 98;
+const CHORD_AM = [440, 523.25, 659.25, 880];
+const CHORD_F = [349.23, 440, 523.25, 698.46];
+const CHORD_G = [392, 493.88, 587.33, 783.99];
+
+/** Two bars of a laid-back funk groove at 104 BPM, and a disco stomp. */
 const LOOPS: Record<LoopName, LoopPattern> = {
+  disco: {
+    bpm: 124,
+    steps: 32,
+    step(ctx, out, step, at, stepDur) {
+      const t = at - ctx.currentTime;
+      // four on the floor, open hat on every off-beat, claps on 2 and 4
+      if (step % 4 === 0) kick(ctx, out, at, 0.6);
+      if (step % 4 === 2) {
+        noise(ctx, out, {
+          start: t,
+          duration: 0.16,
+          gain: 0.09,
+          filter: { type: "highpass", from: 6000 },
+        });
+      }
+      if (step % 8 === 4) {
+        noise(ctx, out, {
+          start: t,
+          duration: 0.1,
+          gain: 0.2,
+          filter: { type: "bandpass", from: 1500 },
+        });
+      }
+      // octave bass: root on the beat, octave up on the "and"
+      const bar = Math.floor(step / 8);
+      const root = [A1, A1, F2, G2_][bar]!;
+      if (step % 2 === 0) {
+        pluck(
+          ctx,
+          out,
+          step % 4 === 0 ? root : root * 2,
+          at,
+          stepDur * 1.4,
+          0.3,
+        );
+      }
+      // string-ish chord stabs
+      if (step % 8 === 0 || step % 8 === 3 || step % 8 === 6) {
+        const chord = [CHORD_AM, CHORD_AM, CHORD_F, CHORD_G][bar]!;
+        for (const f of chord) {
+          tone(ctx, out, {
+            type: "sawtooth",
+            from: f,
+            start: t,
+            duration: stepDur * (step % 8 === 6 ? 1.8 : 0.9),
+            gain: 0.03,
+          });
+        }
+      }
+      // a little sparkle lead on the last bar
+      if (bar === 3 && step % 2 === 1) {
+        tone(ctx, out, {
+          type: "triangle",
+          from: [C2, A2_, G2_, F2][(step >> 1) % 4]! * 8,
+          start: t,
+          duration: stepDur * 0.8,
+          gain: 0.05,
+        });
+      }
+    },
+  },
   lounge: {
     bpm: 104,
     steps: 32,
@@ -768,6 +847,94 @@ const PATCHES: Record<SoundPatch, Patch> = {
         gain: 0.04 * v,
       });
     }
+  },
+  konami: (ctx, out, v) => {
+    // The 8-bit "cheat accepted" riff: a quick square arpeggio, a bend up
+    // and a held top note with vibrato-ish stutter.
+    [659.25, 783.99, 1046.5, 1318.5].forEach((f, i) =>
+      tone(ctx, out, {
+        type: "square",
+        from: f,
+        start: i * 0.08,
+        duration: 0.1,
+        gain: 0.09 * v,
+      }),
+    );
+    tone(ctx, out, {
+      type: "square",
+      from: 1046.5,
+      to: 1568,
+      start: 0.36,
+      duration: 0.16,
+      gain: 0.09 * v,
+    });
+    for (let i = 0; i < 4; i++) {
+      tone(ctx, out, {
+        type: "square",
+        from: i % 2 ? 1568 : 1760,
+        start: 0.56 + i * 0.07,
+        duration: 0.06,
+        gain: 0.08 * v,
+      });
+    }
+  },
+  squeak: (ctx, out, v) => {
+    // A banana-peel slip: two rubbery chirps and a thud.
+    for (let i = 0; i < 2; i++) {
+      tone(ctx, out, {
+        type: "sine",
+        from: 1400,
+        to: 2600,
+        start: i * 0.14,
+        duration: 0.1,
+        gain: 0.16 * v,
+      });
+      tone(ctx, out, {
+        type: "sine",
+        from: 2600,
+        to: 1200,
+        start: i * 0.14 + 0.09,
+        duration: 0.06,
+        gain: 0.12 * v,
+      });
+    }
+    kick(ctx, out, ctx.currentTime + 0.34, 0.5 * v);
+  },
+  splash: (ctx, out, v) => {
+    // A cannonball: a bloop dropping in pitch under a wash of noise.
+    tone(ctx, out, {
+      type: "sine",
+      from: 520,
+      to: 120,
+      start: 0,
+      duration: 0.25,
+      gain: 0.22 * v,
+    });
+    noise(ctx, out, {
+      start: 0.03,
+      duration: 0.5,
+      gain: 0.22 * v,
+      filter: { type: "lowpass", from: 4000, to: 500 },
+    });
+  },
+  squeal: (ctx, out, v) => {
+    // Tyres on a hot wheel: a wavering high sawtooth over hissing noise.
+    for (let i = 0; i < 6; i++) {
+      tone(ctx, out, {
+        type: "sawtooth",
+        from: i % 2 ? 1900 : 2300,
+        to: i % 2 ? 2300 : 1900,
+        start: i * 0.07,
+        duration: 0.09,
+        gain: 0.05 * v,
+      });
+    }
+    noise(ctx, out, {
+      start: 0,
+      duration: 0.5,
+      gain: 0.1 * v,
+      filter: { type: "bandpass", from: 3000, to: 1200 },
+    });
   },
   poke: (ctx, out, v) => {
     // A springy "boing": a fast pitch drop with a wobbling tail.

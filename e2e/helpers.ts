@@ -201,3 +201,29 @@ export async function readTarget(page: Page): Promise<number> {
   expect(target).toBeGreaterThan(0);
   return target;
 }
+
+/**
+ * A flat-out flick: nearly a full turn in four pointer moves, so even a
+ * browser that stamps synthetic events in real time reports a velocity
+ * well past the server's clamp (the Pixel emulation lands around 20 rad/s
+ * with `flickWheel`).
+ */
+export async function flickWheelHard(page: Page) {
+  const box = (await page.getByTestId("board").boundingBox())!;
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height * (205 / 230);
+  const r = box.width * 0.4;
+  const at = (deg: number) => {
+    const a = (deg * Math.PI) / 180;
+    return [cx + r * Math.cos(a), cy - r * Math.sin(a)] as const;
+  };
+  // Press just above the baseline (inside the board), then sweep round;
+  // pointer capture keeps the moves below the baseline on the wheel.
+  await page.mouse.move(...at(170));
+  await page.mouse.down();
+  // Each hop is just under a half turn: the most the wheel reads per event.
+  for (const deg of [0, -170, -340, -510, -680]) {
+    await page.mouse.move(...at(deg), { steps: 1 });
+  }
+  await page.mouse.up();
+}

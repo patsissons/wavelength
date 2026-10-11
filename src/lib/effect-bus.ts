@@ -3,7 +3,7 @@ import type { Ephemeral } from "@shared/protocol/messages";
 export type EffectPayload = Extract<Ephemeral, { kind: "effect" | "poke" }>;
 
 /** Tiny pub/sub decoupled from React state. */
-class Bus<T> {
+export class Bus<T> {
   #listeners = new Set<(value: T) => void>();
   subscribe(listener: (value: T) => void): () => void {
     this.#listeners.add(listener);
@@ -25,6 +25,8 @@ export type Celebration =
   | { kind: "lock" }
   | { kind: "score"; points: 2 | 3 | 4 }
   | { kind: "newround" }
-  | { kind: "gameover" };
+  | { kind: "gameover" }
+  /** The clue was given; the eggs layer checks it for magic words. */
+  | { kind: "clue"; clue: string };
 
 export const celebrationBus = new Bus<Celebration>();

@@ -109,6 +109,15 @@ phone (same network) to play.
    and a play-by-play of every turn: clue, target, every dial and what each
    player earned.
 
+## Easter eggs
+
+There are a few. Open the browser console and type `wavelength`: it prints
+the full list (how to trigger each one and what happens) and returns an
+API that fires them by hand, for example `wavelength.disco()` or
+`wavelength.rain("🍕", 24)`. Some are keyboard or touch sequences, some are
+magic clues the whole room reacts to, some only turn up on certain dates.
+Every one of them respects the **Reduce effects** setting.
+
 If a phone sleeps or the tab is backgrounded, the player keeps their seat:
 the client reconnects as soon as the page wakes, and the room only marks a
 player "away" after a grace period (never ejects them). Away players don't
@@ -132,7 +141,9 @@ psychic has vanished.
 - `src/` — the React app. `lib/connection.ts` wraps partysocket with a
   heartbeat watchdog, wake-up reconnects, acks and idempotency ids;
   `lib/store.ts` applies events and resyncs on version gaps; the board is
-  SVG with pointer-driven dial and spin hooks.
+  SVG with pointer-driven dial and spin hooks. `lib/eggs/` holds the
+  easter eggs (the console menu, triggers, modes) and
+  `components/eggs/eggs-layer.tsx` renders them over every screen.
 
 ## Deploy
 

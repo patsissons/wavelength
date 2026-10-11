@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { audio } from "@/lib/audio";
+import { usePatience } from "@/lib/eggs/charm";
+import { loungeLoop } from "@/lib/eggs/disco";
+import { useEggs } from "@/lib/eggs/store";
 import { saveIdentity, loadIdentity } from "@/lib/identity";
 import { usePrefs } from "@/lib/prefs";
 import { selectIsHost, useGameStore } from "@/lib/store";
@@ -39,13 +42,16 @@ export function Lounge() {
   const unlocked = usePrefs((s) => s.soundUnlocked);
   const muted = usePrefs((s) => s.muted);
   const music = usePrefs((s) => s.music);
+  const disco = useEggs((s) => s.disco);
+  const hostName = game.players[game.hostId]?.name ?? "the host";
+  const quip = usePatience(hostName);
 
   // A looping groove while everyone gathers: the easiest way to tell that
-  // sound really works on this phone.
+  // sound really works on this phone (disco mode swaps the record).
   useEffect(() => {
-    audio.setLoop(unlocked && !muted && music ? "lounge" : null);
+    audio.setLoop(loungeLoop({ unlocked, muted, music, disco }));
     return () => audio.setLoop(null);
-  }, [unlocked, muted, music]);
+  }, [unlocked, muted, music, disco]);
 
   let startBlocker: string | null = null;
   if (game.settings.mode === "teams") {
@@ -123,9 +129,9 @@ export function Lounge() {
           <p
             className="rounded-2xl bg-card py-4 text-center text-muted-foreground"
             data-testid="waiting"
+            data-quip={quip ? "" : undefined}
           >
-            Waiting for {game.players[game.hostId]?.name ?? "the host"} to
-            start…
+            {quip ?? `Waiting for ${hostName} to start…`}
           </p>
         )}
       </footer>

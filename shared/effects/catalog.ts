@@ -18,7 +18,11 @@ export type SoundPatch =
   | "laugh"
   | "hmm"
   | "sparkle"
-  | "poke";
+  | "poke"
+  | "konami"
+  | "squeak"
+  | "splash"
+  | "squeal";
 
 export type ScreenFx = "shake" | "flash" | "fog" | "spotlight";
 
@@ -34,6 +38,10 @@ export interface EffectDef {
   fx?: ScreenFx;
   sound?: SoundPatch;
   haptic?: ReadonlyArray<number>;
+  /** Not on the effects bar: fired by an easter egg, still validated here. */
+  hidden?: boolean;
+  /** Text after the sender's name on the burst chip. */
+  caption?: string;
 }
 
 /**
@@ -224,6 +232,19 @@ export const EFFECTS: ReadonlyArray<EffectDef> = [
     sound: "whoosh",
     haptic: [50],
   },
+  // easter eggs (hidden from the bar; see src/lib/eggs)
+  {
+    id: "konami",
+    label: "Knows the code",
+    icon: "🕹️",
+    roles: ["any"],
+    hidden: true,
+    caption: "knows the code",
+    burst: { glyphs: ["🕹️", "🌈", "⭐"], count: 16 },
+    confetti: true,
+    sound: "konami",
+    haptic: [30, 30, 30, 30, 90],
+  },
 ];
 
 const BY_ID = new Map(EFFECTS.map((e) => [e.id, e]));
@@ -234,7 +255,7 @@ export function effectById(id: string): EffectDef | undefined {
 
 export function effectsFor(role: Role): EffectDef[] {
   return EFFECTS.filter(
-    (e) => e.roles.includes("any") || e.roles.includes(role),
+    (e) => !e.hidden && (e.roles.includes("any") || e.roles.includes(role)),
   );
 }
 

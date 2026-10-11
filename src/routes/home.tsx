@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { LIMITS } from "@shared/game/types";
@@ -6,11 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError, api } from "@/lib/api";
+import { QUIPS, TapCounter } from "@/lib/eggs/charm";
+import { tagline, useSeason } from "@/lib/eggs/seasons";
 import { lastName, loadIdentity, saveIdentity } from "@/lib/identity";
 
 export function Home() {
   const navigate = useNavigate();
+  const season = useSeason();
   const [name, setName] = useState(lastName);
+  const titleTaps = useRef(new TapCounter(7, 4000));
+  const [waves, setWaves] = useState(0);
+  const [waving, setWaving] = useState(false);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const trimmed = name.trim();
@@ -66,9 +72,30 @@ export function Home() {
   return (
     <main className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-10 [--page-pad:1.5rem]">
       <header className="text-center">
-        <h1 className="text-5xl font-black tracking-tight">Wavelength</h1>
-        <p className="mt-2 text-muted-foreground">
-          Read your friends&apos; minds.
+        <h1
+          className="text-5xl font-black tracking-tight"
+          aria-label="Wavelength"
+          data-egg-wave={waving || undefined}
+          onClick={() => {
+            // Seven quick taps: the letters do the wave, the tagline quips.
+            if (!titleTaps.current.push(Date.now())) return;
+            setWaves((n) => n + 1);
+            setWaving(true);
+            setTimeout(() => setWaving(false), 1800);
+          }}
+        >
+          {Array.from("Wavelength", (ch, i) => (
+            <span
+              key={i}
+              className="egg-letter inline-block"
+              style={{ animationDelay: `${i * 70}ms` }}
+            >
+              {ch}
+            </span>
+          ))}
+        </h1>
+        <p className="mt-2 text-muted-foreground" data-testid="tagline">
+          {waves > 0 ? QUIPS[(waves - 1) % QUIPS.length] : tagline(season)}
         </p>
       </header>
 

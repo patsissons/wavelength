@@ -219,3 +219,231 @@ textarea,
     opacity: 0;
   }
 }
+
+/* Easter eggs (see lib/eggs and components/eggs/eggs-layer.tsx) */
+.egg-crt {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      oklch(0 0 0 / 0.22) 0 1px,
+      transparent 1px 3px
+    ),
+    radial-gradient(ellipse at center, transparent 55%, oklch(0 0 0 / 0.55));
+  mix-blend-mode: multiply;
+  animation: egg-flicker 0.12s steps(2) infinite;
+}
+@keyframes egg-flicker {
+  from {
+    opacity: 0.92;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.egg-chip {
+  transform: translateX(-50%);
+  animation: egg-chip 2.6s ease-out forwards;
+}
+@keyframes egg-chip {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(0.8);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.05);
+  }
+  20% {
+    transform: translate(-50%, 0) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -16px);
+  }
+}
+.egg-pet {
+  left: -3rem;
+  animation: egg-trot 12s linear forwards;
+}
+.egg-pet-step {
+  animation: egg-step 0.4s ease-in-out infinite alternate;
+}
+@keyframes egg-trot {
+  to {
+    transform: translateX(calc(100vw + 6rem));
+  }
+}
+@keyframes egg-step {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 0 -4px;
+  }
+}
+/* Konami: party mode */
+[data-egg-party]:not([data-egg-reduce]) [data-testid="board"] {
+  animation: egg-hue 6s linear infinite;
+}
+[data-egg-party] h1 {
+  background: linear-gradient(
+    90deg,
+    oklch(0.8 0.2 20),
+    oklch(0.85 0.17 85),
+    oklch(0.8 0.17 150),
+    oklch(0.75 0.17 250),
+    oklch(0.75 0.2 320),
+    oklch(0.8 0.2 20)
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+[data-egg-party]:not([data-egg-reduce]) h1 {
+  animation: egg-slide 3s linear infinite;
+}
+@keyframes egg-hue {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+@keyframes egg-slide {
+  to {
+    background-position: 200% 0;
+  }
+}
+/* Disco: the stage hue-cycles and the wheel ticks pulse to the beat */
+[data-egg-disco] body {
+  background: oklch(0.2 0.09 320);
+}
+[data-egg-disco]:not([data-egg-reduce]) body {
+  animation: egg-disco 4s linear infinite;
+}
+[data-egg-disco]:not([data-egg-reduce]) [data-testid="disc"] line {
+  animation: egg-pulse 0.484s ease-in-out infinite alternate;
+}
+@keyframes egg-disco {
+  0% {
+    background-color: oklch(0.2 0.09 320);
+  }
+  25% {
+    background-color: oklch(0.2 0.09 230);
+  }
+  50% {
+    background-color: oklch(0.2 0.09 150);
+  }
+  75% {
+    background-color: oklch(0.2 0.09 60);
+  }
+  100% {
+    background-color: oklch(0.2 0.09 320);
+  }
+}
+@keyframes egg-pulse {
+  from {
+    stroke: var(--color-muted-foreground);
+  }
+  to {
+    stroke: var(--color-primary);
+  }
+}
+/* Magic clue: abracadabra shimmers */
+.egg-shimmer {
+  background-image: linear-gradient(
+    110deg,
+    transparent 30%,
+    oklch(1 0 0 / 0.35) 50%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+}
+:root:not([data-egg-reduce]) .egg-shimmer {
+  animation: egg-shimmer 2.4s ease-in-out infinite;
+}
+@keyframes egg-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+/* Hot wheel: the ticks glow for a moment after a flat-out flick */
+[data-testid="disc"] line {
+  transition: stroke 0.3s ease-out;
+}
+[data-egg-hot] [data-testid="disc"] line {
+  stroke: oklch(0.72 0.2 25);
+  stroke-opacity: 1;
+  filter: drop-shadow(0 0 4px oklch(0.72 0.2 25));
+}
+/* Seasons */
+[data-egg-season="halloween"] [data-testid="shroud"] > path {
+  fill: oklch(0.62 0.19 45);
+}
+[data-egg-season="halloween"] [data-testid="shroud"] > text {
+  fill: oklch(0.25 0.05 45);
+}
+.egg-snow {
+  animation: egg-snow linear infinite;
+}
+@keyframes egg-snow {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(18px, 50vh) rotate(180deg);
+  }
+  100% {
+    transform: translate(-12px, 105vh) rotate(360deg);
+    opacity: 0.4;
+  }
+}
+.egg-ghost {
+  left: -3rem;
+  animation: egg-drift linear infinite;
+}
+@keyframes egg-drift {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(calc(25vw + 1.5rem), -14px);
+  }
+  50% {
+    transform: translate(calc(50vw + 3rem), 10px);
+  }
+  75% {
+    transform: translate(calc(75vw + 4.5rem), -10px);
+  }
+  100% {
+    transform: translate(calc(100vw + 6rem), 0);
+  }
+}
+/* Title wave: each letter hops in turn */
+h1[data-egg-wave] .egg-letter {
+  animation: egg-wave 0.9s ease-in-out;
+}
+[data-egg-reduce] h1[data-egg-wave] .egg-letter {
+  animation: none;
+}
+@keyframes egg-wave {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  35% {
+    transform: translateY(-14px) rotate(-6deg);
+  }
+  70% {
+    transform: translateY(3px) rotate(3deg);
+  }
+}

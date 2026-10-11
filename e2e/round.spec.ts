@@ -85,6 +85,12 @@ test("the psychic draws, spins (and re-spins), covers the wheel and gives a clue
     "data-open",
   );
 
+  // The flat wedge strip above the clue input mirrors the board's target.
+  await expect(host.page.getByTestId("wedge-strip")).toHaveAttribute(
+    "data-target",
+    third.toFixed(4),
+  );
+  await expect(host.page.getByTestId("strip-wedge-4")).toBeVisible();
   await host.page.getByTestId("clue-input").fill("Pineapple on pizza");
   await host.page.getByTestId("submit-clue").click();
   await expect(bob.page.getByTestId("clue")).toContainText(

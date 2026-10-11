@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { spinsRemaining } from "@shared/game/selectors";
 import { useCommand } from "@/lib/use-game-connection";
 import { useState } from "react";
+import { WedgeStrip } from "@/components/board/wedge-strip";
+import { useGameStore } from "@/lib/store";
 import { CardFlip, CardPile } from "./card-pile";
 import { ClueInput } from "./clue-input";
 
@@ -16,6 +18,7 @@ export function PsychicPanel({
   spinDone: boolean;
 }) {
   const send = useCommand();
+  const target = useGameStore((s) => s.you?.target ?? null);
   const [busy, setBusy] = useState(false);
   const round = game.round!;
   const run = async (command: Parameters<typeof send>[0]) => {
@@ -65,14 +68,19 @@ export function PsychicPanel({
               : "Tap the shroud to peek again, or give your clue: one idea, on the spectrum, no numbers."
           }
         >
-          <ShroudButton
-            open={round.shroudOpen}
-            onToggle={toggleShroud}
-            disabled={!spinDone}
+          {/* The wedge stays in view while typing, even with the keyboard up. */}
+          <WedgeStrip
+            target={spinDone ? target : null}
+            spectrum={round.spectrum}
           />
           <ClueInput
             disabled={!spinDone || busy}
             onSubmit={(clue) => run({ type: "clue.submit", clue })}
+          />
+          <ShroudButton
+            open={round.shroudOpen}
+            onToggle={toggleShroud}
+            disabled={!spinDone}
           />
         </Panel>
       );

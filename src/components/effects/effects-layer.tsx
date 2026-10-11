@@ -23,13 +23,36 @@ export function EffectsLayer() {
   const layer = useRef<HTMLDivElement | null>(null);
   const [fx, setFx] = useState<{ kind: ScreenFx; key: number } | null>(null);
   const [celebration, setCelebration] = useState<string | null>(null);
+  const [poke, setPoke] = useState<string | null>(null);
 
   useEffect(() => {
     return effectBus.subscribe((effect) => {
+      const prefs = usePrefs.getState();
+      const state = useGameStore.getState();
+      const from = state.game?.players[effect.from]?.name;
+      if (effect.kind === "poke") {
+        const me = state.you?.playerId;
+        const target = state.game?.players[effect.to]?.name ?? "someone";
+        const mine = effect.to === me;
+        if (layer.current) {
+          burst(
+            layer.current,
+            ["👉"],
+            prefs.reduceEffects ? 2 : mine ? 10 : 4,
+            mine ? `${from ?? "Someone"} poked you!` : `${from} 👉 ${target}`,
+            effect,
+          );
+        }
+        if (mine) {
+          setPoke(from ?? "someone");
+          if (!prefs.reduceEffects) shake();
+          audio.play("poke");
+          vibrate([60, 40, 60]);
+        }
+        return;
+      }
       const def = effectById(effect.effectId);
       if (!def) return;
-      const prefs = usePrefs.getState();
-      const from = useGameStore.getState().game?.players[effect.from]?.name;
       if (def.burst && layer.current) {
         burst(
           layer.current,
@@ -75,6 +98,12 @@ export function EffectsLayer() {
     return () => clearTimeout(t);
   }, [celebration]);
 
+  useEffect(() => {
+    if (!poke) return;
+    const t = setTimeout(() => setPoke(null), 2000);
+    return () => clearTimeout(t);
+  }, [poke]);
+
   return (
     <div
       ref={layer}
@@ -82,6 +111,7 @@ export function EffectsLayer() {
       aria-hidden
       data-testid="effects-layer"
       data-celebration={celebration ?? undefined}
+      data-poked-by={poke ?? undefined}
     >
       {fx && fx.kind !== "shake" && (
         <div
@@ -214,7 +244,7 @@ function burst(
     const el = document.createElement("span");
     el.textContent = glyphs[i % glyphs.length]!;
     el.dataset.testid = "effect-burst";
-    el.dataset.effect = effect.effectId;
+    el.dataset.effect = effect.kind === "poke" ? "poke" : effect.effectId;
     el.style.cssText = `position:absolute;left:${baseX + (Math.random() - 0.5) * 120}px;top:${height - 80}px;font-size:${28 + Math.random() * 20}px;will-change:transform,opacity;`;
     root.appendChild(el);
     const drift = (Math.random() - 0.5) * 160;

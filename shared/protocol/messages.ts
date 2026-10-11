@@ -32,6 +32,8 @@ export const SettingsPatchSchema = z
     psychicScoring: z.enum(["none", "average"]),
     catchUp: z.boolean(),
     firstTeam: z.enum(["left", "right", "random"]),
+    firstPsychic: z.enum(["random", "order"]),
+    maxSpins: z.number().int().min(0).max(LIMITS.maxSpins),
     customSpectra: z.array(SpectrumSchema).max(LIMITS.customSpectraMax),
     useBuiltInDeck: z.boolean(),
     effects: z.boolean(),
@@ -88,6 +90,7 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("effect.send"),
     effectId: z.string().min(1).max(40),
   }),
+  withCmd({ type: z.literal("poke.send"), playerId: PlayerId }),
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -111,7 +114,8 @@ export type ErrorCode =
 
 export type Ephemeral =
   | { kind: "dial.live"; dialId: string; position: number; by: string }
-  | { kind: "effect"; effectId: string; from: string; nonce: string };
+  | { kind: "effect"; effectId: string; from: string; nonce: string }
+  | { kind: "poke"; from: string; to: string; nonce: string };
 
 export type ServerMessage =
   | {

@@ -9,7 +9,6 @@ import {
   type PrivateMessage,
   type ServerState,
 } from "@shared/game/commands";
-import { canSendEffect } from "@shared/effects/catalog";
 import { applyEvent } from "@shared/game/reducer";
 import { roleOf } from "@shared/game/selectors";
 import type { GameEvent } from "@shared/protocol/events";
@@ -196,12 +195,18 @@ export class GameRoom extends Server<Env> {
       return;
     }
 
-    if (message.type === "effect.send") {
-      this.#handleEffect(connection, playerId, message.cmdId, message.effectId);
+    const now = Date.now();
+    const reaction =
+      message.type === "effect.send" || message.type === "poke.send";
+    if (reaction && !this.#takeEffectToken(playerId, now)) {
+      this.#send(connection, {
+        type: "error",
+        cmdId: message.cmdId,
+        code: "rate_limited",
+        message: "slow down",
+      });
       return;
     }
-
-    const now = Date.now();
     const result = handleCommand(state, message, {
       playerId,
       now,
@@ -227,6 +232,27 @@ export class GameRoom extends Server<Env> {
       },
       lastActivityAt: now,
     };
+    if (message.type === "effect.send") {
+      this.#broadcast({
+        type: "ephemeral",
+        payload: {
+          kind: "effect",
+          effectId: message.effectId,
+          from: playerId,
+          nonce: message.cmdId,
+        },
+      });
+    } else if (message.type === "poke.send") {
+      this.#broadcast({
+        type: "ephemeral",
+        payload: {
+          kind: "poke",
+          from: playerId,
+          to: message.playerId,
+          nonce: message.cmdId,
+        },
+      });
+    }
     this.#applyAndBroadcast(result.events, result.privates);
     this.#send(connection, {
       type: "ack",
@@ -323,25 +349,8 @@ export class GameRoom extends Server<Env> {
     }
   }
 
-  #handleEffect(
-    connection: Connection<ConnState>,
-    playerId: string,
-    cmdId: string,
-    effectId: string,
-  ) {
-    const game = this.#state!.game;
-    const now = Date.now();
-    if (!canSendEffect(game, playerId, effectId)) {
-      this.#send(connection, {
-        type: "error",
-        cmdId,
-        code: "not_allowed",
-        message: game.settings.effects
-          ? "that effect isn't yours to send"
-          : "effects are off",
-      });
-      return;
-    }
+  /** Per-player and per-room token buckets shared by effects and pokes. */
+  #takeEffectToken(playerId: string, now: number): boolean {
     let bucket = this.#playerBuckets.get(playerId);
     if (!bucket) {
       bucket = new TokenBucket(
@@ -351,20 +360,7 @@ export class GameRoom extends Server<Env> {
       );
       this.#playerBuckets.set(playerId, bucket);
     }
-    if (!bucket.take(now) || !this.#roomBucket.take(now)) {
-      this.#send(connection, {
-        type: "error",
-        cmdId,
-        code: "rate_limited",
-        message: "slow down",
-      });
-      return;
-    }
-    this.#broadcast({
-      type: "ephemeral",
-      payload: { kind: "effect", effectId, from: playerId, nonce: cmdId },
-    });
-    this.#send(connection, { type: "ack", cmdId, version: game.version });
+    return bucket.take(now) && this.#roomBucket.take(now);
   }
 
   /* ---------- Plumbing ---------- */

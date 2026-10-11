@@ -17,6 +17,8 @@ export interface BoardDial {
   id: string;
   position: number;
   color: string;
+  /** Name of whoever moved it last (shown in tests / tooltips). */
+  by?: string;
   /** Larger needle with a grab knob. */
   emphasized?: boolean;
   locked?: boolean;
@@ -268,6 +270,8 @@ function Needle({ dial }: { dial: BoardDial }) {
     <g
       data-testid={`dial-${dial.id}`}
       data-position={dial.position.toFixed(4)}
+      data-by={dial.by}
+      data-locked={dial.locked || undefined}
       className={cn(dial.faded && "opacity-40")}
     >
       <line

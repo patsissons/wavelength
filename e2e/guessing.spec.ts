@@ -20,16 +20,23 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
   await expect(bob.page.getByTestId("accept-dial")).toHaveCount(0);
   await expect(bob.page.getByTestId("panel")).toContainText("is guessing");
 
-  // Cid drags; everyone sees the needle move
+  // Cid drags; everyone sees the needle move, wearing Cid's colour.
   await dragDial(cid.page, 0.2);
   await expectDialNear(bob.page, "shared", 0.2);
   await expectDialNear(eve.page, "shared", 0.2);
+  await expect(eve.page.getByTestId("dial-shared")).toHaveAttribute(
+    "data-by",
+    "Cid",
+  );
 
-  // Cid accepts → 1 of 2; Eve moves → reset
+  // Cid accepts → 1 of 2 (and a tick on Cid's pill); Eve moves → reset
   await cid.page.getByTestId("accept-dial").click();
   await expect(
     eve.page.locator("[data-testid=accept-chip][data-accepted]"),
   ).toHaveCount(1);
+  await expect(
+    bob.page.locator("[data-testid=presence-player][data-player-name=Cid]"),
+  ).toHaveAttribute("data-accepted", "true");
   await expect(cid.page.getByTestId("accept-dial")).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -38,6 +45,10 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
   await expect(
     eve.page.locator("[data-testid=accept-chip][data-accepted]"),
   ).toHaveCount(0);
+  await expect(cid.page.getByTestId("dial-shared")).toHaveAttribute(
+    "data-by",
+    "Eve",
+  );
   await expect(cid.page.getByTestId("accept-dial")).toHaveAttribute(
     "aria-pressed",
     "false",
@@ -47,6 +58,9 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
   await eve.page.getByTestId("accept-dial").click();
   await cid.page.getByTestId("accept-dial").click();
   await expect(cid.page.getByTestId("locked")).toBeVisible();
+  await expect(
+    bob.page.locator("[data-testid=presence-player][data-player-name=Cid]"),
+  ).toHaveAttribute("data-locked", "true");
   // Everyone gets a little confetti when the team agrees.
   await expect(bob.page.getByTestId("effects-layer")).toHaveAttribute(
     "data-celebration",

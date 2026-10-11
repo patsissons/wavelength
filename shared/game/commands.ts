@@ -1,4 +1,5 @@
 import type { DeckState } from "../deck/deck";
+import { canSendEffect } from "../effects/catalog";
 import { buildDeck, deckRemaining, drawCard } from "../deck/deck";
 import type { GameEvent } from "../protocol/events";
 import type {
@@ -15,6 +16,7 @@ import {
   nextColor,
   nextPsychic,
   playersInOrder,
+  rotationStart,
   smallerTeam,
   teamMembers,
 } from "./rotation";
@@ -145,9 +147,11 @@ export function createGame(input: {
       players: { [host.id]: host },
       activeTeam: null,
       psychicCursor: { left: -1, right: -1, all: -1 },
+      psychicStart: { left: -1, right: -1, all: -1 },
       scores: {},
       round: null,
       roundsPlayed: 0,
+      effectTally: {},
       history: [],
       suddenDeath: false,
       gameOver: null,
@@ -372,6 +376,8 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
       phase("spinning", "clue");
       psychic();
       if (round().clue !== null) fail("invalid", "the clue is already given");
+      const max = game.settings.maxSpins;
+      if (max > 0 && round().spins >= max) fail("invalid", "no spins left");
       const target = randomTarget(ctx.random);
       tx.secret = { ...tx.secret, target };
       tx.emit({
@@ -528,7 +534,34 @@ function dispatch(tx: Tx, cmd: Command, ctx: CommandContext) {
       return;
 
     case "effect.send":
-      // Relayed by the room as an ephemeral; nothing to persist.
+      // The room relays the effect itself as an ephemeral (after its rate
+      // limit); the game only keeps the tally.
+      if (!canSendEffect(game, me.id, cmd.effectId)) {
+        fail(
+          "not_allowed",
+          game.settings.effects
+            ? "that effect isn't yours to send"
+            : "effects are off",
+        );
+      }
+      tx.emit({
+        type: "effect.sent",
+        by: me.id,
+        effectId: cmd.effectId,
+        to: null,
+      });
+      return;
+
+    case "poke.send":
+      if (!game.settings.effects) fail("not_allowed", "effects are off");
+      if (cmd.playerId === me.id) fail("invalid", "you can't poke yourself");
+      if (!game.players[cmd.playerId]) fail("invalid", "no such player");
+      tx.emit({
+        type: "effect.sent",
+        by: me.id,
+        effectId: "poke",
+        to: cmd.playerId,
+      });
       return;
   }
 }
@@ -595,9 +628,22 @@ function startGame(tx: Tx, ctx: CommandContext) {
     for (const id of Object.keys(game.players)) scores[id] = 0;
   }
 
+  // Each pool's rotation opens with a random player (or the first to join).
+  const pick = game.settings.firstPsychic;
+  const cursor = { left: -1, right: -1, all: -1 };
+  const start = { left: -1, right: -1, all: -1 };
+  for (const key of ["left", "right", "all"] as const) {
+    if ((key === "all") !== (activeTeam === null)) continue;
+    const pool =
+      key === "all" ? playersInOrder(tx.game) : teamMembers(tx.game, key);
+    const opening = rotationStart(pool, pick, ctx.random);
+    cursor[key] = opening.cursor;
+    start[key] = opening.start;
+  }
   const base: GameState = {
     ...tx.game,
-    psychicCursor: { left: -1, right: -1, all: -1 },
+    psychicCursor: cursor,
+    psychicStart: start,
   };
   const next = makeRound(base, {
     index: 0,
@@ -610,6 +656,7 @@ function startGame(tx: Tx, ctx: CommandContext) {
     round: next.round,
     activeTeam,
     psychicCursor: next.psychicCursor,
+    psychicStart: start,
     scores,
     deckRemaining: deckRemaining(deck),
   });
@@ -733,6 +780,7 @@ function reveal(tx: Tx, now: number) {
     vote: null,
     deltas: {},
     goAgain: false,
+    psychicBonus: 0,
     gameOver: null,
     stats: computeRoundStats(round, target, now),
   };
@@ -778,12 +826,14 @@ function reveal(tx: Tx, now: number) {
       if (dial.movedBy !== null || dial.accepts.length > 0)
         guesses[dial.id] = dial.position;
     }
-    result.deltas = scoreFfaRound(
+    const scored = scoreFfaRound(
       guesses,
       target,
       round.psychicId,
       game.settings.psychicScoring,
     );
+    result.deltas = scored.deltas;
+    result.psychicBonus = scored.psychicBonus;
     for (const [id, delta] of Object.entries(result.deltas)) {
       scores[id] = (scores[id] ?? 0) + delta;
     }

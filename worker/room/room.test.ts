@@ -61,6 +61,8 @@ describe("nextAlarmAt", () => {
     players: {},
     activeTeam: null,
     psychicCursor: { left: -1, right: -1, all: -1 },
+    psychicStart: { left: -1, right: -1, all: -1 },
+    effectTally: {},
     scores: {},
     round: null,
     roundsPlayed: 0,

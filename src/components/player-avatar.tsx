@@ -1,5 +1,5 @@
 import type { Player } from "@shared/game/types";
-import { cn, playerColor } from "@/lib/utils";
+import { cn, firstGrapheme, playerColor } from "@/lib/utils";
 
 export function PlayerAvatar({
   player,
@@ -16,7 +16,7 @@ export function PlayerAvatar({
       : size === "lg"
         ? "size-12 text-lg"
         : "size-9 text-sm";
-  const initial = player.name.trim().charAt(0).toUpperCase() || "?";
+  const initial = firstGrapheme(player.name);
   return (
     <span
       className={cn(

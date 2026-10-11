@@ -19,6 +19,8 @@ class AudioManager {
   #ctx: AudioContext | null = null;
   #master: AudioNode | null = null;
   #keepAlive: HTMLAudioElement | null = null;
+  /** The tab is hidden or unfocused: nothing plays until it is back. */
+  #background = false;
   #loop: {
     name: LoopName;
     gain: GainNode;
@@ -65,10 +67,38 @@ class AudioManager {
 
   /** Best-effort resume after backgrounding (works once unlocked). */
   resume(): void {
+    if (this.#background) return;
     this.#playKeepAlive();
     if (this.#ctx && this.#ctx.state !== "running") {
       void this.#ctx.resume().catch(() => {});
     }
+  }
+
+  /**
+   * The tab lost focus or was hidden: silence everything (the loop, any
+   * tails, the keep-alive element) until `foreground()`.
+   */
+  background(): void {
+    this.#background = true;
+    try {
+      this.#keepAlive?.pause();
+    } catch {
+      /* ignore */
+    }
+    if (this.#ctx && this.#ctx.state === "running") {
+      void this.#ctx.suspend().catch(() => {});
+    }
+  }
+
+  foreground(): void {
+    if (!this.#background) return;
+    this.#background = false;
+    if (usePrefs.getState().muted) return;
+    this.resume();
+  }
+
+  get inBackground(): boolean {
+    return this.#background;
   }
 
   get ready(): boolean {
@@ -77,7 +107,7 @@ class AudioManager {
 
   play(patch: SoundPatch, volume = 1): void {
     const ctx = this.#ctx;
-    if (!ctx || usePrefs.getState().muted) return;
+    if (!ctx || this.#background || usePrefs.getState().muted) return;
     if (ctx.state !== "running") {
       // Safari reports "interrupted" after a call or lock screen; a resume
       // outside a gesture sometimes works, and the document listener below
@@ -262,13 +292,24 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | void> {
 }
 
 if (typeof document !== "undefined") {
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") audio.resume();
-  });
+  // Sound belongs to the tab you are looking at: a hidden or unfocused tab
+  // goes quiet and picks up again when it is back.
+  const sync = () => {
+    if (document.visibilityState === "hidden" || !document.hasFocus()) {
+      audio.background();
+    } else {
+      audio.foreground();
+    }
+  };
+  document.addEventListener("visibilitychange", sync);
+  window.addEventListener("blur", sync);
+  window.addEventListener("focus", sync);
+  window.addEventListener("pagehide", () => audio.background());
+  window.addEventListener("pageshow", sync);
   // Any tap re-arms audio when the context is missing or not running. The
   // handler must stay synchronous so the gesture still counts.
   const onGesture = () => {
-    if (usePrefs.getState().muted) return;
+    if (usePrefs.getState().muted || audio.inBackground) return;
     if (!audio.ready) void audio.unlock();
   };
   for (const type of ["touchend", "click", "keydown"] as const) {
@@ -659,6 +700,95 @@ const PATCHES: Record<SoundPatch, Patch> = {
       gain: 0.08 * v,
       filter: { type: "bandpass", from: 400, to: 2500 },
     });
+  },
+  laugh: (ctx, out, v) => {
+    // "ha-ha-ha-ha": four falling chuckles with a breathy edge.
+    for (let i = 0; i < 4; i++) {
+      const start = i * 0.16;
+      tone(ctx, out, {
+        type: "triangle",
+        from: 520 - i * 40,
+        to: 380 - i * 40,
+        start,
+        duration: 0.12,
+        gain: 0.16 * v,
+      });
+      noise(ctx, out, {
+        start,
+        duration: 0.09,
+        gain: 0.07 * v,
+        filter: { type: "bandpass", from: 1200 },
+      });
+    }
+  },
+  hmm: (ctx, out, v) => {
+    // A pondering "hmm…?" that rises at the end.
+    tone(ctx, out, {
+      type: "sine",
+      from: 180,
+      to: 190,
+      start: 0,
+      duration: 0.5,
+      gain: 0.2 * v,
+    });
+    tone(ctx, out, {
+      type: "triangle",
+      from: 360,
+      to: 380,
+      start: 0,
+      duration: 0.5,
+      gain: 0.05 * v,
+    });
+    tone(ctx, out, {
+      type: "sine",
+      from: 190,
+      to: 300,
+      start: 0.5,
+      duration: 0.3,
+      gain: 0.18 * v,
+    });
+  },
+  sparkle: (ctx, out, v) => {
+    // Magic glissando: a quick run up the pentatonic plus shimmer.
+    [784, 880, 1047, 1175, 1319, 1568, 1760].forEach((f, i) =>
+      tone(ctx, out, {
+        type: "sine",
+        from: f,
+        start: i * 0.05,
+        duration: 0.3,
+        gain: 0.12 * v,
+      }),
+    );
+    for (let i = 0; i < 10; i++) {
+      tone(ctx, out, {
+        type: "sine",
+        from: 2500 + Math.random() * 3000,
+        start: 0.3 + Math.random() * 0.6,
+        duration: 0.1,
+        gain: 0.04 * v,
+      });
+    }
+  },
+  poke: (ctx, out, v) => {
+    // A springy "boing": a fast pitch drop with a wobbling tail.
+    tone(ctx, out, {
+      type: "square",
+      from: 900,
+      to: 220,
+      start: 0,
+      duration: 0.12,
+      gain: 0.18 * v,
+    });
+    for (let i = 0; i < 5; i++) {
+      tone(ctx, out, {
+        type: "triangle",
+        from: 300 - i * 25,
+        to: 240 - i * 25,
+        start: 0.1 + i * 0.08,
+        duration: 0.09,
+        gain: (0.18 - i * 0.03) * v,
+      });
+    }
   },
   crickets: (ctx, out, v) => {
     for (let i = 0; i < 6; i++) {

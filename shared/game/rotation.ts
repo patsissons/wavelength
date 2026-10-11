@@ -35,13 +35,45 @@ export function nextPsychic(
   );
   if (pool.length === 0) return null;
   const cursor = state.psychicCursor[key];
+  const start = state.psychicStart[key];
   const after = pool.find((p) => p.order > cursor);
   const psychic = after ?? pool[0]!;
   return {
     psychicId: psychic.id,
     psychicCursor: { ...state.psychicCursor, [key]: psychic.order },
-    wrapped: after === undefined,
+    // The rotation may start anywhere (random first psychic), so it is
+    // complete when the cursor passes the starting order again.
+    wrapped:
+      start < 0
+        ? after === undefined
+        : crossesCyclic(cursor, psychic.order, start),
   };
+}
+
+/** Is `mark` inside the cyclic half-open interval (from, to]? */
+function crossesCyclic(from: number, to: number, mark: number): boolean {
+  return from < to ? mark > from && mark <= to : mark > from || mark <= to;
+}
+
+/**
+ * Where a pool's rotation begins: the cursor just before the opening
+ * psychic (so `nextPsychic` picks them first) and their order as the
+ * start mark.
+ */
+export function rotationStart(
+  pool: Player[],
+  pick: "random" | "order",
+  random: () => number,
+): { cursor: number; start: number } {
+  const present = eligible(pool);
+  if (present.length === 0) return { cursor: -1, start: -1 };
+  const first =
+    pick === "random"
+      ? present[
+          Math.min(present.length - 1, Math.floor(random() * present.length))
+        ]!
+      : present[0]!;
+  return { cursor: first.order - 1, start: first.order };
 }
 
 /** Smaller team (ties → left) for auto-balancing joins. */

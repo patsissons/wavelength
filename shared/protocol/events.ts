@@ -35,6 +35,7 @@ export type GameEvent =
       round: Round;
       activeTeam: TeamId | null;
       psychicCursor: { left: number; right: number; all: number };
+      psychicStart: { left: number; right: number; all: number };
       scores: Record<string, number>;
       deckRemaining: number;
     }
@@ -70,6 +71,7 @@ export type GameEvent =
       deckRemaining: number;
     }
   | { type: "game.over"; gameOver: GameOver }
+  | { type: "effect.sent"; by: string; effectId: string; to: string | null }
   | { type: "game.reset"; scores: Record<string, number> };
 
 export type GameEventType = GameEvent["type"];

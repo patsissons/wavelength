@@ -101,9 +101,18 @@ function setup(
     };
     ids.push(id);
   });
-  if (mode !== "teams") {
-    state = run(state, "p0", cmd("settings.update", { patch: { mode } }));
-  }
+  // Tests pin the rotation to join order; random openings are covered
+  // separately at the end of the file (they consume the shared RNG).
+  state = run(
+    state,
+    "p0",
+    cmd("settings.update", {
+      patch:
+        mode === "teams"
+          ? { firstPsychic: "order" }
+          : { mode, firstPsychic: "order" },
+    }),
+  );
   for (const id of ids) {
     state = {
       ...state,
@@ -545,6 +554,7 @@ describe("free-for-all", () => {
     expect(deltas.p2).toBe(2);
     expect(deltas.p3).toBeDefined();
     expect(deltas.p0).toBe(Math.round((4 + 2 + deltas.p3!) / 3));
+    expect(state.game.round!.result!.psychicBonus).toBe(0);
     // Three more psychic turns remain in this round.
     expect(state.game.round!.result!.gameOver).toBeNull();
     state = run(state, "p0", cmd("round.next"));
@@ -697,6 +707,147 @@ describe("spin and shroud", () => {
       state,
       "p1",
       cmd("shroud.toggle", { open: false }),
+      "not_allowed",
+    );
+  });
+});
+
+describe("rotation openings and spin limits", () => {
+  it("caps spins per turn and allows unlimited with 0", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    state = run(
+      state,
+      "p0",
+      cmd("settings.update", { patch: { maxSpins: 2 } }),
+    );
+    state = run(state, "p0", cmd("game.start"));
+    state = run(state, "p0", cmd("card.draw"));
+    state = run(state, "p0", cmd("card.pickSide", { side: 0 }));
+    state = run(state, "p0", cmd("spin.flick", { velocity: 10 }));
+    state = run(state, "p0", cmd("spin.flick", { velocity: 10 }));
+    expect(state.game.round!.spins).toBe(2);
+    expectError(state, "p0", cmd("spin.flick", { velocity: 10 }), "invalid");
+
+    ({ state } = setup("coop", ["Ann", "Bob"]));
+    state = run(
+      state,
+      "p0",
+      cmd("settings.update", { patch: { maxSpins: 0 } }),
+    );
+    state = run(state, "p0", cmd("game.start"));
+    state = run(state, "p0", cmd("card.draw"));
+    state = run(state, "p0", cmd("card.pickSide", { side: 0 }));
+    for (let i = 0; i < 12; i++) {
+      state = run(state, "p0", cmd("spin.flick", { velocity: 10 }));
+    }
+    expect(state.game.round!.spins).toBe(12);
+  });
+
+  it("opens the rotation with a random psychic and still gives everyone one turn per round", () => {
+    const seen = new Set<string>();
+    for (let attempt = 0; attempt < 12; attempt++) {
+      let { state } = setup("ffa", ["Ann", "Bob", "Cid"]);
+      state = run(
+        state,
+        "p0",
+        cmd("settings.update", {
+          patch: { firstPsychic: "random", rounds: 2 },
+        }),
+      );
+      state = run(state, "p0", cmd("game.start"));
+      const first = state.game.round!.psychicId;
+      seen.add(first);
+      expect(state.game.psychicStart.all).toBe(
+        state.game.players[first]!.order,
+      );
+      const order: string[] = [];
+      for (let turn = 0; turn < 6; turn++) {
+        order.push(state.game.round!.psychicId);
+        const lastRound = turn === 5;
+        ({ state } = psychicTurn(state));
+        for (const [id, dial] of Object.entries(state.game.round!.dials)) {
+          if (!dial.locked)
+            state = run(state, id, cmd("dial.accept", { dialId: id }));
+        }
+        expect(state.game.phase).toBe("reveal");
+        expect(state.game.round!.result!.gameOver !== null).toBe(lastRound);
+        state = run(state, "p0", cmd("round.next"));
+        if (!lastRound) {
+          // Round 1 is over exactly after every player had a turn.
+          expect(state.game.roundsPlayed).toBe(turn >= 2 ? 1 : 0);
+        }
+      }
+      expect(state.game.phase).toBe("gameover");
+      // Everyone was psychic twice, in join order from the random start.
+      const ids = ["p0", "p1", "p2"];
+      const k = ids.indexOf(first);
+      expect(order).toEqual([0, 1, 2, 3, 4, 5].map((i) => ids[(k + i) % 3]));
+    }
+    expect(seen.size).toBeGreaterThan(1);
+  });
+});
+
+describe("free-for-all sweep", () => {
+  it("rewards the psychic when every guesser hits the bullseye", () => {
+    let { state } = setup("ffa", ["Ann", "Bob", "Cid"]);
+    state = run(state, "p0", cmd("game.start"));
+    const turn = psychicTurn(state);
+    state = turn.state;
+    for (const id of ["p1", "p2"]) {
+      state = run(
+        state,
+        id,
+        cmd("dial.set", { dialId: id, position: turn.target }),
+      );
+      state = run(state, id, cmd("dial.accept", { dialId: id }));
+    }
+    const result = state.game.round!.result!;
+    expect(result.psychicBonus).toBe(2);
+    expect(result.deltas).toEqual({ p0: 6, p1: 4, p2: 4 });
+    expect(state.game.scores.p0).toBe(6);
+  });
+});
+
+describe("reactions and pokes", () => {
+  it("tallies effects and pokes per player and validates them", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    state = run(state, "p0", cmd("effect.send", { effectId: "applause" }));
+    state = run(state, "p0", cmd("effect.send", { effectId: "applause" }));
+    state = run(state, "p1", cmd("poke.send", { playerId: "p0" }));
+    expect(state.game.effectTally).toEqual({
+      p0: { applause: 2, poked: 1 },
+      p1: { poke: 1 },
+    });
+    expectError(
+      state,
+      "p0",
+      cmd("effect.send", { effectId: "drumroll" }),
+      "not_allowed",
+    );
+    expectError(state, "p0", cmd("poke.send", { playerId: "p0" }), "invalid");
+    expectError(state, "p0", cmd("poke.send", { playerId: "zz" }), "invalid");
+    // The tally is per game: starting a game clears the lobby chatter.
+    state = run(state, "p0", cmd("game.start"));
+    expect(state.game.effectTally).toEqual({});
+  });
+
+  it("refuses reactions when effects are off", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    state = run(
+      state,
+      "p0",
+      cmd("settings.update", { patch: { effects: false } }),
+    );
+    expectError(
+      state,
+      "p1",
+      cmd("poke.send", { playerId: "p0" }),
+      "not_allowed",
+    );
+    expectError(
+      state,
+      "p1",
+      cmd("effect.send", { effectId: "applause" }),
       "not_allowed",
     );
   });

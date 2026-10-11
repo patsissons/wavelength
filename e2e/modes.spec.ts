@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { dragDial, psychicTurn, readTarget, startModeGame } from "./helpers";
+import {
+  dragDial,
+  expectDialNear,
+  psychicTurn,
+  readTarget,
+  startModeGame,
+} from "./helpers";
 
 test("co-op: everyone shares a dial, no voting, one psychic turn each per round", async ({
   browser,
@@ -54,7 +60,7 @@ test("co-op: everyone shares a dial, no voting, one psychic turn each per round"
     await expect(page.getByTestId("winner")).toHaveText("Galaxy brain");
   }
   await expect(host.page.getByTestId("awards")).toBeVisible();
-  await expect(host.page.getByTestId("turns").locator("li")).toHaveCount(3);
+  await expect(host.page.getByTestId("turn")).toHaveCount(3);
   await game.close();
 });
 
@@ -68,12 +74,26 @@ test("free-for-all: private dials, individual scores and a winner", async ({
   await psychicTurn(host.page, "Karaoke");
   const target = await readTarget(host.page);
 
-  // Each guesser has their own dial and cannot see the other's.
+  // Each guesser has their own dial and cannot see the other's; the
+  // psychic watches both move live.
   await expect(bob.page.locator("[data-testid^=dial-]")).toHaveCount(1);
+  await expect(host.page.locator("[data-testid^=dial-]")).toHaveCount(2);
   await dragDial(bob.page, target);
   await expect(cid.page.locator("[data-testid^=dial-]")).toHaveCount(1);
+  const bobId = await bob.page.evaluate(
+    () => window.__gameStore!.getState().you!.playerId,
+  );
+  await expectDialNear(host.page, bobId, target, 0.03);
   await bob.page.getByTestId("accept-dial").click();
   await expect(bob.page.getByTestId("locked")).toBeVisible();
+  await expect(host.page.getByTestId(`dial-${bobId}`)).toHaveAttribute(
+    "data-locked",
+    "true",
+  );
+  // Everyone's strip shows Bob has locked in.
+  await expect(
+    cid.page.locator("[data-testid=presence-player][data-player-name=Bob]"),
+  ).toHaveAttribute("data-locked", "true");
   await expect(host.page.getByTestId("reveal")).toHaveCount(0);
 
   // Cid aims as far from the target as possible, then locks.
@@ -95,6 +115,15 @@ test("free-for-all: private dials, individual scores and a winner", async ({
   await expect(results.locator("li").filter({ hasText: "Ann" })).toContainText(
     "+2",
   );
+
+  // The player strip is sorted by score and shows each score on the pill.
+  const pills = cid.page.getByTestId("presence-player");
+  await expect(pills).toHaveCount(3);
+  await expect(pills.nth(0)).toHaveAttribute("data-player-name", "Bob");
+  await expect(pills.nth(0)).toHaveAttribute("data-score", "4");
+  await expect(pills.nth(1)).toHaveAttribute("data-player-name", "Ann");
+  await expect(pills.nth(2)).toHaveAttribute("data-player-name", "Cid");
+  await expect(cid.page.getByTestId("score-lead")).toContainText("Bob");
 
   // A round is one psychic turn per player: Bob is up next, not game over.
   await host.page.getByTestId("next-round").click();

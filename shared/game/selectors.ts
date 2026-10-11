@@ -64,3 +64,10 @@ export function allDialsLocked(state: GameState): boolean {
 export function scoreFor(state: GameState, key: TeamId | string): number {
   return state.scores[key] ?? 0;
 }
+
+/** Spins the psychic may still take this turn; null when unlimited. */
+export function spinsRemaining(state: GameState): number | null {
+  const max = state.settings.maxSpins;
+  if (max <= 0) return null;
+  return Math.max(0, max - (state.round?.spins ?? 0));
+}

@@ -1,6 +1,6 @@
 import { useReducedMotion } from "motion/react";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { roleOf } from "@shared/game/selectors";
+import { roleOf, spinsRemaining } from "@shared/game/selectors";
 import type { GameState } from "@shared/game/types";
 import { Board, type BoardDial } from "@/components/board/board";
 import { useSpinAnimation } from "@/components/board/use-spin";
@@ -95,7 +95,8 @@ export function BoardStage({
     round.clue === null &&
     (phase === "spinning" || phase === "clue") &&
     round.shroudOpen &&
-    done;
+    done &&
+    spinsRemaining(game) !== 0;
   const canToggleShroud =
     isPsychic &&
     !revealed &&
@@ -114,26 +115,36 @@ export function BoardStage({
     const list: BoardDial[] = [];
     for (const dial of Object.values(round.dials)) {
       const mine = dial.owners.includes(playerId);
-      // FFA: other players' dials stay hidden until the reveal.
-      if (game.settings.mode === "ffa" && !mine && !revealed) continue;
+      // FFA: guessers only see their own dial until the reveal; the psychic
+      // watches everyone's live.
+      if (game.settings.mode === "ffa" && !mine && !revealed && !isPsychic)
+        continue;
       const liveMove = live.dials[dial.id];
-      const position =
-        mine && live.localDial?.dialId === dial.id
-          ? live.localDial.position
-          : liveMove && !dial.locked
-            ? liveMove.position
-            : dial.position;
-      const owner = game.players[dial.id] ?? game.players[dial.movedBy ?? ""];
+      const dragging = mine && live.localDial?.dialId === dial.id;
+      const position = dragging
+        ? live.localDial!.position
+        : liveMove && !dial.locked
+          ? liveMove.position
+          : dial.position;
+      // A shared dial wears the colour of whoever is moving (or last moved)
+      // it; a private dial always wears its owner's.
+      const moverId = dragging
+        ? playerId
+        : liveMove && !dial.locked
+          ? liveMove.by
+          : dial.movedBy;
+      const owner =
+        dial.id === "shared"
+          ? game.players[moverId ?? ""]
+          : game.players[dial.id];
       list.push({
         id: dial.id,
         position,
-        color:
-          dial.id === "shared"
-            ? "var(--color-primary)"
-            : playerColor(owner?.color ?? 0),
+        color: owner ? playerColor(owner.color) : "var(--color-primary)",
+        by: dial.id === "shared" ? owner?.name : undefined,
         emphasized: mine,
         locked: dial.locked,
-        faded: !mine && game.settings.mode === "ffa",
+        faded: !mine && game.settings.mode === "ffa" && !isPsychic,
       });
     }
     return list;
@@ -141,6 +152,7 @@ export function BoardStage({
     phase,
     round.dials,
     playerId,
+    isPsychic,
     game.settings.mode,
     game.players,
     live,

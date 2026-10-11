@@ -226,6 +226,7 @@ describe("store.receive", () => {
       vote: null,
       deltas: { coop: 4 },
       goAgain: false,
+      psychicBonus: 0,
       gameOver: null,
       stats: {
         durationMs: 0,

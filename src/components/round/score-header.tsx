@@ -1,8 +1,12 @@
+import { ranking } from "@shared/game/scoring";
 import type { GameState } from "@shared/game/types";
 import { TEAM_NAMES } from "@shared/game/types";
-import { ranking } from "@shared/game/scoring";
 import { cn } from "@/lib/utils";
 
+/**
+ * One compact line: where we are in the game on the left, the score on the
+ * right. Per-player scores live on the pills below (see PresenceStrip).
+ */
 export function ScoreHeader({ game }: { game: GameState }) {
   const round = game.round;
   const players = Object.keys(game.players).length;
@@ -11,84 +15,73 @@ export function ScoreHeader({ game }: { game: GameState }) {
       ? `Turn ${game.roundsPlayed + 1}`
       : `Round ${game.roundsPlayed + 1} of ${game.settings.rounds} · Turn ${game.history.length + 1}`
     : "";
+  const flags = (
+    <>
+      {game.suddenDeath && (
+        <span className="ml-2 font-bold text-primary">Sudden death</span>
+      )}
+      {round?.catchUp && (
+        <span className="ml-2 font-bold text-primary">Catch-up turn</span>
+      )}
+    </>
+  );
 
+  let score: React.ReactNode;
   if (game.settings.mode === "teams") {
-    return (
-      <header
-        className="grid grid-cols-[1fr_auto_1fr] items-center gap-2"
-        data-testid="score-header"
+    score = (["left", "right"] as const).map((team) => (
+      <span
+        key={team}
+        className={cn(
+          "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold tracking-wider uppercase transition-opacity",
+          team === "left"
+            ? "bg-team-left/15 text-team-left"
+            : "bg-team-right/15 text-team-right",
+          game.activeTeam !== team && "opacity-50",
+        )}
+        data-testid={`score-${team}`}
       >
-        {(["left", "right"] as const).map((team) => (
-          <div
-            key={team}
-            className={cn(
-              "rounded-2xl px-3 py-2 text-center transition-opacity",
-              team === "left"
-                ? "bg-team-left/15 text-team-left"
-                : "bg-team-right/15 text-team-right",
-              game.activeTeam !== team && "opacity-50",
-            )}
-            data-testid={`score-${team}`}
-          >
-            <p className="text-[10px] font-bold tracking-widest uppercase">
-              {TEAM_NAMES[team]}
-            </p>
-            <p className="text-3xl font-black tabular-nums">
-              {game.scores[team] ?? 0}
-            </p>
-          </div>
-        ))}
-        <p className="col-start-2 row-start-1 text-center text-xs text-muted-foreground">
-          {roundLabel}
-          {game.suddenDeath && (
-            <span className="block font-bold text-primary">Sudden death</span>
-          )}
-          {round?.catchUp && (
-            <span className="block font-bold text-primary">Catch-up turn</span>
-          )}
-        </p>
-      </header>
+        {TEAM_NAMES[team]}
+        <strong className="text-base tabular-nums">
+          {game.scores[team] ?? 0}
+        </strong>
+      </span>
+    ));
+  } else if (game.settings.mode === "coop") {
+    score = (
+      <span
+        className="text-lg font-black tabular-nums"
+        data-testid="score-coop"
+      >
+        {game.scores.coop ?? 0}
+        <span className="text-xs font-normal text-muted-foreground">
+          {" "}
+          / {game.settings.rounds * players * 4}
+        </span>
+      </span>
     );
+  } else {
+    const top = ranking(game.scores)[0];
+    const lead = top && top.score > 0 && game.players[top.id];
+    score = lead ? (
+      <span className="text-xs text-muted-foreground" data-testid="score-lead">
+        🏆 {lead.name}{" "}
+        <strong className="text-sm text-foreground tabular-nums">
+          {top.score}
+        </strong>
+      </span>
+    ) : null;
   }
 
-  if (game.settings.mode === "coop") {
-    return (
-      <header
-        className="flex items-center justify-between rounded-2xl bg-card px-4 py-2"
-        data-testid="score-header"
-      >
-        <p className="text-xs text-muted-foreground">{roundLabel}</p>
-        <p
-          className="text-2xl font-black tabular-nums"
-          data-testid="score-coop"
-        >
-          {game.scores.coop ?? 0}
-          <span className="text-sm font-normal text-muted-foreground">
-            {" "}
-            / {game.settings.rounds * players * 4}
-          </span>
-        </p>
-      </header>
-    );
-  }
-
-  const top = ranking(game.scores).slice(0, 3);
   return (
     <header
-      className="flex items-center justify-between rounded-2xl bg-card px-4 py-2"
+      className="flex min-h-8 items-center justify-between gap-2"
       data-testid="score-header"
     >
-      <p className="text-xs text-muted-foreground">{roundLabel}</p>
-      <ol className="flex gap-3 text-sm">
-        {top.map((r) => (
-          <li key={r.id} className="tabular-nums">
-            <span className="text-muted-foreground">
-              {game.players[r.id]?.name ?? "?"}
-            </span>{" "}
-            <strong>{r.score}</strong>
-          </li>
-        ))}
-      </ol>
+      <p className="min-w-0 truncate text-xs text-muted-foreground">
+        {roundLabel}
+        {flags}
+      </p>
+      <div className="flex shrink-0 items-center gap-1.5">{score}</div>
     </header>
   );
 }

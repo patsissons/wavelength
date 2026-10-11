@@ -52,9 +52,18 @@ test("the psychic draws, spins (and re-spins), covers the wheel and gives a clue
   await expect(bob.page.getByTestId("panel")).toContainText("Ann is peeking");
   await expect(bob.page.getByTestId("wedge-4")).toHaveCount(0);
 
-  // Tapping again re-spins to a fresh target.
+  // Tapping again re-spins to a fresh target (3 spins per turn by default).
   await tapWheel(host.page);
   await expect.poll(() => readTarget(host.page)).not.toBeCloseTo(first, 3);
+  await expect(host.page.getByTestId("panel")).toContainText("1 left");
+  const second = await readTarget(host.page);
+  await tapWheel(host.page);
+  await expect(host.page.getByTestId("panel")).toContainText("No spins left");
+  await expect.poll(() => readTarget(host.page)).not.toBeCloseTo(second, 3);
+  const third = await readTarget(host.page);
+  await tapWheel(host.page);
+  await expect(bob.page.getByTestId("panel")).toContainText("Ann is peeking");
+  expect(await readTarget(host.page)).toBeCloseTo(third, 6);
 
   // The handle covers the wheel; tapping the shroud lifts it again.
   await host.page.getByTestId("shroud-handle").click();
@@ -76,6 +85,12 @@ test("the psychic draws, spins (and re-spins), covers the wheel and gives a clue
     "data-open",
   );
 
+  // The flat wedge strip above the clue input mirrors the board's target.
+  await expect(host.page.getByTestId("wedge-strip")).toHaveAttribute(
+    "data-target",
+    third.toFixed(4),
+  );
+  await expect(host.page.getByTestId("strip-wedge-4")).toBeVisible();
   await host.page.getByTestId("clue-input").fill("Pineapple on pizza");
   await host.page.getByTestId("submit-clue").click();
   await expect(bob.page.getByTestId("clue")).toContainText(

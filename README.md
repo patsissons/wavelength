@@ -70,32 +70,44 @@ phone (same network) to play.
    can tap a team to switch. The code and QR stay visible during the game so
    late arrivals can still join.
 3. The host picks the mode and settings (points to win, rounds, catch-up,
-   custom spectra, effects) and starts the game.
+   who opens the psychic rotation (random or join order), wheel spins per
+   turn, custom spectra, effects) and starts the game. A **Leave** button
+   returns to the home screen; the seat stays open.
 4. Each turn the psychic draws a card off the pile, flips it to compare both
    spectra and picks a side. The shroud lifts and everyone watches the wheel;
    the psychic taps or flicks it to spin (only their screen shows the
-   wedge) and can spin again until they like the target. Tapping the shroud
-   or its handle covers and uncovers the wheel; giving the clue (type it and
-   say it out loud) covers it automatically.
-5. Guessers turn the dial. On a shared dial anyone on the team can move it;
-   the dial locks once every active teammate has accepted, and any move
-   clears the accepts. In free-for-all each guesser has a private dial.
+   wedge) and can spin again until they like the target (up to the spins
+   setting). Tapping the shroud or its handle covers and uncovers the
+   wheel; the clue panel shows the wedge as a flat strip so it stays in
+   view with the keyboard up, and giving the clue (type it and say it out
+   loud) covers the wheel automatically.
+5. Guessers turn the dial. On a shared dial anyone on the team can move it
+   (it wears the colour of whoever moved it last); the dial locks once
+   every active teammate has accepted, and any move clears the accepts.
+   In free-for-all each guesser has a private dial, the psychic watches
+   them all move live, and the psychic earns a +2 sweep bonus when every
+   guesser hits a 4. The player strip at the top is sorted by score and
+   shows who has accepted or locked in.
 6. In Teams the other team calls **left** or **right** (majority wins, ties
    score nothing), then the shroud opens for everyone and points are scored:
    4 / 3 / 2 for the wedge, +1 for a correct call unless it was a bullseye,
    and a 4 while behind grants another turn. First to the target wins; a tie
    at the target goes to sudden death.
 7. Anyone can fire effects (emoji bursts, confetti, sounds, screen shakes,
-   haptics) at the room; the psychic has their own set. Confetti falls on
+   haptics) at the room; the psychic has their own set. Tapping a player's
+   name pokes them (their screen shakes with a boing). Confetti falls on
    every screen when a dial locks, and on the guessers' screens when they
    score (a bullseye gets the full barrage). Tap **Enable sound** in the
    lounge once so iOS allows audio; any later tap re-arms it, and sound
    plays even with the iPhone ringer switch on silent. A looping lounge
    groove (toggle in the lounge) makes it obvious when sound works; a chime
    marks every new turn and a jingle plays for bullseyes and at game over.
+   Audio goes quiet whenever the tab is hidden or unfocused.
 8. The game-over screen hands out awards (Sharpshooter, Saboteur, Quick
-   draw, Mind reader, Spin doctor and more), lists game-wide numbers, a
-   per-player table and every turn's clue and score.
+   draw, Mind reader, Spin doctor, Hype machine, Pest and more), lists
+   game-wide numbers (including reactions and pokes), a per-player table
+   and a play-by-play of every turn: clue, target, every dial and what each
+   player earned.
 
 If a phone sleeps or the tab is backgrounded, the player keeps their seat:
 the client reconnects as soon as the page wakes, and the room only marks a
@@ -109,7 +121,9 @@ psychic has vanished.
   `game/commands.ts` (command → events with all phase/role rules),
   `game/reducer.ts` (`applyEvent`, the single reducer), scoring, geometry,
   `game/stats.ts` (round stats, awards and facts), the card deck, the
-  effects catalog and the zod protocol schemas.
+  effects catalog and the zod protocol schemas. Reactions and pokes go
+  through the command handler too (`effect.sent` keeps a per-game tally)
+  while the room relays the visible effect as an ephemeral.
 - `worker/` — the Cloudflare Worker: `/api/*` (create / join / status via
   Durable Object RPC) and `/parties/game-room/:code` WebSockets. `GameRoom`
   is a hibernating partyserver Durable Object per game code; it applies

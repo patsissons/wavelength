@@ -55,7 +55,7 @@ export function Join() {
   };
 
   return (
-    <main className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-8 p-6">
+    <main className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-8 [--page-pad:1.5rem]">
       <header className="text-center">
         <p className="text-sm tracking-widest text-muted-foreground uppercase">
           Joining game

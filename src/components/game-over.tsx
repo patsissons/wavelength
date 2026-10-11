@@ -1,13 +1,15 @@
 import { useMemo } from "react";
 import { ranking } from "@shared/game/scoring";
 import { gameAwards, gameFacts, playerTotals } from "@shared/game/stats";
+import type { GameState, RoundResult } from "@shared/game/types";
 import { TEAM_NAMES } from "@shared/game/types";
+import { WedgeStrip, type StripMarker } from "@/components/board/wedge-strip";
 import { ShareStrip } from "@/components/lounge/share-card";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { Button } from "@/components/ui/button";
 import { selectIsHost, useGameStore } from "@/lib/store";
 import { useCommand } from "@/lib/use-game-connection";
-import { cn } from "@/lib/utils";
+import { cn, firstGrapheme, playerColor } from "@/lib/utils";
 
 export function GameOver() {
   const game = useGameStore((s) => s.game)!;
@@ -34,7 +36,7 @@ export function GameOver() {
 
   return (
     <main
-      className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 p-6"
+      className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6"
       data-testid="game-over"
     >
       <header className="text-center">
@@ -101,12 +103,15 @@ export function GameOver() {
 /** Awards, numbers and a per-player table computed from the round history. */
 function Stats() {
   const game = useGameStore((s) => s.game)!;
-  const { history, players, settings } = game;
+  const { history, players, settings, effectTally } = game;
   const awards = useMemo(
-    () => gameAwards(history, players, settings.mode),
-    [history, players, settings.mode],
+    () => gameAwards(history, players, settings.mode, effectTally),
+    [history, players, settings.mode, effectTally],
   );
-  const facts = useMemo(() => gameFacts(history, players), [history, players]);
+  const facts = useMemo(
+    () => gameFacts(history, players, effectTally),
+    [history, players, effectTally],
+  );
   const totals = useMemo(
     () => playerTotals(history, players),
     [history, players],
@@ -211,42 +216,141 @@ function Stats() {
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold tracking-widest text-muted-foreground uppercase">
-          Turns
+          Play by play
         </h2>
-        <ol className="flex flex-col gap-1" data-testid="turns">
-          {history.map((r, i) => {
-            const points = Object.values(r.dials).map((d) => d.wedge);
-            const best = points.length ? Math.max(...points) : 0;
-            return (
-              <li
-                key={i}
-                className="flex items-center gap-3 rounded-xl bg-card px-3 py-2 text-sm"
-              >
-                <span className="w-5 text-center text-muted-foreground">
-                  {i + 1}
-                </span>
-                <span className="min-w-0 flex-1 truncate">
-                  <span className="text-muted-foreground">
-                    {players[r.psychicId]?.name ?? "?"}:
-                  </span>{" "}
-                  “{r.clue}”
-                </span>
-                <strong
-                  className={cn(
-                    "tabular-nums",
-                    best === 4 && "text-wedge-4",
-                    best === 3 && "text-wedge-3",
-                    best === 2 && "text-wedge-2",
-                    best === 0 && "text-muted-foreground",
-                  )}
-                >
-                  {best}
-                </strong>
-              </li>
-            );
-          })}
+        <ol className="flex flex-col gap-2" data-testid="turns">
+          {history.map((r, i) => (
+            <TurnCard key={i} index={i} result={r} game={game} />
+          ))}
         </ol>
       </section>
     </div>
+  );
+}
+
+/**
+ * One turn, for everyone: the clue, where the target was, where every
+ * dial ended up and what each player got out of it.
+ */
+function TurnCard({
+  index,
+  result: r,
+  game,
+}: {
+  index: number;
+  result: RoundResult;
+  game: GameState;
+}) {
+  const { players, settings } = game;
+  const mode = settings.mode;
+  const psychic = players[r.psychicId];
+  const wedges = Object.values(r.dials).map((d) => d.wedge);
+  const best = wedges.length ? Math.max(...wedges) : 0;
+  const markers: StripMarker[] = Object.values(r.dials).map((d, i) => {
+    const owner = d.owners.length === 1 ? players[d.owners[0]!] : undefined;
+    return {
+      id: owner?.id ?? `dial-${i}`,
+      position: d.position,
+      color: owner ? playerColor(owner.color) : "var(--color-primary)",
+      label: owner ? firstGrapheme(owner.name) : "team",
+    };
+  });
+
+  // Per-player lines: what each person did this turn and what it earned.
+  const lines: Array<{ id: string; role: string; points: string }> = [];
+  const pointsFor = (dialOwner: string): string => {
+    const dial = Object.values(r.dials).find((d) =>
+      d.owners.includes(dialOwner),
+    );
+    if (!dial) return "";
+    if (mode === "ffa") return `+${r.deltas[dialOwner] ?? dial.wedge}`;
+    return `+${dial.wedge}`;
+  };
+  if (psychic) {
+    lines.push({
+      id: psychic.id,
+      role: "psychic",
+      points:
+        mode === "ffa"
+          ? `+${r.deltas[psychic.id] ?? 0}${r.psychicBonus ? " (sweep)" : ""}`
+          : `+${r.dials.shared?.wedge ?? 0}`,
+    });
+  }
+  for (const dial of Object.values(r.dials)) {
+    for (const id of dial.owners) {
+      if (!players[id]) continue;
+      lines.push({ id, role: "guesser", points: pointsFor(id) });
+    }
+  }
+  for (const [id, s] of Object.entries(r.stats.players)) {
+    if (s.vote && players[id] && !lines.some((l) => l.id === id)) {
+      lines.push({
+        id,
+        role: `called ${s.vote === "correct" ? "right" : "wrong"}`,
+        points: s.vote === "correct" && r.vote?.bonusTo ? "+1" : "+0",
+      });
+    }
+  }
+
+  return (
+    <li
+      className="flex flex-col gap-2 rounded-2xl bg-card px-3 py-2 text-sm"
+      data-testid="turn"
+    >
+      <div className="flex items-center gap-2">
+        <span className="w-5 text-center text-muted-foreground">
+          {index + 1}
+        </span>
+        {psychic && <PlayerAvatar player={psychic} size="sm" />}
+        <span className="min-w-0 flex-1 truncate">
+          <span className="text-muted-foreground">{psychic?.name ?? "?"}:</span>{" "}
+          <strong>“{r.clue}”</strong>
+        </span>
+        <strong
+          className={cn(
+            "text-lg tabular-nums",
+            best === 4 && "text-wedge-4",
+            best === 3 && "text-wedge-3",
+            best === 2 && "text-wedge-2",
+            best === 0 && "text-muted-foreground",
+          )}
+          data-testid="turn-best"
+        >
+          {best}
+        </strong>
+      </div>
+      <div className="flex justify-between text-[11px] text-muted-foreground">
+        <span className="truncate">{r.spectrum.left}</span>
+        <span className="truncate">{r.spectrum.right}</span>
+      </div>
+      <WedgeStrip target={r.target} spectrum={r.spectrum} markers={markers} />
+      {mode === "teams" && r.vote && (
+        <p className="text-xs text-muted-foreground" data-testid="turn-vote">
+          {TEAM_NAMES[r.psychicTeam!]} +{r.deltas[r.psychicTeam!] ?? 0} ·{" "}
+          {TEAM_NAMES[r.psychicTeam === "left" ? "right" : "left"]}{" "}
+          {r.vote.majority === null
+            ? "split the vote"
+            : `called ${r.vote.majority}${r.vote.bonusTo ? " (+1)" : ""}`}
+        </p>
+      )}
+      <ul className="flex flex-wrap gap-1.5" data-testid="turn-players">
+        {lines.map((l) => {
+          const p = players[l.id]!;
+          return (
+            <li
+              key={l.id}
+              className="flex items-center gap-1 rounded-full bg-muted py-0.5 pr-2 pl-0.5 text-xs"
+              data-player-name={p.name}
+              data-role={l.role}
+            >
+              <PlayerAvatar player={p} size="sm" />
+              <span className="max-w-24 truncate">{p.name}</span>
+              <span className="text-muted-foreground">{l.role}</span>
+              <strong className="tabular-nums">{l.points}</strong>
+            </li>
+          );
+        })}
+      </ul>
+    </li>
   );
 }

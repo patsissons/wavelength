@@ -39,6 +39,9 @@ const MODES: Array<{ id: Mode; label: string; blurb: string }> = [
   },
 ];
 
+/** Spins per turn offered in the settings; 0 means unlimited. */
+const SPIN_OPTIONS = [1, 2, 3, 5, 0] as const;
+
 export function HostSettings({ settings }: { settings: Settings }) {
   const send = useCommand();
   const [customText, setCustomText] = useState(() =>
@@ -170,6 +173,46 @@ export function HostSettings({ settings }: { settings: Settings }) {
               />
             </Row>
           )}
+
+          <fieldset className="flex flex-col gap-2">
+            <Label>First psychic</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["random", "order"] as const).map((v) => (
+                <Button
+                  key={v}
+                  type="button"
+                  variant={
+                    settings.firstPsychic === v ? "default" : "secondary"
+                  }
+                  onClick={() => patch({ firstPsychic: v })}
+                  data-testid={`first-psychic-${v}`}
+                >
+                  {v === "random" ? "Random" : "Join order"}
+                </Button>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-2">
+            <Label>Wheel spins per turn</Label>
+            <p className="text-sm text-muted-foreground">
+              How often the psychic may re-spin before giving the clue.
+            </p>
+            <div className="grid grid-cols-5 gap-2">
+              {SPIN_OPTIONS.map((v) => (
+                <Button
+                  key={v}
+                  type="button"
+                  variant={settings.maxSpins === v ? "default" : "secondary"}
+                  onClick={() => patch({ maxSpins: v })}
+                  data-testid={`max-spins-${v}`}
+                  aria-label={v === 0 ? "Unlimited spins" : `${v} spins`}
+                >
+                  {v === 0 ? "∞" : v}
+                </Button>
+              ))}
+            </div>
+          </fieldset>
 
           <Row
             label="Effects"

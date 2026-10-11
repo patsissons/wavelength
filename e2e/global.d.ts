@@ -15,4 +15,13 @@ interface Window {
       error: { code: string } | null;
     };
   };
+  /** The easter-egg console API (see src/lib/eggs/console.ts). */
+  wavelength?: {
+    list(): string;
+    rain(glyph?: string, count?: number): string;
+    barrelRoll(): string;
+    crt(): string;
+    pet(glyph?: string | null): string;
+    reset(): string;
+  };
 }

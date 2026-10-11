@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wavelength",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "binding": "ASSETS",
+    // Serve index.html for client-side routes (/join/:code, /game/:code).
+    "not_found_handling": "single-page-application",
+    // API and game-room WebSocket routes always hit the Worker first.
+    "run_worker_first": ["/api/*", "/parties/*"],
+  },
+  "observability": {
+    "enabled": true,
+  },
+  "workers_dev": true,
+  "env": {
+    // Deterministic, fast e2e runs (see playwright.config.ts).
+    "e2e": {
+      "vars": {
+        "GAME_SEED": "e2e",
+        "GRACE_MS": "3000",
+      },
+    },
+  },
+}

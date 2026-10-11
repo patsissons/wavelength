@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-muted-foreground: oklch(0.7 0.02 290);
+}
+
+html,
+body {
+  height: 100%;
+  background: #0f0a1e;
+  color: #f4f1fb;
+  -webkit-text-size-adjust: 100%;
+}

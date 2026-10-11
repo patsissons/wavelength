@@ -284,3 +284,35 @@ textarea,
     translate: 0 -4px;
   }
 }
+/* Konami: party mode */
+[data-egg-party]:not([data-egg-reduce]) [data-testid="board"] {
+  animation: egg-hue 6s linear infinite;
+}
+[data-egg-party] h1 {
+  background: linear-gradient(
+    90deg,
+    oklch(0.8 0.2 20),
+    oklch(0.85 0.17 85),
+    oklch(0.8 0.17 150),
+    oklch(0.75 0.17 250),
+    oklch(0.75 0.2 320),
+    oklch(0.8 0.2 20)
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+[data-egg-party]:not([data-egg-reduce]) h1 {
+  animation: egg-slide 3s linear infinite;
+}
+@keyframes egg-hue {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+@keyframes egg-slide {
+  to {
+    background-position: 200% 0;
+  }
+}

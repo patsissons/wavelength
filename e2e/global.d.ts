@@ -18,6 +18,7 @@ interface Window {
   /** The easter-egg console API (see src/lib/eggs/console.ts). */
   wavelength?: {
     list(): string;
+    party(): string;
     rain(glyph?: string, count?: number): string;
     barrelRoll(): string;
     crt(): string;

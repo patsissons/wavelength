@@ -1,4 +1,5 @@
 import { eggBus } from "./bus";
+import { toggleParty } from "./triggers";
 import { EGGS, menuText } from "./registry";
 import { useEggs } from "./store";
 
@@ -8,6 +9,7 @@ import { useEggs } from "./store";
  */
 export interface EggApi {
   list: () => string;
+  party: () => string;
   rain: (glyph?: string, count?: number) => string;
   barrelRoll: () => string;
   crt: () => string;
@@ -37,6 +39,9 @@ export const eggApi: EggApi = {
   list() {
     printMenu();
     return `${EGGS.length} eggs`;
+  },
+  party() {
+    return toggleParty() ? "🕹️ party on" : "party off";
   },
   rain(glyph = "🌧️", count = 24) {
     const glyphs = Array.from(

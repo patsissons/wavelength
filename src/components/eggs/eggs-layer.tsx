@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { burst } from "@/components/effects/burst";
 import { eggBus } from "@/lib/eggs/bus";
 import { useEggs } from "@/lib/eggs/store";
+import { installTriggers } from "@/lib/eggs/triggers";
 import { usePrefs } from "@/lib/prefs";
 
 /**
@@ -14,6 +15,8 @@ export function EggsLayer() {
   const layer = useRef<HTMLDivElement | null>(null);
   const crt = useEggs((s) => s.crt);
   const pet = useEggs((s) => s.pet);
+  const party = useEggs((s) => s.party);
+  const reduce = usePrefs((s) => s.reduceEffects);
   const [chip, setChip] = useState<{
     id: string;
     text: string;
@@ -24,6 +27,19 @@ export function EggsLayer() {
     document.documentElement.toggleAttribute("data-egg-crt", crt);
     return () => document.documentElement.removeAttribute("data-egg-crt");
   }, [crt]);
+
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-egg-party", party);
+    return () => document.documentElement.removeAttribute("data-egg-party");
+  }, [party]);
+
+  // Lets the egg styles skip motion without each rule checking prefs.
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-egg-reduce", reduce);
+    return () => document.documentElement.removeAttribute("data-egg-reduce");
+  }, [reduce]);
+
+  useEffect(() => installTriggers(), []);
 
   useEffect(() => {
     return eggBus.subscribe((event) => {
@@ -41,6 +57,8 @@ export function EggsLayer() {
           return;
         case "chip":
           setChip({ id: event.id, text: event.text, key: Date.now() });
+          return;
+        case "konami":
           return;
         case "roll":
           if (reduce) {

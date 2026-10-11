@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { hostGame, joinGame, playerRow } from "./helpers";
 
 /** `wavelength` in the console prints the menu; the API drives the eggs. */
 test("the console menu lists the eggs and the API fires them", async ({
@@ -33,4 +34,52 @@ test("the console menu lists the eggs and the API fires them", async ({
   await page.evaluate(() => window.wavelength!.reset());
   await expect(page.locator("html")).not.toHaveAttribute("data-egg-crt");
   await expect(page.getByTestId("egg-pet")).toHaveCount(0);
+});
+
+test("the Konami code starts party mode and tells the room", async ({
+  browser,
+}) => {
+  const host = await hostGame(browser, "Ann");
+  const bob = await joinGame(browser, host.code, "Bob");
+  await expect(playerRow(host.page, "Bob")).toBeVisible();
+
+  const keys = [
+    "ArrowUp",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "ArrowLeft",
+    "ArrowRight",
+    "b",
+    "a",
+  ];
+  for (const key of keys) await host.page.keyboard.press(key);
+  await expect(host.page.locator("html")).toHaveAttribute("data-egg-party", "");
+  await expect(host.page.getByText("+30 lives")).toBeVisible();
+  // Everyone, Bob included, sees who knows the code.
+  for (const { page } of [host, bob]) {
+    await expect(
+      page.locator("[data-testid=effect-burst][data-effect=konami]").first(),
+    ).toBeAttached();
+    await expect(page.getByTestId("effect-from").first()).toHaveText(
+      "Ann knows the code",
+    );
+  }
+  await expect(bob.page.locator("html")).not.toHaveAttribute("data-egg-party");
+
+  // The API toggles it back off; the room hears nothing this time.
+  expect(await host.page.evaluate(() => window.wavelength!.party())).toBe(
+    "party off",
+  );
+  await expect(host.page.locator("html")).not.toHaveAttribute("data-egg-party");
+
+  // Typing the magic word (outside a field) points at the console.
+  await host.page.keyboard.press("Escape");
+  await host.page.locator("body").click({ position: { x: 5, y: 5 } });
+  await host.page.keyboard.type("wavelength");
+  await expect(host.page.getByText("The console knows more")).toBeVisible();
+
+  await Promise.all([host.context.close(), bob.context.close()]);
 });

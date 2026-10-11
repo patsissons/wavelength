@@ -52,7 +52,7 @@ export function EffectsLayer() {
         burst(layer.current, {
           glyphs: def.burst.glyphs,
           count: prefs.reduceEffects ? 3 : def.burst.count,
-          label: from,
+          label: def.caption ? `${from ?? "Someone"} ${def.caption}` : from,
           effect: effect.effectId,
         });
       }

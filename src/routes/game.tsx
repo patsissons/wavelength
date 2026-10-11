@@ -1,5 +1,6 @@
 import { Navigate, useParams } from "react-router";
 import { ConnectionBanner } from "@/components/connection-banner";
+import { RoomEggs } from "@/components/eggs/room-eggs";
 import { EffectsLayer } from "@/components/effects/effects-layer";
 import { GameOver } from "@/components/game-over";
 import { OutdatedBanner } from "@/components/outdated-banner";
@@ -21,6 +22,7 @@ export function Game() {
     <ConnectionProvider code={normalized}>
       <ConnectionBanner />
       <EffectsLayer />
+      <RoomEggs />
       <GameScreen />
       <OutdatedBanner />
     </ConnectionProvider>

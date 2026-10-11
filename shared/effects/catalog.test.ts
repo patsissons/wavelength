@@ -29,6 +29,29 @@ describe("effects catalog", () => {
     }
   });
 
+  it("keeps easter-egg effects off the bar but lets anyone send them", () => {
+    const konami = effectById("konami");
+    expect(konami?.hidden).toBe(true);
+    expect(konami?.roles).toEqual(["any"]);
+    expect(konami?.caption).toBe("knows the code");
+    for (const role of [
+      "psychic",
+      "guesser",
+      "opponent",
+      "spectator",
+    ] as const) {
+      expect(effectsFor(role).map((e) => e.id)).not.toContain("konami");
+    }
+    const { game } = createGame({
+      code: "BCDF",
+      hostId: "p1",
+      hostName: "Ann",
+      hostTokenHash: "h",
+      now: 0,
+    });
+    expect(canSendEffect(game, "p1", "konami")).toBe(true);
+  });
+
   it("authorises by role, existence and the effects setting", () => {
     const { game } = createGame({
       code: "BCDF",

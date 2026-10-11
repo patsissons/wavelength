@@ -23,6 +23,19 @@ export const EGGS: ReadonlyArray<EggDef> = [
     api: "wavelength.list()",
   },
   {
+    id: "konami",
+    name: "Konami code",
+    how: "↑ ↑ ↓ ↓ ← → ← → B A on a keyboard; on a phone swipe ↑ ↑ ↓ ↓ ← → ← → then tap twice (home or lounge)",
+    what: "party mode: a rainbow wheel, an 8-bit jingle, +30 lives, and the whole room learns you know the code",
+    api: "wavelength.party()",
+  },
+  {
+    id: "magicword",
+    name: "The magic word",
+    how: 'type "wavelength" on a keyboard, outside any field',
+    what: "a nudge toward this very menu",
+  },
+  {
     id: "rain",
     name: "Rain",
     how: "ask for it",

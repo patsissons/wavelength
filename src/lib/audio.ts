@@ -769,6 +769,36 @@ const PATCHES: Record<SoundPatch, Patch> = {
       });
     }
   },
+  konami: (ctx, out, v) => {
+    // The 8-bit "cheat accepted" riff: a quick square arpeggio, a bend up
+    // and a held top note with vibrato-ish stutter.
+    [659.25, 783.99, 1046.5, 1318.5].forEach((f, i) =>
+      tone(ctx, out, {
+        type: "square",
+        from: f,
+        start: i * 0.08,
+        duration: 0.1,
+        gain: 0.09 * v,
+      }),
+    );
+    tone(ctx, out, {
+      type: "square",
+      from: 1046.5,
+      to: 1568,
+      start: 0.36,
+      duration: 0.16,
+      gain: 0.09 * v,
+    });
+    for (let i = 0; i < 4; i++) {
+      tone(ctx, out, {
+        type: "square",
+        from: i % 2 ? 1568 : 1760,
+        start: 0.56 + i * 0.07,
+        duration: 0.06,
+        gain: 0.08 * v,
+      });
+    }
+  },
   poke: (ctx, out, v) => {
     // A springy "boing": a fast pitch drop with a wobbling tail.
     tone(ctx, out, {

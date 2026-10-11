@@ -10,8 +10,11 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the tagline", () => {
+  it("renders the host and join forms", () => {
     render(<App />);
-    expect(screen.getByText(/read your friends' minds/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Host a game" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Join" })).toBeInTheDocument();
   });
 });

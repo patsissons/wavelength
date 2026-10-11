@@ -232,8 +232,21 @@ export class GameRoom extends Server<Env> {
       cmdId: message.cmdId,
       version: this.#state.game.version,
     });
+    if (message.type === "host.kick") this.#evict(message.playerId);
     await this.#persist();
     await this.#scheduleAlarm();
+  }
+
+  /** Tell a removed player's sockets to drop their seat and close them. */
+  #evict(playerId: string) {
+    for (const connection of this.getConnections(tagFor(playerId))) {
+      this.#send(connection, {
+        type: "error",
+        code: "unauthorized",
+        message: "removed by the host",
+      });
+      connection.close(4403, "kicked");
+    }
   }
 
   async onClose(connection: Connection<ConnState>) {

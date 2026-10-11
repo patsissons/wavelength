@@ -109,3 +109,52 @@ test("a player can leave the lounge for the home screen and come back", async ({
   await host.context.close();
   await bob.context.close();
 });
+
+test("players pick avatars on the home page and in the lounge and everyone sees them", async ({
+  browser,
+}) => {
+  // Ann picks a character before hosting; it rides along with the create.
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto("/");
+  await page.getByLabel("Your name").fill("Ann");
+  await page.getByTestId("open-avatar").click();
+  await page.getByTestId("avatar-dancing-unicorn").click();
+  await expect(page.getByTestId("open-avatar")).toHaveAttribute(
+    "data-avatar",
+    "dancing-unicorn",
+  );
+  await page.getByRole("button", { name: "Host a game" }).click();
+  await expect(page).toHaveURL(/\/game\/[A-Z]{4}$/);
+  const code = page.url().slice(-4);
+  await expect(
+    playerRow(page, "Ann").locator("[data-avatar=dancing-unicorn]"),
+  ).toBeVisible();
+  await expect(
+    playerRow(page, "Ann").locator(".avatar-body[data-anim=dance]"),
+  ).toBeAttached();
+
+  // Bob joins with the monogram, then switches to an emoji in the lounge;
+  // Ann's screen updates too.
+  const bob = await joinGame(browser, code, "Bob");
+  await expect(
+    playerRow(page, "Bob").locator("[data-avatar-kind=initial]"),
+  ).toHaveText("B");
+  await bob.page.getByTestId("open-avatar").click();
+  await bob.page.getByTestId("avatar-emoji-🦊").click();
+  await expect(
+    playerRow(page, "Bob").locator("[data-avatar='🦊']"),
+  ).toBeVisible();
+  await expect(
+    playerRow(bob.page, "Bob").locator("[data-avatar='🦊']"),
+  ).toBeVisible();
+
+  // The choice is remembered on the device: the join page offers it next time.
+  await bob.page.goto("/join/ZZZZ");
+  await expect(bob.page.getByTestId("open-avatar")).toHaveAttribute(
+    "data-avatar",
+    "🦊",
+  );
+
+  await Promise.all([context.close(), bob.context.close()]);
+});

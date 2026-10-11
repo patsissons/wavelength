@@ -36,15 +36,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  createGame: (name: string) =>
+  createGame: (name: string, avatar: string | null = null) =>
     request<CreatedGame>("/api/games", {
       method: "POST",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, avatar }),
     }),
-  joinGame: (code: string, name: string) =>
+  joinGame: (code: string, name: string, avatar: string | null = null) =>
     request<JoinedGame>(`/api/games/${code}/join`, {
       method: "POST",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, avatar }),
     }),
   status: (code: string) => request<RoomStatus>(`/api/games/${code}`),
 };

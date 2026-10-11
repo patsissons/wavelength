@@ -16,7 +16,9 @@ import { audio } from "@/lib/audio";
 import { usePatience } from "@/lib/eggs/charm";
 import { loungeLoop } from "@/lib/eggs/disco";
 import { useEggs } from "@/lib/eggs/store";
-import { saveIdentity, loadIdentity } from "@/lib/identity";
+import { saveAvatar, saveIdentity, loadIdentity } from "@/lib/identity";
+import { AvatarPicker } from "@/components/avatar/avatar-picker";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { usePrefs } from "@/lib/prefs";
 import { selectIsHost, useGameStore } from "@/lib/store";
 import { useCommand } from "@/lib/use-game-connection";
@@ -104,11 +106,30 @@ export function Lounge() {
             Players · {count}
           </h2>
           {me && (
-            <RenameDialog
-              code={game.code}
-              name={me.name}
-              onRename={(name) => send({ type: "player.rename", name })}
-            />
+            <div className="flex items-center gap-1">
+              <AvatarPicker
+                value={me.avatar}
+                onChange={(avatar) => {
+                  saveAvatar(avatar);
+                  void send({ type: "player.setAvatar", avatar });
+                }}
+                trigger={
+                  <button
+                    type="button"
+                    className="rounded-full"
+                    aria-label="Choose your avatar"
+                    data-testid="open-avatar"
+                  >
+                    <PlayerAvatar player={me} />
+                  </button>
+                }
+              />
+              <RenameDialog
+                code={game.code}
+                name={me.name}
+                onRename={(name) => send({ type: "player.rename", name })}
+              />
+            </div>
           )}
         </div>
         <PlayerList />

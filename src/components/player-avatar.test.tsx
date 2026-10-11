@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import { firstGrapheme } from "@/lib/utils";
 import { PlayerAvatar } from "./player-avatar";
 
-const player = (name: string) => ({
+const player = (name: string, avatar: string | null = null) => ({
   name,
   color: 2,
+  avatar,
   away: false,
   connected: true,
 });
@@ -28,13 +29,56 @@ describe("firstGrapheme", () => {
 });
 
 describe("PlayerAvatar", () => {
-  it("renders the initial", () => {
-    render(<PlayerAvatar player={player("Cid")} />);
+  it("renders the initial when no avatar is set", () => {
+    const { container } = render(<PlayerAvatar player={player("Cid")} />);
     expect(screen.getByText("C")).toBeInTheDocument();
+    expect(container.firstElementChild).toHaveAttribute(
+      "data-avatar-kind",
+      "initial",
+    );
   });
 
   it("renders an emoji initial intact", () => {
     render(<PlayerAvatar player={player("🎯 Dee")} />);
     expect(screen.getByText("🎯")).toBeInTheDocument();
+  });
+
+  it("shows an emoji avatar instead of the initial", () => {
+    const { container } = render(<PlayerAvatar player={player("Cid", "🦊")} />);
+    expect(screen.getByText("🦊")).toBeInTheDocument();
+    expect(screen.queryByText("C")).toBeNull();
+    expect(container.firstElementChild).toHaveAttribute("data-avatar", "🦊");
+    expect(container.firstElementChild).toHaveAttribute(
+      "data-avatar-kind",
+      "emoji",
+    );
+  });
+
+  it("shows a catalog character with its prop and animation", () => {
+    const { container } = render(
+      <PlayerAvatar player={player("Cid", "dancing-unicorn")} />,
+    );
+    expect(screen.getByText("🦄")).toBeInTheDocument();
+    expect(screen.getByText("✨")).toBeInTheDocument();
+    expect(screen.queryByText("C")).toBeNull();
+    expect(container.querySelector(".avatar-body")).toHaveAttribute(
+      "data-anim",
+      "dance",
+    );
+    expect(container.querySelector(".avatar-prop-glyph")).toHaveAttribute(
+      "data-prop-anim",
+      "sparkle",
+    );
+    expect(container.querySelector("[data-avatar-id]")).toHaveAttribute(
+      "title",
+      "Dancing unicorn",
+    );
+  });
+
+  it("treats an unknown id as the initial rather than crashing", () => {
+    // Not reachable through the server (ids are validated), but a stale
+    // bundle could meet a newer catalog.
+    render(<PlayerAvatar player={player("Cid", "future-avatar")} />);
+    expect(screen.getByText("future-avatar")).toBeInTheDocument();
   });
 });

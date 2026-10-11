@@ -1,12 +1,20 @@
 import type { Player } from "@shared/game/types";
-import { cn, firstGrapheme, playerColor } from "@/lib/utils";
+import { AvatarFigure } from "@/components/avatar/avatar-figure";
+import { avatarOf } from "@/components/avatar/avatar";
+import { cn, playerColor } from "@/lib/utils";
 
+/**
+ * A player's badge: their chosen avatar (a catalog character or an emoji)
+ * on their colour, or their monogram when they have not picked one.
+ */
 export function PlayerAvatar({
   player,
   size = "md",
   className,
 }: {
-  player: Pick<Player, "name" | "color" | "away" | "connected">;
+  player: Pick<Player, "name" | "color" | "away" | "connected"> & {
+    avatar?: string | null;
+  };
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
@@ -16,7 +24,7 @@ export function PlayerAvatar({
       : size === "lg"
         ? "size-12 text-lg"
         : "size-9 text-sm";
-  const initial = firstGrapheme(player.name);
+  const render = avatarOf(player);
   return (
     <span
       className={cn(
@@ -27,8 +35,16 @@ export function PlayerAvatar({
       )}
       style={{ background: playerColor(player.color) }}
       aria-hidden
+      data-avatar={player.avatar ?? undefined}
+      data-avatar-kind={render.kind}
     >
-      {initial}
+      {render.kind === "figure" ? (
+        <AvatarFigure def={render.def} className="text-[1.25em]" />
+      ) : render.kind === "emoji" ? (
+        <span className="text-[1.2em] leading-none">{render.text}</span>
+      ) : (
+        render.text
+      )}
     </span>
   );
 }

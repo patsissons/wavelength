@@ -6,13 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError, api, type RoomStatus } from "@/lib/api";
-import { lastName, loadIdentity, saveIdentity } from "@/lib/identity";
+import {
+  lastAvatar,
+  lastName,
+  loadIdentity,
+  saveAvatar,
+  saveIdentity,
+} from "@/lib/identity";
+import {
+  AvatarPicker,
+  AvatarPreviewButton,
+} from "@/components/avatar/avatar-picker";
 
 export function Join() {
   const { code = "" } = useParams();
   const normalized = code.toUpperCase();
   const navigate = useNavigate();
   const [name, setName] = useState(lastName);
+  const [avatar, setAvatar] = useState(lastAvatar);
   const [status, setStatus] = useState<RoomStatus | "missing" | null>(null);
   const [busy, setBusy] = useState(false);
   const existing = loadIdentity(normalized);
@@ -37,7 +48,7 @@ export function Join() {
     if (!trimmed) return;
     setBusy(true);
     try {
-      const joined = await api.joinGame(normalized, trimmed);
+      const joined = await api.joinGame(normalized, trimmed, avatar);
       saveIdentity(normalized, { ...joined, name: trimmed });
       navigate(`/game/${normalized}`, { replace: true });
     } catch (err) {
@@ -74,16 +85,26 @@ export function Join() {
 
       <form onSubmit={join} className="flex flex-col gap-3">
         <Label htmlFor="name">Your name</Label>
-        <Input
-          id="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={LIMITS.nameMax}
-          autoComplete="nickname"
-          placeholder="What should we call you?"
-          className="h-12 text-lg"
-          required
-        />
+        <div className="flex gap-2">
+          <AvatarPicker
+            value={avatar}
+            onChange={(a) => {
+              setAvatar(a);
+              saveAvatar(a);
+            }}
+            trigger={<AvatarPreviewButton avatar={avatar} />}
+          />
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={LIMITS.nameMax}
+            autoComplete="nickname"
+            placeholder="What should we call you?"
+            className="h-12 text-lg"
+            required
+          />
+        </div>
         <Button
           type="submit"
           size="lg"

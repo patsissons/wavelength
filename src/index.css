@@ -447,3 +447,321 @@ h1[data-egg-wave] .egg-letter {
     transform: translateY(3px) rotate(3deg);
   }
 }
+
+/* Avatars (see components/avatar): a character glyph animated as a whole,
+   with a prop glyph layered on it. The same classes drive HTML spans and
+   SVG groups (dial pips); SVG sets its own transform-origin inline. */
+.avatar-fig {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 1.3em;
+  height: 1.3em;
+  line-height: 1;
+  vertical-align: middle;
+}
+.avatar-body {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+.avatar-body,
+.avatar-prop,
+.avatar-prop-glyph {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform;
+}
+.avatar-base {
+  line-height: 1;
+}
+.avatar-prop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.avatar-prop-glyph {
+  position: absolute;
+  font-size: 0.5em;
+  line-height: 1;
+}
+.avatar-prop-glyph[data-anchor="top"] {
+  top: -0.35em;
+  left: 50%;
+  translate: -50% 0;
+}
+.avatar-prop-glyph[data-anchor="top-right"] {
+  top: -0.2em;
+  right: -0.25em;
+}
+.avatar-prop-glyph[data-anchor="top-left"] {
+  top: -0.2em;
+  left: -0.25em;
+}
+.avatar-prop-glyph[data-anchor="right"] {
+  top: 50%;
+  right: -0.45em;
+  translate: 0 -50%;
+}
+.avatar-prop-glyph[data-anchor="left"] {
+  top: 50%;
+  left: -0.45em;
+  translate: 0 -50%;
+}
+
+.avatar-body[data-anim="dance"] {
+  animation: avatar-dance 0.6s ease-in-out infinite alternate;
+}
+.avatar-body[data-anim="bob"] {
+  animation: avatar-bob 1.2s ease-in-out infinite alternate;
+}
+.avatar-body[data-anim="float"] {
+  animation: avatar-float 2.4s ease-in-out infinite alternate;
+}
+.avatar-body[data-anim="buzz"] {
+  animation: avatar-buzz 0.18s linear infinite;
+}
+.avatar-body[data-anim="spin"] {
+  animation: avatar-spin 2.5s linear infinite;
+}
+.avatar-body[data-anim="breathe"] {
+  animation: avatar-breathe 2.2s ease-in-out infinite alternate;
+}
+.avatar-body[data-anim="hop"] {
+  animation: avatar-hop 1s ease-in-out infinite;
+}
+.avatar-body[data-anim="wiggle"] {
+  animation: avatar-wiggle 0.4s ease-in-out infinite alternate;
+}
+.avatar-body[data-anim="stomp"] {
+  animation: avatar-stomp 0.9s ease-in-out infinite;
+}
+.avatar-body[data-anim="chomp"] {
+  animation: avatar-chomp 0.5s ease-in-out infinite alternate;
+}
+.avatar-body[data-anim="sway"] {
+  animation: avatar-sway 1.6s ease-in-out infinite alternate;
+}
+.avatar-body[data-anim="zoom"] {
+  animation: avatar-zoom 0.8s ease-in-out infinite alternate;
+}
+.avatar-body[data-anim="glitch"] {
+  animation: avatar-glitch 0.6s steps(1) infinite;
+}
+.avatar-body[data-anim="pulse"] {
+  animation: avatar-pulse 0.7s ease-in-out infinite alternate;
+}
+.avatar-body[data-anim="waddle"] {
+  animation: avatar-waddle 0.7s ease-in-out infinite alternate;
+}
+.avatar-body[data-anim="creep"] {
+  animation: avatar-creep 4s linear infinite alternate;
+}
+.avatar-prop[data-prop-anim="orbit"] {
+  animation: avatar-spin 2.5s linear infinite;
+}
+.avatar-prop-glyph[data-prop-anim="sparkle"] {
+  animation: avatar-sparkle 0.7s ease-in-out infinite alternate;
+}
+.avatar-prop-glyph[data-prop-anim="rise"] {
+  animation: avatar-rise 1.6s ease-out infinite;
+}
+.avatar-prop-glyph[data-prop-anim="spin"] {
+  animation: avatar-spin 2s linear infinite;
+}
+.avatar-prop-glyph[data-prop-anim="hover"] {
+  animation: avatar-hover 1.4s ease-in-out infinite alternate;
+}
+[data-egg-reduce] .avatar-body,
+[data-egg-reduce] .avatar-prop,
+[data-egg-reduce] .avatar-prop-glyph {
+  animation: none;
+}
+
+@keyframes avatar-dance {
+  from {
+    transform: rotate(-12deg) translateY(0);
+  }
+  to {
+    transform: rotate(12deg) translateY(-8%);
+  }
+}
+@keyframes avatar-bob {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-10%);
+  }
+}
+@keyframes avatar-float {
+  from {
+    transform: translateY(-6%);
+    opacity: 0.75;
+  }
+  to {
+    transform: translateY(6%);
+    opacity: 1;
+  }
+}
+@keyframes avatar-buzz {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(3%, -3%);
+  }
+  50% {
+    transform: translate(-3%, 2%);
+  }
+  75% {
+    transform: translate(2%, 3%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes avatar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes avatar-breathe {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.1);
+  }
+}
+@keyframes avatar-hop {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-25%);
+  }
+}
+@keyframes avatar-wiggle {
+  from {
+    transform: rotate(-10deg);
+  }
+  to {
+    transform: rotate(10deg);
+  }
+}
+@keyframes avatar-stomp {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  40% {
+    transform: translateY(-15%) scale(0.95, 1.05);
+  }
+  55% {
+    transform: translateY(0) scale(1.15, 0.85);
+  }
+  75% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+@keyframes avatar-chomp {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(0.7);
+  }
+}
+@keyframes avatar-sway {
+  from {
+    transform: rotate(-8deg);
+  }
+  to {
+    transform: rotate(8deg);
+  }
+}
+@keyframes avatar-zoom {
+  from {
+    transform: translateX(-12%);
+  }
+  to {
+    transform: translateX(12%);
+  }
+}
+@keyframes avatar-glitch {
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-6%, 2%);
+  }
+  40% {
+    transform: translate(5%, -3%);
+  }
+  60% {
+    transform: translate(-3%, 4%);
+  }
+  80% {
+    transform: translate(4%, 0);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes avatar-pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.15);
+  }
+}
+@keyframes avatar-waddle {
+  from {
+    transform: rotate(-10deg) translateX(-6%);
+  }
+  to {
+    transform: rotate(10deg) translateX(6%);
+  }
+}
+@keyframes avatar-creep {
+  from {
+    transform: translateX(-15%);
+  }
+  to {
+    transform: translateX(15%);
+  }
+}
+@keyframes avatar-sparkle {
+  from {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  to {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+@keyframes avatar-rise {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-70%);
+    opacity: 0;
+  }
+}
+@keyframes avatar-hover {
+  from {
+    transform: translateY(-10%);
+  }
+  to {
+    transform: translateY(10%);
+  }
+}

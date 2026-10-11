@@ -8,12 +8,23 @@ import { Label } from "@/components/ui/label";
 import { ApiError, api } from "@/lib/api";
 import { QUIPS, TapCounter } from "@/lib/eggs/charm";
 import { tagline, useSeason } from "@/lib/eggs/seasons";
-import { lastName, loadIdentity, saveIdentity } from "@/lib/identity";
+import {
+  lastAvatar,
+  lastName,
+  loadIdentity,
+  saveAvatar,
+  saveIdentity,
+} from "@/lib/identity";
+import {
+  AvatarPicker,
+  AvatarPreviewButton,
+} from "@/components/avatar/avatar-picker";
 
 export function Home() {
   const navigate = useNavigate();
   const season = useSeason();
   const [name, setName] = useState(lastName);
+  const [avatar, setAvatar] = useState(lastAvatar);
   const titleTaps = useRef(new TapCounter(7, 4000));
   const [waves, setWaves] = useState(0);
   const [waving, setWaving] = useState(false);
@@ -27,7 +38,7 @@ export function Home() {
     if (!trimmed) return;
     setBusy(true);
     try {
-      const created = await api.createGame(trimmed);
+      const created = await api.createGame(trimmed, avatar);
       saveIdentity(created.code, { ...created, name: trimmed });
       navigate(`/game/${created.code}`);
     } catch {
@@ -52,7 +63,7 @@ export function Home() {
     }
     setBusy(true);
     try {
-      const joined = await api.joinGame(normalized, trimmed);
+      const joined = await api.joinGame(normalized, trimmed, avatar);
       saveIdentity(normalized, { ...joined, name: trimmed });
       navigate(`/game/${normalized}`);
     } catch (err) {
@@ -101,16 +112,26 @@ export function Home() {
 
       <form onSubmit={host} className="flex flex-col gap-3">
         <Label htmlFor="name">Your name</Label>
-        <Input
-          id="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={LIMITS.nameMax}
-          autoComplete="nickname"
-          placeholder="What should we call you?"
-          className="h-12 text-lg"
-          required
-        />
+        <div className="flex gap-2">
+          <AvatarPicker
+            value={avatar}
+            onChange={(a) => {
+              setAvatar(a);
+              saveAvatar(a);
+            }}
+            trigger={<AvatarPreviewButton avatar={avatar} />}
+          />
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={LIMITS.nameMax}
+            autoComplete="nickname"
+            placeholder="What should we call you?"
+            className="h-12 text-lg"
+            required
+          />
+        </div>
         <Button
           type="submit"
           size="lg"

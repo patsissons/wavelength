@@ -5,6 +5,7 @@ interface Window {
     getState(): {
       conn: string;
       game: { phase: string; version: number } | null;
+      error: { code: string } | null;
     };
   };
 }

@@ -4,6 +4,8 @@ import { roleOf } from "@shared/game/selectors";
 import type { GameState } from "@shared/game/types";
 import { Board, type BoardDial } from "@/components/board/board";
 import { useSpinAnimation } from "@/components/board/use-spin";
+import { audio } from "@/lib/audio";
+import { vibrate } from "@/lib/haptics";
 import { useGameStore } from "@/lib/store";
 import { useCommand, useConnection } from "@/lib/use-game-connection";
 import { playerColor } from "@/lib/utils";
@@ -40,6 +42,10 @@ export function BoardStage({
   const { angle, done } = useSpinAnimation(round.spin, spinFrom, {
     reducedMotion: reduced,
     onDone: onSpinDone,
+    onTick: () => {
+      audio.play("tick", 0.6);
+      vibrate(8);
+    },
   });
 
   const phase = game.phase;

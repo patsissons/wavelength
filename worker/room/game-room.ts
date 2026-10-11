@@ -9,6 +9,7 @@ import {
   type PrivateMessage,
   type ServerState,
 } from "@shared/game/commands";
+import { canSendEffect } from "@shared/effects/catalog";
 import { applyEvent } from "@shared/game/reducer";
 import { roleOf } from "@shared/game/selectors";
 import type { GameEvent } from "@shared/protocol/events";
@@ -340,12 +341,14 @@ export class GameRoom extends Server<Env> {
   ) {
     const game = this.#state!.game;
     const now = Date.now();
-    if (!game.settings.effects) {
+    if (!canSendEffect(game, playerId, effectId)) {
       this.#send(connection, {
         type: "error",
         cmdId,
         code: "not_allowed",
-        message: "effects are off",
+        message: game.settings.effects
+          ? "that effect isn't yours to send"
+          : "effects are off",
       });
       return;
     }

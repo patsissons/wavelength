@@ -1,5 +1,6 @@
 import { Navigate, useParams } from "react-router";
 import { ConnectionBanner } from "@/components/connection-banner";
+import { EffectsLayer } from "@/components/effects/effects-layer";
 import { GameOver } from "@/components/game-over";
 import { Lounge } from "@/components/lounge/lounge";
 import { RoundScreen } from "@/components/round/round-screen";
@@ -16,6 +17,7 @@ export function Game() {
   return (
     <ConnectionProvider code={normalized}>
       <ConnectionBanner />
+      <EffectsLayer />
       <GameScreen />
     </ConnectionProvider>
   );

@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { saveIdentity, loadIdentity } from "@/lib/identity";
 import { selectIsHost, useGameStore } from "@/lib/store";
 import { useCommand } from "@/lib/use-game-connection";
+import { EnableSound } from "./enable-sound";
 import { HostSettings } from "./host-settings";
 import { PlayerList } from "./player-list";
 import { ShareCard } from "./share-card";
@@ -62,6 +63,8 @@ export function Lounge() {
         </div>
         {isHost && <HostSettings settings={game.settings} />}
       </section>
+
+      <EnableSound />
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between">

@@ -91,6 +91,13 @@ test("the console menu lists the eggs and the API fires them", async ({
   await expect(page.locator("html")).not.toHaveAttribute("data-egg-crt");
   await expect(page.getByTestId("egg-pet")).toHaveCount(0);
 
+  // ↑ hits the title from below: a coin, and the count on the corner.
+  await page.keyboard.press("ArrowUp");
+  await expect(page.getByTestId("egg-coin")).toBeAttached();
+  await expect(page.getByTestId("egg-coins")).toHaveText("🪙 ×1");
+  await page.evaluate(() => window.wavelength!.reset());
+  await expect(page.getByTestId("egg-coins")).toHaveCount(0);
+
   // Press and hold the tagline: scanlines. A plain tap is nothing.
   const line = page.getByTestId("tagline");
   await line.click();

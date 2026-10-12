@@ -1018,6 +1018,23 @@ const PATCHES: Record<SoundPatch, Patch> = {
       });
     });
   },
+  // Two quick square-wave notes a fourth apart: a coin.
+  coin: (ctx, out, v) => {
+    tone(ctx, out, {
+      type: "square",
+      from: 1174.66,
+      start: 0,
+      duration: 0.08,
+      gain: 0.05 * v,
+    });
+    tone(ctx, out, {
+      type: "square",
+      from: 1567.98,
+      start: 0.08,
+      duration: 0.3,
+      gain: 0.05 * v,
+    });
+  },
   // Six chirpy notes climbing two octaves, the last one held.
   oneup: (ctx, out, v) => {
     const run = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98];

@@ -128,6 +128,14 @@ export const EGGS: ReadonlyArray<EggDef> = [
     api: 'wavelength.pet("🐈")',
   },
   {
+    id: "coinblock",
+    name: "Coin block",
+    how: "on the home screen, press ↑ (yes, the first two Konami keys count)",
+    touch:
+      "flick the Wavelength title upwards, like hitting a block from below",
+    what: "a coin pops out of the title with a ding; a hundred of them is a 1-UP",
+  },
+  {
     id: "titlewave",
     name: "Title wave",
     how: "tap the Wavelength title on the home screen seven times",

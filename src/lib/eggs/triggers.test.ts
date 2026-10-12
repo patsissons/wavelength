@@ -23,6 +23,7 @@ function fingers(
   down: Finger[],
   changed: Finger[],
   t = 0,
+  target: EventTarget = document,
 ) {
   const touchOf = (f: Finger) =>
     ({ identifier: f.id ?? 0, clientX: f.x, clientY: f.y }) as Touch;
@@ -32,7 +33,7 @@ function fingers(
     value: changed.map(touchOf),
   });
   Object.defineProperty(event, "timeStamp", { value: t });
-  document.dispatchEvent(event);
+  target.dispatchEvent(event);
   return event;
 }
 
@@ -162,6 +163,28 @@ describe("egg triggers", () => {
     expect(seen).toEqual([]);
     const lone = fingers("touchmove", [a], [a], 600);
     expect(lone.defaultPrevented).toBe(false);
+  });
+
+  it("hits the coin block from below with ↑ or a flick up on it", () => {
+    const block = document.createElement("h1");
+    block.setAttribute("data-egg-block", "");
+    document.body.appendChild(block);
+    press("ArrowUp");
+    expect(useEggs.getState().coins).toBe(1);
+    expect(seen).toContainEqual({ kind: "coin", coins: 1, oneUp: false });
+    expect(play).toHaveBeenCalledWith("coin");
+
+    // A flick up that starts on the block pops one; elsewhere it is a swipe.
+    const at = (x: number, y: number) => [{ x, y }];
+    fingers("touchstart", at(100, 300), at(100, 300), 0, block);
+    fingers("touchend", [], at(100, 200), 150);
+    expect(useEggs.getState().coins).toBe(2);
+    fingers("touchstart", at(100, 300), at(100, 300), 1000);
+    fingers("touchend", [], at(100, 200), 1150);
+    expect(useEggs.getState().coins).toBe(2);
+    block.remove();
+    press("ArrowUp"); // no block on screen: nothing
+    expect(useEggs.getState().coins).toBe(2);
   });
 
   it("the magic word nudges toward the console", () => {

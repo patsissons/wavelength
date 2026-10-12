@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { LIMITS } from "@shared/game/types";
@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError, api } from "@/lib/api";
+import { eggBus } from "@/lib/eggs/bus";
 import { QUIPS, TapCounter } from "@/lib/eggs/charm";
+import { useEggs } from "@/lib/eggs/store";
 import { toggleCrt } from "@/lib/eggs/modes";
 import { useLongPress } from "@/lib/eggs/press";
 import { tagline } from "@/lib/eggs/seasons";
@@ -33,6 +35,25 @@ export function Home() {
   const [waving, setWaving] = useState(false);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  // The title is a coin block: hit it from below (↑, or a flick up on it).
+  const coins = useEggs((s) => s.coins);
+  const [bump, setBump] = useState(false);
+  const [coin, setCoin] = useState<number | null>(null);
+  useEffect(() => {
+    let timers: ReturnType<typeof setTimeout>[] = [];
+    const off = eggBus.subscribe((event) => {
+      if (event.kind !== "coin") return;
+      setBump(true);
+      setCoin(Date.now());
+      timers.push(setTimeout(() => setBump(false), 300));
+      timers.push(setTimeout(() => setCoin(null), 700));
+    });
+    return () => {
+      off();
+      for (const t of timers) clearTimeout(t);
+      timers = [];
+    };
+  }, []);
   // Press and hold the tagline: a 1987 arcade cabinet.
   const holdTagline = useLongPress(1500, () =>
     toast(toggleCrt() ? "📺 CRT on" : "CRT off"),
@@ -89,10 +110,30 @@ export function Home() {
 
   return (
     <main className="safe-area mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-10 [--page-pad:1.5rem]">
-      <header className="text-center">
+      <header className="relative text-center">
+        {coin !== null && (
+          <span
+            key={coin}
+            className="egg-coin pointer-events-none absolute top-0 left-1/2 text-3xl"
+            aria-hidden
+            data-testid="egg-coin"
+          >
+            🪙
+          </span>
+        )}
+        {coins > 0 && (
+          <span
+            className="absolute top-0 right-0 text-xs font-semibold text-muted-foreground tabular-nums"
+            data-testid="egg-coins"
+          >
+            🪙 ×{coins}
+          </span>
+        )}
         <h1
-          className="text-5xl font-black tracking-tight"
+          className="text-5xl font-black tracking-tight select-none"
           aria-label="Wavelength"
+          data-egg-block
+          data-egg-bump={bump || undefined}
           data-egg-wave={waving || undefined}
           onClick={() => {
             // Seven quick taps: the letters do the wave, the tagline quips.

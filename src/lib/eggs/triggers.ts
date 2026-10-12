@@ -4,6 +4,7 @@ import { audio } from "@/lib/audio";
 import { useGameStore } from "@/lib/store";
 import { vibrate } from "@/lib/haptics";
 import { eggBus } from "./bus";
+import { bumpBlock } from "./coins";
 import { printMenu } from "./console";
 import { toggleDisco } from "./disco";
 import {
@@ -100,6 +101,10 @@ export function installTriggers(doc: Document = document): () => void {
       toggleParty();
       return;
     }
+    // ↑ hits the coin block from below wherever one is on screen (the
+    // home title); the first two Konami keys pop two coins, by design.
+    if (token === "ArrowUp" && doc.querySelector("[data-egg-block]"))
+      bumpBlock();
     if (token.length !== 1) return;
     for (const w of words) {
       if (!w.matcher.push(token)) continue;
@@ -109,9 +114,11 @@ export function installTriggers(doc: Document = document): () => void {
     }
   };
 
-  // One finger: a trail from touchstart to touchend.
+  // One finger: a trail from touchstart to touchend, and whether it
+  // began on a coin block.
   let start: { x: number; y: number; t: number } | null = null;
   let trail: Point[] = [];
+  let onBlock = false;
   // Two fingers: where each started and where it is now.
   let pair: {
     ids: [number, number];
@@ -143,6 +150,9 @@ export function installTriggers(doc: Document = document): () => void {
     if (!touch || event.touches.length > 1) return;
     start = { x: touch.clientX, y: touch.clientY, t: event.timeStamp };
     trail = [{ x: touch.clientX, y: touch.clientY }];
+    const target = event.target;
+    onBlock =
+      target instanceof Element && target.closest("[data-egg-block]") !== null;
   };
   const onTouchMove = (event: TouchEvent) => {
     if (pair) {
@@ -197,6 +207,7 @@ export function installTriggers(doc: Document = document): () => void {
       swipes.reset();
       return;
     }
+    if (gesture === "ArrowUp" && onBlock) bumpBlock();
     if (swipes.push(gesture)) toggleParty();
   };
 

@@ -121,6 +121,8 @@ export function EggsLayer() {
           return;
         case "effect":
           return; // RoomEggs' business
+        case "coin":
+          return; // the home screen's business
         case "hot": {
           const html = document.documentElement;
           html.setAttribute("data-egg-hot", "");

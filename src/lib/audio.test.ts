@@ -165,6 +165,7 @@ describe("audio manager", () => {
     expect(names.patches).toContain("ticktock");
     expect(names.patches).toContain("powerup");
     expect(names.patches).toContain("oneup");
+    expect(names.patches).toContain("coin");
   });
 
   it("goes quiet while the tab is hidden or unfocused and resumes after", async () => {

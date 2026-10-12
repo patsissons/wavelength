@@ -25,7 +25,8 @@ export type SoundPatch =
   | "squeal"
   | "ticktock"
   | "powerup"
-  | "oneup";
+  | "oneup"
+  | "coin";
 
 export type ScreenFx = "shake" | "flash" | "fog" | "spotlight";
 

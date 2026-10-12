@@ -157,9 +157,14 @@ Commit in small, modular units (one logical change per commit).
   leaves behind. Every egg collapses under "Reduce effects"
   (`<html data-egg-reduce>`). Add an entry to `EGGS` for anything new,
   with a `touch` wording when the phone instructions differ and
-  `consoleOnly` when there is nothing to do by hand; the QR-code cheat
-  sheet (`components/eggs/cheatsheet.tsx`) renders the list per platform
-  (`lib/eggs/platform.ts`).
+  `consoleOnly` when there is nothing to do by hand (nothing is, today:
+  every egg has a phone trigger, and `api` marks the ones the console can
+  also fire); the QR-code cheat sheet (`components/eggs/cheatsheet.tsx`)
+  renders the list per platform (`lib/eggs/platform.ts`) and hosts the
+  jukebox and the off switch. Seasons are pure data in
+  `lib/eggs/seasons.ts` (the one `SEASONS` list; `use-season.ts` reads
+  the override). The e2e suite asks that module what today is, so the
+  tagline assertions hold on a holiday.
 
 ## Gotchas
 

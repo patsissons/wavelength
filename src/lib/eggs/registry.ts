@@ -91,10 +91,9 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "jukebox",
-    consoleOnly: true,
     name: "Jukebox",
-    how: "ask for it, then play any sound by name",
-    what: "lists every synthesised sound and loop; play() and loop() fire them (tap the page once first so iOS allows audio)",
+    how: "press and hold the mute button in the round toolbar, or tap Jukebox at the bottom of this cheat sheet",
+    what: "every synthesised sound and loop, playable by tap (tap the page once first so iOS allows audio)",
     api: 'wavelength.jukebox() · wavelength.play("fanfare") · wavelength.loop("disco")',
   },
   {
@@ -161,9 +160,8 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "reset",
-    consoleOnly: true,
     name: "Reset",
-    how: "ask for it",
+    how: "tap “Switch everything off” at the bottom of this cheat sheet",
     what: "switches every egg mode off again",
     api: "wavelength.reset()",
   },

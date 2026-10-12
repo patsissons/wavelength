@@ -1,10 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { EGGS, howFor } from "@/lib/eggs/registry";
 import {
   detectPlatform,
   PLATFORM_LABEL,
   type Platform,
 } from "@/lib/eggs/platform";
+import { useEggs } from "@/lib/eggs/store";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,11 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Jukebox } from "./jukebox";
 
 /**
  * Every easter egg and how to set it off on this device. Opens after five
- * quick taps on a QR code; the console-only ones are listed apart, since a
- * phone has no console.
+ * quick taps on a QR code. The console calls are listed apart for the
+ * desktop crowd; the jukebox and the off switch live at the bottom so a
+ * phone can reach them too.
  */
 export function EggCheatsheet({
   open,
@@ -29,8 +34,9 @@ export function EggCheatsheet({
   platform?: Platform;
 }) {
   const platform = useMemo(() => forced ?? detectPlatform(), [forced]);
+  const [jukebox, setJukebox] = useState(false);
   const hands = EGGS.filter((e) => !e.consoleOnly);
-  const console = EGGS.filter((e) => e.consoleOnly);
+  const console = EGGS.filter((e) => e.api);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -56,23 +62,43 @@ export function EggCheatsheet({
             ))}
           </ol>
           <h3 className="mt-5 mb-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            From the console
-            {platform !== "desktop" && " (desktop browsers)"}
+            Also from a desktop console
           </h3>
           <ol className="flex flex-col gap-3" data-testid="egg-console-list">
             {console.map((egg) => (
               <li key={egg.id} data-egg={egg.id}>
                 <p className="font-semibold">{egg.name}</p>
-                {egg.api && (
-                  <code className="block text-sm break-words text-primary">
-                    {egg.api}
-                  </code>
-                )}
-                <p className="text-sm text-muted-foreground">{egg.what}</p>
+                <code className="block text-sm break-words text-primary">
+                  {egg.api}
+                </code>
               </li>
             ))}
           </ol>
+          <div className="mt-5 flex flex-col gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-12"
+              onClick={() => setJukebox(true)}
+              data-testid="egg-jukebox-open"
+            >
+              🎵 Jukebox
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-12"
+              onClick={() => {
+                useEggs.getState().reset();
+                toast("All eggs off.");
+              }}
+              data-testid="egg-reset"
+            >
+              Switch everything off
+            </Button>
+          </div>
         </div>
+        <Jukebox open={jukebox} onOpenChange={setJukebox} />
       </DialogContent>
     </Dialog>
   );

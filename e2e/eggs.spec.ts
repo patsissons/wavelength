@@ -25,6 +25,18 @@ test("five taps on the QR code open the cheat sheet for this device", async ({
   await expect(sheet).toContainText(`on ${phone}`);
   await expect(sheet).toContainText("swipe ↑ ↑ ↓ ↓");
   await expect(sheet).not.toContainText("B A on a keyboard");
+  // The jukebox and the off switch are reachable from the sheet.
+  await host.page.getByTestId("egg-jukebox-open").click();
+  const jukebox = host.page.getByTestId("egg-jukebox");
+  await expect(jukebox).toBeVisible();
+  await expect(jukebox).toContainText("fanfare");
+  await host.page.getByTestId("juke-fanfare").click();
+  await host.page.keyboard.press("Escape");
+  await expect(jukebox).toHaveCount(0);
+  await host.page.evaluate(() => window.wavelength!.crt());
+  await expect(host.page.locator("html")).toHaveAttribute("data-egg-crt", "");
+  await host.page.getByTestId("egg-reset").click();
+  await expect(host.page.locator("html")).not.toHaveAttribute("data-egg-crt");
   await host.page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
   await host.context.close();
@@ -203,6 +215,18 @@ test("a magic clue reaches every screen and leaves the clue box free", async ({
     return s.game!.effectTally[s.you!.playerId];
   });
   expect(tally).toEqual({ "clue:marco": 1 });
+
+  // Press and hold mute: the jukebox, and no mute toggle or fidget.
+  const mute = bob.page.getByTestId("mute-toggle");
+  const box = (await mute.boundingBox())!;
+  await bob.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await bob.page.mouse.down();
+  await bob.page.waitForTimeout(800);
+  await bob.page.mouse.up();
+  await expect(bob.page.getByTestId("egg-jukebox")).toBeVisible();
+  await expect(mute).not.toHaveAttribute("data-fidget");
+  await bob.page.keyboard.press("Escape");
+  await expect(bob.page.getByTestId("egg-jukebox")).toHaveCount(0);
 
   // Ten taps on mute in five seconds: the button has had enough.
   for (let i = 0; i < 10; i++)

@@ -88,3 +88,85 @@ export function isTypingTarget(target: EventTarget | null): boolean {
     target.isContentEditable === true
   );
 }
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+/** Fold an angle into (-π, π]. */
+export function wrapAngle(a: number): number {
+  while (a > Math.PI) a -= 2 * Math.PI;
+  while (a <= -Math.PI) a += 2 * Math.PI;
+  return a;
+}
+
+const CIRCLE_MIN_SIDE = 60;
+const CIRCLE_MIN_SAMPLES = 12;
+/** A hand-drawn lap rarely closes exactly; nine tenths of a turn will do. */
+const CIRCLE_MIN_TURN = 2 * Math.PI * 0.9;
+
+/**
+ * Did one finger draw a full circle? Samples are the trail from touchstart
+ * to touchend. The turn is summed around the bounding-box centre (samples
+ * near the centre are skipped so a scribble through the middle does not
+ * count), and the trail has to end near where it began.
+ */
+export function circleOf(points: ReadonlyArray<Point>): "cw" | "ccw" | null {
+  if (points.length < CIRCLE_MIN_SAMPLES) return null;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of points) {
+    minX = Math.min(minX, p.x);
+    minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+  }
+  const side = Math.min(maxX - minX, maxY - minY);
+  if (side < CIRCLE_MIN_SIDE) return null;
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const angles: number[] = [];
+  for (const p of points) {
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    if (Math.hypot(dx, dy) < side * 0.25) continue;
+    angles.push(Math.atan2(dy, dx));
+  }
+  if (angles.length < CIRCLE_MIN_SAMPLES) return null;
+  let turn = 0;
+  for (let i = 1; i < angles.length; i++) {
+    const step = wrapAngle(angles[i]! - angles[i - 1]!);
+    // A lap never turns a right angle between two samples; a trail that
+    // does crossed the middle (a line, a figure of eight), not a circle.
+    if (Math.abs(step) > Math.PI / 2) return null;
+    turn += step;
+  }
+  if (Math.abs(turn) < CIRCLE_MIN_TURN) return null;
+  const first = points[0]!;
+  const last = points[points.length - 1]!;
+  if (Math.hypot(last.x - first.x, last.y - first.y) > side * 0.5) return null;
+  // Screen y points down, so a positive turn is clockwise on screen.
+  return turn > 0 ? "cw" : "ccw";
+}
+
+export const TWIST_MIN = 90;
+
+/** How far, in degrees, a pair of fingers rotated between two moments. */
+export function twistOf(a0: Point, b0: Point, a1: Point, b1: Point): number {
+  const before = Math.atan2(b0.y - a0.y, b0.x - a0.x);
+  const after = Math.atan2(b1.y - a1.y, b1.x - a1.x);
+  return (wrapAngle(after - before) * 180) / Math.PI;
+}
+
+/** Words typed outside a field (spaces are dropped by `keyToken`). */
+export const WORDS: ReadonlyArray<{
+  word: string;
+  id: "menu" | "disco" | "roll";
+}> = [
+  { word: MAGIC_WORD, id: "menu" },
+  { word: "disco", id: "disco" },
+  { word: "doabarrelroll", id: "roll" },
+];

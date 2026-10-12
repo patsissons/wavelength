@@ -15,20 +15,35 @@ function press(key: string, target: EventTarget = document.body) {
   target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
 }
 
+type Finger = { id?: number; x: number; y: number };
+
+/** Dispatch a touch event: `down` are the fingers still on the glass. */
+function fingers(
+  type: "touchstart" | "touchmove" | "touchend",
+  down: Finger[],
+  changed: Finger[],
+  t = 0,
+) {
+  const touchOf = (f: Finger) =>
+    ({ identifier: f.id ?? 0, clientX: f.x, clientY: f.y }) as Touch;
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "touches", { value: down.map(touchOf) });
+  Object.defineProperty(event, "changedTouches", {
+    value: changed.map(touchOf),
+  });
+  Object.defineProperty(event, "timeStamp", { value: t });
+  document.dispatchEvent(event);
+  return event;
+}
+
 function touch(
   type: "touchstart" | "touchend",
   x: number,
   y: number,
   t: number,
 ) {
-  const point = { clientX: x, clientY: y } as Touch;
-  const event = new Event(type, { bubbles: true }) as TouchEvent;
-  Object.defineProperty(event, "touches", {
-    value: type === "touchstart" ? [point] : [],
-  });
-  Object.defineProperty(event, "changedTouches", { value: [point] });
-  Object.defineProperty(event, "timeStamp", { value: t });
-  document.dispatchEvent(event);
+  const f = { x, y };
+  fingers(type, type === "touchstart" ? [f] : [], [f], t);
 }
 
 describe("egg triggers", () => {
@@ -76,6 +91,77 @@ describe("egg triggers", () => {
     for (const key of KONAMI_KEYS.slice(2)) press(key);
     expect(useEggs.getState().party).toBe(true); // uninstalled: no toggle
     uninstall = () => {};
+  });
+
+  it("typed words outside a field drop the disco and roll the page", () => {
+    for (const ch of "disco") press(ch);
+    expect(useEggs.getState().disco).toBe(true);
+    expect(toast).toHaveBeenLastCalledWith("🪩 Disco.");
+    for (const ch of "do a barrel roll") press(ch);
+    expect(seen.at(-1)).toEqual({ kind: "roll" });
+    expect(play).toHaveBeenLastCalledWith("whoosh");
+  });
+
+  it("a drawn circle drops the disco on the home screen, not in a round", () => {
+    const circle = (cx: number, cy: number, r = 60) => {
+      const n = 36;
+      const at = (i: number) => {
+        const a = (i / (n - 1)) * 1.05 * 2 * Math.PI;
+        return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+      };
+      fingers("touchstart", [at(0)], [at(0)], 0);
+      for (let i = 1; i < n - 1; i++)
+        fingers("touchmove", [at(i)], [at(i)], i * 20);
+      fingers("touchend", [], [at(n - 1)], n * 20);
+    };
+    circle(200, 300);
+    expect(useEggs.getState().disco).toBe(true);
+    expect(toast).toHaveBeenLastCalledWith("🪩 Disco.");
+    circle(200, 300);
+    expect(useEggs.getState().disco).toBe(false);
+
+    const game = createGame({
+      code: "BCDF",
+      hostId: "p1",
+      hostName: "Ann",
+      hostTokenHash: "h",
+      now: 0,
+    }).game;
+    useGameStore.getState().receive({
+      type: "snapshot",
+      state: { ...game, phase: "guessing" },
+      you: { playerId: "p1", target: null },
+    });
+    circle(200, 300);
+    expect(useEggs.getState().disco).toBe(false);
+  });
+
+  it("a two-finger twist rolls the page and blocks the pinch-zoom", () => {
+    const a = { id: 1, x: 100, y: 300 };
+    const b = { id: 2, x: 200, y: 300 };
+    fingers("touchstart", [a], [a], 0);
+    fingers("touchstart", [a, b], [b], 10);
+    const a1 = { id: 1, x: 150, y: 250 };
+    const b1 = { id: 2, x: 150, y: 350 };
+    const move = fingers("touchmove", [a1, b1], [a1, b1], 100);
+    expect(move.defaultPrevented).toBe(true);
+    fingers("touchend", [b1], [a1], 200);
+    expect(seen).toContainEqual({ kind: "roll" });
+    expect(play).toHaveBeenCalledWith("whoosh");
+    // The second finger lifting is nothing on its own.
+    seen.length = 0;
+    fingers("touchend", [], [b1], 210);
+    expect(seen).toEqual([]);
+
+    // A small twist is not a roll, and nothing is prevented without a pair.
+    fingers("touchstart", [a], [a], 300);
+    fingers("touchstart", [a, b], [b], 310);
+    const b2 = { id: 2, x: 200, y: 330 };
+    fingers("touchmove", [a, b2], [b2], 400);
+    fingers("touchend", [b2], [a], 500);
+    expect(seen).toEqual([]);
+    const lone = fingers("touchmove", [a], [a], 600);
+    expect(lone.defaultPrevented).toBe(false);
   });
 
   it("the magic word nudges toward the console", () => {

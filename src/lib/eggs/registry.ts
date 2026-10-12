@@ -83,11 +83,12 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "disco",
-    consoleOnly: true,
     name: "Disco",
-    how: "ask for it (a number of seconds makes it a timed drop)",
+    how: 'type "disco" on a keyboard, outside any field (again to switch it off)',
+    touch:
+      "draw a full circle with one finger, like spinning a record, on the home screen, in the lounge or at game over (again to switch it off)",
     what: "the room hue-cycles, the wheel pulses and the lounge spins a 124 BPM stomp instead of the groove",
-    api: "wavelength.disco()",
+    api: "wavelength.disco() · wavelength.disco(30) for a timed drop",
   },
   {
     id: "jukebox",
@@ -105,9 +106,10 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "barrelroll",
-    consoleOnly: true,
     name: "Barrel roll",
-    how: "ask for it",
+    how: 'type "do a barrel roll" on a keyboard, outside any field',
+    touch:
+      "put two fingers on the screen and twist them a quarter turn (home screen, lounge or game over)",
     what: "the whole page rolls 360°",
     api: "wavelength.barrelRoll()",
   },

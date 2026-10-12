@@ -147,7 +147,14 @@ Commit in small, modular units (one logical change per commit).
   effect and the clue box clears; the same word again is submitted as the
   real clue. `EggsLayer` fires clue eggs from the `effect` ephemeral (the
   room echoes it to the sender); `RoomEggs` fires them locally only when
-  the room refused the effect. Every egg collapses under "Reduce effects"
+  the room refused the effect. Gesture maths (swipes, the drawn circle, the
+  two-finger twist) is pure in `lib/eggs/sequences.ts`; `installTriggers`
+  owns the document listeners, including one non-passive `touchmove` that
+  calls `preventDefault()` only while a two-finger pair is tracked, so
+  iOS does not pinch-zoom mid-twist. Gestures stay off the round (the
+  wheel and dial own touches there). Press-and-hold triggers share
+  `useLongPress` (`lib/eggs/press.ts`), which swallows the click a hold
+  leaves behind. Every egg collapses under "Reduce effects"
   (`<html data-egg-reduce>`). Add an entry to `EGGS` for anything new,
   with a `touch` wording when the phone instructions differ and
   `consoleOnly` when there is nothing to do by hand; the QR-code cheat

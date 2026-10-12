@@ -33,7 +33,7 @@ export function toggleParty(): boolean {
       glyphs: ["🕹️", "🌈", "⭐"],
       count: 18,
     });
-    eggBus.emit({ kind: "konami" });
+    eggBus.emit({ kind: "effect", effectId: "konami" });
   } else {
     toast("Party's over.");
   }

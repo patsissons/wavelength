@@ -113,8 +113,8 @@ export function EggsLayer() {
         case "chip":
           setChip({ id: event.id, text: event.text, key: Date.now() });
           return;
-        case "konami":
-          return;
+        case "effect":
+          return; // RoomEggs' business
         case "hot": {
           const html = document.documentElement;
           html.setAttribute("data-egg-hot", "");

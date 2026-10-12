@@ -16,7 +16,7 @@ describe("RoomEggs", () => {
     );
     eggBus.emit({ kind: "roll" });
     expect(send).not.toHaveBeenCalled();
-    eggBus.emit({ kind: "konami" });
+    eggBus.emit({ kind: "effect", effectId: "konami" });
     expect(send).toHaveBeenCalledWith({
       type: "effect.send",
       effectId: "konami",

@@ -53,7 +53,8 @@ describe("egg triggers", () => {
     expect(toggleParty()).toBe(true);
     expect(useEggs.getState().party).toBe(true);
     expect(play).toHaveBeenCalledWith("konami");
-    expect(seen.map((e) => e.kind)).toEqual(["rain", "konami"]);
+    expect(seen.map((e) => e.kind)).toEqual(["rain", "effect"]);
+    expect(seen[1]).toEqual({ kind: "effect", effectId: "konami" });
     expect(toast).toHaveBeenCalledWith("🕹️ +30 lives");
     expect(toggleParty()).toBe(false);
     expect(seen).toHaveLength(2);

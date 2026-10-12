@@ -14,7 +14,7 @@ export type EggEvent =
   | { kind: "hot" }
   | { kind: "chip"; id: string; text: string }
   | { kind: "roll" }
-  /** Ask the room bridge to broadcast the Konami effect. */
-  | { kind: "konami" };
+  /** Ask the room bridge to send a hidden catalog effect to the room. */
+  | { kind: "effect"; effectId: string };
 
 export const eggBus = new Bus<EggEvent>();

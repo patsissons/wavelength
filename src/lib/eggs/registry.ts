@@ -115,9 +115,8 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "crt",
-    consoleOnly: true,
     name: "CRT",
-    how: "ask for it",
+    how: "press and hold the tagline under the Wavelength title for a second and a half (again to switch it off)",
     what: "scanlines and a vignette, like a 1987 arcade cabinet (toggle)",
     api: "wavelength.crt()",
   },

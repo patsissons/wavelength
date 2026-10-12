@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError, api } from "@/lib/api";
 import { QUIPS, TapCounter } from "@/lib/eggs/charm";
+import { toggleCrt } from "@/lib/eggs/modes";
+import { useLongPress } from "@/lib/eggs/press";
 import { tagline } from "@/lib/eggs/seasons";
 import { useSeason } from "@/lib/eggs/use-season";
 import {
@@ -31,6 +33,10 @@ export function Home() {
   const [waving, setWaving] = useState(false);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  // Press and hold the tagline: a 1987 arcade cabinet.
+  const holdTagline = useLongPress(1500, () =>
+    toast(toggleCrt() ? "📺 CRT on" : "CRT off"),
+  );
   const trimmed = name.trim();
   const normalized = code.toUpperCase().replace(/[^A-Z]/g, "");
 
@@ -106,7 +112,11 @@ export function Home() {
             </span>
           ))}
         </h1>
-        <p className="mt-2 text-muted-foreground" data-testid="tagline">
+        <p
+          className="mt-2 text-muted-foreground select-none [-webkit-touch-callout:none]"
+          data-testid="tagline"
+          {...holdTagline}
+        >
           {waves > 0 ? QUIPS[(waves - 1) % QUIPS.length] : tagline(season)}
         </p>
       </header>

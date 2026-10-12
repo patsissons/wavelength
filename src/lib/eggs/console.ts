@@ -2,6 +2,7 @@ import { audio, soundNames, type LoopName } from "@/lib/audio";
 import type { SoundPatch } from "@shared/effects/catalog";
 import { eggBus } from "./bus";
 import { discoFor, toggleDisco } from "./disco";
+import { toggleCrt } from "./modes";
 import { SEASONS, isSeason } from "./seasons";
 import { toggleParty } from "./triggers";
 import { EGGS, menuText } from "./registry";
@@ -114,9 +115,7 @@ export const eggApi: EggApi = {
     return "🛩️ rolling";
   },
   crt() {
-    const crt = !useEggs.getState().crt;
-    useEggs.getState().set({ crt });
-    return crt ? "📺 CRT on" : "CRT off";
+    return toggleCrt() ? "📺 CRT on" : "CRT off";
   },
   pet(glyph = "🐈") {
     const pet = glyph && glyph.trim() ? glyph.trim() : null;

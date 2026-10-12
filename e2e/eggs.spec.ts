@@ -64,6 +64,18 @@ test("the console menu lists the eggs and the API fires them", async ({
   await expect(page.locator("html")).not.toHaveAttribute("data-egg-crt");
   await expect(page.getByTestId("egg-pet")).toHaveCount(0);
 
+  // Press and hold the tagline: scanlines. A plain tap is nothing.
+  const line = page.getByTestId("tagline");
+  await line.click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-egg-crt");
+  const box = (await line.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(1700);
+  await page.mouse.up();
+  await expect(page.locator("html")).toHaveAttribute("data-egg-crt", "");
+  await page.evaluate(() => window.wavelength!.reset());
+
   // Seven quick taps on the title: the wave, and a quip for a tagline.
   const title = page.getByRole("heading", { name: "Wavelength" });
   // Whatever the calendar says today (the seasons have their own test).

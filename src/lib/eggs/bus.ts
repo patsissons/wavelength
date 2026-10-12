@@ -14,6 +14,8 @@ export type EggEvent =
   | { kind: "hot" }
   | { kind: "chip"; id: string; text: string }
   | { kind: "roll" }
+  /** A timed power-up: `data-egg-<attr>` on <html> for `ms`. */
+  | { kind: "mode"; attr: "super" | "star"; ms: number }
   /** Ask the room bridge to send a hidden catalog effect to the room. */
   | { kind: "effect"; effectId: string };
 

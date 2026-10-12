@@ -1005,4 +1005,30 @@ const PATCHES: Record<SoundPatch, Patch> = {
       });
     }
   },
+  // A quick rising sweep up a major chord, 8-bit style.
+  powerup: (ctx, out, v) => {
+    const run = [392, 523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98, 2093];
+    run.forEach((f, i) => {
+      tone(ctx, out, {
+        type: "square",
+        from: f,
+        start: i * 0.055,
+        duration: 0.07,
+        gain: 0.05 * v,
+      });
+    });
+  },
+  // Six chirpy notes climbing two octaves, the last one held.
+  oneup: (ctx, out, v) => {
+    const run = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98];
+    run.forEach((f, i) => {
+      tone(ctx, out, {
+        type: "square",
+        from: f,
+        start: i * 0.09,
+        duration: i === run.length - 1 ? 0.35 : 0.1,
+        gain: 0.05 * v,
+      });
+    });
+  },
 };

@@ -287,6 +287,22 @@ textarea,
     translate: 0 -4px;
   }
 }
+/* Power-up clues: everyone grows on a mushroom, the stage flashes on a star */
+[data-egg-super] [data-avatar-kind] {
+  transition: transform 0.3s ease-out;
+}
+[data-egg-super]:not([data-egg-reduce]) [data-avatar-kind] {
+  transform: scale(1.35);
+}
+[data-egg-star]:not([data-egg-reduce]) body {
+  animation: egg-disco 1s linear infinite;
+}
+[data-egg-star]:not([data-egg-reduce]) [data-testid="board"] {
+  animation: egg-hue 1s linear infinite;
+}
+.egg-chip[data-egg="oneup"] {
+  color: oklch(0.72 0.2 150);
+}
 /* Konami: party mode */
 [data-egg-party]:not([data-egg-reduce]) [data-testid="board"] {
   animation: egg-hue 6s linear infinite;

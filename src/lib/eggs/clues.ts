@@ -26,6 +26,12 @@ const CLUES: Record<string, ClueEgg> = {
   disco: { id: "disco" },
   "do a barrel roll": { id: "barrelroll" },
   wavelength: { id: "meta", subtitle: "Very meta." },
+  mushroom: { id: "mushroom", subtitle: "Super." },
+  star: { id: "star", shimmer: true },
+  starman: { id: "star", shimmer: true },
+  "1 up": { id: "oneup" },
+  "1up": { id: "oneup" },
+  "one up": { id: "oneup" },
 };
 
 export const MAGIC_CLUES: ReadonlyArray<string> = Object.keys(CLUES);
@@ -142,6 +148,31 @@ export function fireClueEgg(egg: ClueEgg): void {
       return;
     case "meta":
       eggBus.emit({ kind: "chip", id: "meta", text: "🎯 Very meta." });
+      return;
+    case "mushroom":
+      eggBus.emit({ kind: "mode", attr: "super", ms: 10_000 });
+      eggBus.emit({ kind: "rain", id: "mushroom", glyphs: ["🍄"], count: 12 });
+      audio.play("powerup");
+      return;
+    case "star":
+      eggBus.emit({ kind: "mode", attr: "star", ms: 10_000 });
+      eggBus.emit({
+        kind: "rain",
+        id: "star",
+        glyphs: ["⭐", "✨", "🌟"],
+        count: 16,
+      });
+      audio.play("powerup");
+      return;
+    case "oneup":
+      eggBus.emit({ kind: "chip", id: "oneup", text: "1-UP" });
+      eggBus.emit({
+        kind: "rain",
+        id: "oneup",
+        glyphs: ["🟢", "🍄"],
+        count: 8,
+      });
+      audio.play("oneup");
       return;
   }
 }

@@ -60,8 +60,8 @@ export const EGGS: ReadonlyArray<EggDef> = [
   {
     id: "clues",
     name: "Magic clues",
-    how: 'psychic: type "banana", "marco", "42", "abracadabra", "disco", "do a barrel roll" or "wavelength" as your clue and say it; the room gets the egg and your clue box clears (say the same word again to make it your actual clue)',
-    what: "every screen in the room reacts: a banana-peel slip, a POLO!, a towel day, a shimmer, a ten-second disco drop, a roll, or a very meta chip",
+    how: 'psychic: type "banana", "marco", "42", "abracadabra", "disco", "do a barrel roll", "wavelength", "mushroom", "star" or "1-up" as your clue and say it; the room gets the egg and your clue box clears (say the same word again to make it your actual clue)',
+    what: "every screen in the room reacts: a banana-peel slip, a POLO!, a towel day, a shimmer, a ten-second disco drop, a roll, a very meta chip, ten seconds of everyone super-sized, ten seconds of invincibility, or an extra life",
   },
   {
     id: "hotwheel",

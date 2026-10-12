@@ -127,6 +127,9 @@ export function EggsLayer() {
           setTimeout(() => html.removeAttribute("data-egg-hot"), 1500);
           return;
         }
+        case "mode":
+          timedAttribute(`data-egg-${event.attr}`, event.ms);
+          return;
         case "roll":
           if (reduce) {
             setChip({
@@ -245,6 +248,23 @@ function fireworks(reduce: boolean) {
     if (Date.now() < end) setTimeout(tick, 350);
   };
   tick();
+}
+
+const timed = new Map<string, ReturnType<typeof setTimeout>>();
+
+/** Sets an attribute on <html> for a while; a repeat extends it. */
+function timedAttribute(name: string, ms: number) {
+  const html = document.documentElement;
+  html.setAttribute(name, "");
+  const pending = timed.get(name);
+  if (pending !== undefined) clearTimeout(pending);
+  timed.set(
+    name,
+    setTimeout(() => {
+      timed.delete(name);
+      html.removeAttribute(name);
+    }, ms),
+  );
 }
 
 function barrelRoll() {

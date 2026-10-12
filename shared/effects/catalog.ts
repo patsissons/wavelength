@@ -23,7 +23,9 @@ export type SoundPatch =
   | "squeak"
   | "splash"
   | "squeal"
-  | "ticktock";
+  | "ticktock"
+  | "powerup"
+  | "oneup";
 
 export type ScreenFx = "shake" | "flash" | "fog" | "spotlight";
 
@@ -65,6 +67,9 @@ const CLUE_EFFECTS: ReadonlyArray<EffectDef> = (
     ["disco", "Disco", "🪩"],
     ["barrelroll", "Barrel roll", "🛩️"],
     ["meta", "Very meta", "🎯"],
+    ["mushroom", "Mushroom", "🍄"],
+    ["star", "Star", "⭐"],
+    ["oneup", "1-UP", "🟢"],
   ] as const
 ).map(([id, label, icon]) => ({
   id: `${CLUE_EFFECT_PREFIX}${id}`,

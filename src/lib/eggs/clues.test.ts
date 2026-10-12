@@ -51,7 +51,12 @@ describe("magic clues", () => {
     expect(matchClue("a banana")).toBeNull();
     expect(matchClue("")).toBeNull();
     expect(matchClue(null)).toBeNull();
-    expect(MAGIC_CLUES).toHaveLength(7);
+    expect(matchClue("Mushroom")?.subtitle).toBe("Super.");
+    expect(matchClue("starman")?.id).toBe("star");
+    expect(matchClue("1-UP")?.id).toBe("oneup");
+    expect(matchClue("one up")?.id).toBe("oneup");
+    expect(matchClue("1up")?.id).toBe("oneup");
+    expect(MAGIC_CLUES).toHaveLength(13);
   });
 
   it("has a hidden catalog effect for every egg, and only those", () => {
@@ -108,6 +113,17 @@ describe("magic clues", () => {
 
     fireClueEgg(matchClue("wavelength")!);
     expect(seen.at(-1)).toMatchObject({ kind: "chip", id: "meta" });
+  });
+
+  it("the power-ups time a mode on <html>, the 1-up is a green chip", () => {
+    fireClueEgg(matchClue("mushroom")!);
+    expect(seen).toContainEqual({ kind: "mode", attr: "super", ms: 10_000 });
+    expect(audio.play).toHaveBeenLastCalledWith("powerup");
+    fireClueEgg(matchClue("star")!);
+    expect(seen).toContainEqual({ kind: "mode", attr: "star", ms: 10_000 });
+    fireClueEgg(matchClue("1-up")!);
+    expect(seen).toContainEqual({ kind: "chip", id: "oneup", text: "1-UP" });
+    expect(audio.play).toHaveBeenLastCalledWith("oneup");
   });
 
   it("the disco clue is a ten-second drop with the record spinning", () => {

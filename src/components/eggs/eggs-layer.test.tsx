@@ -92,6 +92,24 @@ describe("EggsLayer", () => {
     expect(document.querySelectorAll("[data-effect=applause]")).toHaveLength(0);
   });
 
+  it("holds a power-up attribute on <html> for a while, extending on repeat", () => {
+    render(<EggsLayer />);
+    act(() => {
+      eggBus.emit({ kind: "mode", attr: "super", ms: 1000 });
+    });
+    expect(document.documentElement.hasAttribute("data-egg-super")).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(700);
+      eggBus.emit({ kind: "mode", attr: "super", ms: 1000 });
+      vi.advanceTimersByTime(700);
+    });
+    expect(document.documentElement.hasAttribute("data-egg-super")).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(document.documentElement.hasAttribute("data-egg-super")).toBe(false);
+  });
+
   it("glows the wheel after a hot flick and rises the smoke", () => {
     render(<EggsLayer />);
     act(() => {

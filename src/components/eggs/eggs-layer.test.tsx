@@ -1,5 +1,9 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// jsdom has no canvas: the fireworks are counted, not drawn.
+const { confetti } = vi.hoisted(() => ({ confetti: vi.fn() }));
+vi.mock("canvas-confetti", () => ({ default: confetti }));
 import { celebrationBus, effectBus } from "@/lib/effect-bus";
 import { eggBus } from "@/lib/eggs/bus";
 import { useEggs } from "@/lib/eggs/store";
@@ -181,6 +185,78 @@ describe("EggsLayer", () => {
     expect(document.querySelectorAll("[data-effect=egg-hattrick]").length).toBe(
       16,
     );
+    useGameStore.getState().reset();
+  });
+
+  it("lets off fireworks when the last dial locks on a flagpole number", () => {
+    const game = createGame({
+      code: "BCDF",
+      hostId: "p1",
+      hostName: "Ann",
+      hostTokenHash: "h",
+      now: 0,
+    }).game;
+    const dial = {
+      id: "shared",
+      owners: ["p1"],
+      position: 0.5,
+      movedBy: null,
+      accepts: [],
+      locked: false,
+    };
+    const round = {
+      index: 0,
+      psychicId: "p1",
+      psychicTeam: null,
+      card: null,
+      side: null,
+      spectrum: null,
+      spin: null,
+      spins: 1,
+      shroudOpen: false,
+      peeks: 0,
+      clue: "x",
+      guessDeadline: 20_000,
+      dials: { shared: dial },
+      votes: {},
+      target: null,
+      result: null,
+      log: [],
+      catchUp: false,
+      startedAt: 0,
+    };
+    useGameStore.getState().reset();
+    render(<EggsLayer />);
+    const snapshot = (locked: boolean, at: number) =>
+      useGameStore.getState().receive({
+        type: "snapshot",
+        state: {
+          ...game,
+          phase: "guessing",
+          round: {
+            ...round,
+            dials: { shared: { ...dial, locked } },
+            log: locked ? [{ t: "lock", at, dialId: "shared" }] : [],
+          },
+        } as never,
+        you: { playerId: "p1", target: null },
+      });
+    act(() => snapshot(false, 0));
+    confetti.mockClear();
+    act(() => snapshot(true, 17_200)); // 2.8 s left reads 3
+    expect(screen.getByTestId("egg-chip")).toHaveTextContent("🎆 ×3");
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(confetti).toHaveBeenCalledTimes(6); // three volleys, two corners
+    // Already locked: no repeat. Unlock, then lock on a 4: nothing.
+    act(() => snapshot(true, 17_200));
+    act(() => snapshot(false, 0));
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    act(() => snapshot(true, 16_500));
+    expect(screen.queryByTestId("egg-chip")).toBeNull();
     useGameStore.getState().reset();
   });
 

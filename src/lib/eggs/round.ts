@@ -75,6 +75,33 @@ export function hatTrickText(game: GameState, who: string): string {
   return name ? `🎩 Hat trick, ${name}!` : "🎩 Hat trick!";
 }
 
+/**
+ * The flagpole rule: with the dial timer on, locking the last dial while
+ * the countdown's ones digit reads 1, 3 or 6 earns that many fireworks.
+ * Both times are server time, so every client agrees. A timeout clears
+ * the deadline before the locks land, so it never counts.
+ */
+export function flagpole(
+  deadline: number | null,
+  lockedAt: number | null,
+): 0 | 1 | 3 | 6 {
+  if (deadline === null || lockedAt === null) return 0;
+  const seconds = Math.ceil((deadline - lockedAt) / 1000);
+  if (seconds <= 0) return 0;
+  const digit = seconds % 10;
+  return digit === 1 || digit === 3 || digit === 6 ? digit : 0;
+}
+
+/** When the most recent dial locked this round, from the public log. */
+export function lastLockAt(game: Pick<GameState, "round">): number | null {
+  const log = game.round?.log ?? [];
+  for (let i = log.length - 1; i >= 0; i--) {
+    const entry = log[i]!;
+    if (entry.t === "lock") return entry.at;
+  }
+  return null;
+}
+
 /** Fire the hat trick moment for everyone. */
 export function celebrateHatTrick(game: GameState, who: string): void {
   eggBus.emit({ kind: "chip", id: "hattrick", text: hatTrickText(game, who) });

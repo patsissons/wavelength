@@ -136,6 +136,12 @@ export const EGGS: ReadonlyArray<EggDef> = [
     what: "a coin pops out of the title with a ding; a hundred of them is a 1-UP",
   },
   {
+    id: "flagpole",
+    name: "Flagpole",
+    how: "with the dial timer on, lock the last dial while the countdown's last digit reads 1, 3 or 6",
+    what: "fireworks: one, three or six of them",
+  },
+  {
     id: "warp",
     name: "Warp pipe",
     how: "press and hold the game code for a second (in the lounge, or on the join strip at game over)",

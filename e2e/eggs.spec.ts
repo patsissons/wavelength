@@ -40,6 +40,18 @@ test("five taps on the QR code open the cheat sheet for this device", async ({
   await host.page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
 
+  // Press and hold the game code: down the warp pipe.
+  const code = host.page.getByTestId("game-code");
+  const codeBox = (await code.boundingBox())!;
+  await host.page.mouse.move(
+    codeBox.x + codeBox.width / 2,
+    codeBox.y + codeBox.height / 2,
+  );
+  await host.page.mouse.down();
+  await host.page.waitForTimeout(1200);
+  await host.page.mouse.up();
+  await expect(host.page.getByTestId("egg-chip")).toContainText("Warp Zone");
+
   // Your own pill: five taps rain your avatar, a hold adopts it as a pet.
   const self = host.page.getByTestId("self");
   for (let i = 0; i < 5; i++) await self.click();

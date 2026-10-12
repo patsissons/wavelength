@@ -1018,6 +1018,16 @@ const PATCHES: Record<SoundPatch, Patch> = {
       });
     });
   },
+  // A square wave sliding down two and a half octaves: down the pipe.
+  warp: (ctx, out, v) =>
+    tone(ctx, out, {
+      type: "square",
+      from: 880,
+      to: 150,
+      start: 0,
+      duration: 0.5,
+      gain: 0.05 * v,
+    }),
   // Two quick square-wave notes a fourth apart: a coin.
   coin: (ctx, out, v) => {
     tone(ctx, out, {

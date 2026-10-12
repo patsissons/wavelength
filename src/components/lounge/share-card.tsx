@@ -4,6 +4,7 @@ import { renderSVG } from "uqr";
 import { Button } from "@/components/ui/button";
 import { EggCheatsheet } from "@/components/eggs/cheatsheet";
 import { isPalindrome, TapCounter } from "@/lib/eggs/charm";
+import { useWarpPipe } from "@/lib/eggs/warp";
 import { cn } from "@/lib/utils";
 
 function useShare(code: string) {
@@ -25,6 +26,8 @@ function useShare(code: string) {
   const tapQr = () => {
     if (taps.current.push(Date.now())) setEggs(true);
   };
+  // Press and hold the code: it goes down the warp pipe.
+  const { warping, ...pipe } = useWarpPipe();
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -41,7 +44,19 @@ function useShare(code: string) {
       /* user cancelled */
     }
   };
-  return { url, qr, copied, canShare, copy, share, eggs, setEggs, tapQr };
+  return {
+    url,
+    qr,
+    copied,
+    canShare,
+    copy,
+    share,
+    eggs,
+    setEggs,
+    tapQr,
+    pipe,
+    warping,
+  };
 }
 
 /** The QR image; five quick taps open the easter-egg cheat sheet. */
@@ -70,8 +85,18 @@ function QrCode({
 }
 
 export function ShareCard({ code }: { code: string }) {
-  const { qr, copied, canShare, copy, share, eggs, setEggs, tapQr } =
-    useShare(code);
+  const {
+    qr,
+    copied,
+    canShare,
+    copy,
+    share,
+    eggs,
+    setEggs,
+    tapQr,
+    pipe,
+    warping,
+  } = useShare(code);
   return (
     <section className="flex items-center gap-4 rounded-2xl bg-card p-4">
       <QrCode qr={qr} onTap={tapQr} className="size-24 rounded-lg p-1" />
@@ -80,10 +105,12 @@ export function ShareCard({ code }: { code: string }) {
         <p className="text-xs tracking-widest text-muted-foreground uppercase">
           Game code
         </p>
-        <p className="flex items-center gap-2">
+        <p className="flex items-center gap-2 overflow-hidden">
           <span
-            className="font-mono text-4xl font-black tracking-[0.2em]"
+            className="inline-block font-mono text-4xl font-black tracking-[0.2em] select-none [-webkit-touch-callout:none]"
             data-testid="game-code"
+            data-egg-warp={warping || undefined}
+            {...pipe}
           >
             {code}
           </span>
@@ -120,8 +147,19 @@ export function ShareStrip({
   code: string;
   className?: string;
 }) {
-  const { url, qr, copied, canShare, copy, share, eggs, setEggs, tapQr } =
-    useShare(code);
+  const {
+    url,
+    qr,
+    copied,
+    canShare,
+    copy,
+    share,
+    eggs,
+    setEggs,
+    tapQr,
+    pipe,
+    warping,
+  } = useShare(code);
   return (
     <section
       className={cn(
@@ -136,11 +174,15 @@ export function ShareStrip({
         <p className="text-[10px] tracking-widest text-muted-foreground uppercase">
           Join with code
         </p>
-        <p
-          className="font-mono text-xl font-black tracking-[0.2em]"
-          data-testid="share-compact-code"
-        >
-          {code}
+        <p className="overflow-hidden">
+          <span
+            className="inline-block font-mono text-xl font-black tracking-[0.2em] select-none [-webkit-touch-callout:none]"
+            data-testid="share-compact-code"
+            data-egg-warp={warping || undefined}
+            {...pipe}
+          >
+            {code}
+          </span>
         </p>
         <p className="truncate text-xs text-muted-foreground">
           {url.replace(/^https?:\/\//, "")}

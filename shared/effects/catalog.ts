@@ -26,7 +26,8 @@ export type SoundPatch =
   | "ticktock"
   | "powerup"
   | "oneup"
-  | "coin";
+  | "coin"
+  | "warp";
 
 export type ScreenFx = "shake" | "flash" | "fog" | "spotlight";
 

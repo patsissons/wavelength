@@ -136,6 +136,12 @@ export const EGGS: ReadonlyArray<EggDef> = [
     what: "a coin pops out of the title with a ding; a hundred of them is a 1-UP",
   },
   {
+    id: "warp",
+    name: "Warp pipe",
+    how: "press and hold the game code for a second (in the lounge, or on the join strip at game over)",
+    what: "the code drops down the pipe and climbs back out, with a slide and a welcome",
+  },
+  {
     id: "titlewave",
     name: "Title wave",
     how: "tap the Wavelength title on the home screen seven times",

@@ -488,6 +488,23 @@ h1[data-egg-bump] {
     transform: translate(-50%, -70px) rotateY(540deg);
   }
 }
+/* Warp pipe: the code drops out of sight and climbs back */
+[data-egg-warp] {
+  animation: egg-warp 1.2s ease-in-out;
+}
+[data-egg-reduce] [data-egg-warp] {
+  animation: none;
+}
+@keyframes egg-warp {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40%,
+  60% {
+    transform: translateY(130%);
+  }
+}
 /* Title wave: each letter hops in turn */
 h1[data-egg-wave] .egg-letter {
   animation: egg-wave 0.9s ease-in-out;

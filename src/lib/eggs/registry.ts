@@ -98,10 +98,9 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "rain",
-    consoleOnly: true,
     name: "Rain",
-    how: "ask for it",
-    what: "emoji rain down the screen (any emoji, any amount)",
+    how: "tap your own avatar pill five times, quickly (the lounge list, or the player strip during a round)",
+    what: "your avatar pours down the screen (from the console: any emoji, any amount)",
     api: 'wavelength.rain("🍕", 24)',
   },
   {
@@ -121,10 +120,9 @@ export const EGGS: ReadonlyArray<EggDef> = [
   },
   {
     id: "pet",
-    consoleOnly: true,
     name: "Pet",
-    how: "ask for it",
-    what: "a critter trots along the bottom edge now and then; null sends it home",
+    how: "press and hold your own avatar pill for a second; hold again to send it home",
+    what: "your avatar trots along the bottom edge now and then (from the console: any emoji; null sends it home)",
     api: 'wavelength.pet("🐈")',
   },
   {

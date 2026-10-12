@@ -3,6 +3,7 @@ import { playersInOrder } from "@shared/game/rotation";
 import { ranking } from "@shared/game/scoring";
 import type { GameState, Player } from "@shared/game/types";
 import { PlayerAvatar } from "@/components/player-avatar";
+import { useSelfPill } from "@/lib/eggs/avatar-eggs";
 import { usePoke } from "@/lib/use-poke";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,8 @@ export function PresenceStrip({
 }) {
   const psychicId = game.round?.psychicId;
   const poke = usePoke();
+  // Your own pill is an egg instead of a poke (see lib/eggs/avatar-eggs).
+  const selfPill = useSelfPill(game.players[playerId] ?? { name: "?" });
   const ffa = game.settings.mode === "ffa";
   const ranks = ffa
     ? Object.fromEntries(ranking(game.scores).map((r) => [r.id, r.rank]))
@@ -75,11 +78,13 @@ export function PresenceStrip({
           >
             <button
               type="button"
-              className="flex items-center gap-1 disabled:cursor-default"
-              onClick={() => poke?.(p.id)}
-              disabled={!poke || p.id === playerId}
+              className="flex items-center gap-1 select-none disabled:cursor-default [-webkit-touch-callout:none]"
+              {...(p.id === playerId
+                ? selfPill
+                : { onClick: () => poke?.(p.id) })}
+              disabled={p.id !== playerId && !poke}
               aria-label={poke && p.id !== playerId ? `Poke ${p.name}` : p.name}
-              data-testid="poke"
+              data-testid={p.id === playerId ? "self" : "poke"}
             >
               <PlayerAvatar player={p} size="sm" />
               <span

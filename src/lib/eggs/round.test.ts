@@ -9,9 +9,11 @@ import { eggBus, type EggEvent } from "./bus";
 import {
   HOT_VELOCITY,
   celebrateHatTrick,
+  flagpole,
   hatTrick,
   hatTrickText,
   hotWheel,
+  lastLockAt,
   neutralDrop,
 } from "./round";
 
@@ -131,5 +133,30 @@ describe("hot wheel and the neutral drop", () => {
     expect(seen).toEqual([
       { kind: "chip", id: "neutral", text: "🇨🇭 Very neutral." },
     ]);
+  });
+
+  it("counts fireworks by the flagpole rule", () => {
+    expect(flagpole(10_000, 4_600)).toBe(6); // 5.4 s left reads 6
+    expect(flagpole(10_000, 7_000)).toBe(3);
+    expect(flagpole(10_000, 9_000)).toBe(1);
+    expect(flagpole(30_000, 9_000)).toBe(1); // 21
+    expect(flagpole(10_000, 8_000)).toBe(0); // 2
+    expect(flagpole(10_000, 10_000)).toBe(0); // out of time
+    expect(flagpole(10_000, 12_000)).toBe(0);
+    expect(flagpole(null, 1_000)).toBe(0); // no timer
+    expect(flagpole(10_000, null)).toBe(0);
+    expect(lastLockAt({ round: null })).toBeNull();
+    expect(
+      lastLockAt({
+        round: {
+          ...base.round!,
+          log: [
+            { t: "lock", at: 3, dialId: "a" },
+            { t: "clue", at: 4 },
+            { t: "lock", at: 5, dialId: "b" },
+          ],
+        },
+      } as never),
+    ).toBe(5);
   });
 });

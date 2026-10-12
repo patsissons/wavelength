@@ -933,6 +933,38 @@ describe("reactions and pokes", () => {
     expect(state.game.effectTally).toEqual({});
   });
 
+  it("lets only the psychic say a magic clue, and only during a round", () => {
+    let { state } = setup("coop", ["Ann", "Bob"]);
+    expectError(
+      state,
+      "p0",
+      cmd("effect.send", { effectId: "clue:banana" }),
+      "not_allowed",
+    );
+    state = run(state, "p0", cmd("game.start"));
+    const psychic = state.game.round!.psychicId;
+    const other = psychic === "p0" ? "p1" : "p0";
+    state = run(state, psychic, cmd("card.draw"));
+    state = run(state, psychic, cmd("card.pickSide", { side: 1 }));
+    state = run(state, psychic, cmd("spin.flick", { velocity: 20 }));
+    expect(state.game.phase).toBe("clue");
+    state = run(
+      state,
+      psychic,
+      cmd("effect.send", { effectId: "clue:banana" }),
+    );
+    // The egg is not the clue: the psychic still owes one.
+    expect(state.game.phase).toBe("clue");
+    expect(state.game.round!.clue).toBeNull();
+    expect(state.game.effectTally[psychic]).toEqual({ "clue:banana": 1 });
+    expectError(
+      state,
+      other,
+      cmd("effect.send", { effectId: "clue:banana" }),
+      "not_allowed",
+    );
+  });
+
   it("throws arena reactions after the reveal and tallies them both ways", () => {
     let { state } = setup("coop", ["Ann", "Bob", "Cid"]);
     const react = (to: string, emoji = "🔥") =>

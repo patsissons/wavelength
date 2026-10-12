@@ -34,7 +34,13 @@ describe("egg modes", () => {
     const { vi } = await import("vitest");
     sessionStorage.setItem(
       KEY,
-      JSON.stringify({ crt: "yes", pet: 7, season: "bogus", disco: true }),
+      JSON.stringify({
+        crt: "yes",
+        pet: 7,
+        season: "bogus",
+        disco: true,
+        coins: "7",
+      }),
     );
     vi.resetModules();
     const useEggs = await load();
@@ -43,6 +49,7 @@ describe("egg modes", () => {
     expect(s.pet).toBeNull();
     expect(s.season).toBeNull();
     expect(s.disco).toBe(true);
+    expect(s.coins).toBe(0);
 
     sessionStorage.setItem(KEY, "{not json");
     vi.resetModules();

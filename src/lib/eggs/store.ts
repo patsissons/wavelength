@@ -1,6 +1,5 @@
 import { create } from "zustand";
-
-export type Season = "halloween" | "winter" | "newyear" | "fools";
+import { SEASONS, type Season } from "./seasons";
 
 export interface EggModes {
   /** Konami: rainbow wheel and accents. */
@@ -13,6 +12,8 @@ export interface EggModes {
   pet: string | null;
   /** Forced seasonal dressing (null = whatever the date says). */
   season: Season | null;
+  /** Coins knocked out of the title so far (a hundred is a 1-UP). */
+  coins: number;
 }
 
 interface EggsStore extends EggModes {
@@ -28,14 +29,8 @@ const DEFAULTS: EggModes = {
   crt: false,
   pet: null,
   season: null,
+  coins: 0,
 };
-
-const SEASONS: ReadonlyArray<Season> = [
-  "halloween",
-  "winter",
-  "newyear",
-  "fools",
-];
 
 /** Session-scoped: a reload keeps the vibe, a fresh tab starts clean. */
 function load(): EggModes {
@@ -53,6 +48,10 @@ function load(): EggModes {
       season: SEASONS.includes(p.season as Season)
         ? (p.season as Season)
         : null,
+      coins:
+        Number.isInteger(p.coins) && (p.coins as number) >= 0
+          ? (p.coins as number) % 100
+          : 0,
     };
   } catch {
     return DEFAULTS;
@@ -68,8 +67,8 @@ function save(modes: EggModes) {
 }
 
 function pick(state: EggsStore): EggModes {
-  const { party, disco, crt, pet, season } = state;
-  return { party, disco, crt, pet, season };
+  const { party, disco, crt, pet, season, coins } = state;
+  return { party, disco, crt, pet, season, coins };
 }
 
 export const useEggs = create<EggsStore>((set, get) => ({

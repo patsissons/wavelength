@@ -26,7 +26,9 @@ describe("egg registry", () => {
     for (const egg of EGGS) {
       if (egg.consoleOnly) expect(egg.api).toBeDefined();
     }
-    expect(eggById("rain")?.consoleOnly).toBe(true);
+    expect(eggById("rain")?.consoleOnly).toBeUndefined();
+    expect(eggById("rain")?.how).toContain("avatar");
+    expect(eggById("pet")?.how).toContain("hold");
     expect(eggById("titlewave")?.consoleOnly).toBeUndefined();
   });
 

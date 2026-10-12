@@ -138,15 +138,28 @@ phone (same network) to play.
 
 ## Easter eggs
 
-There are a few. Tap the QR code five times in five seconds (in the lounge
-or during a game) for a cheat sheet that lists every egg with the
-instructions for the device you are holding (swipes on a phone, keys on a
-desktop). On a desktop, open the browser console and type `wavelength`: it
-prints the same list and returns an API that fires them by hand, for
-example `wavelength.disco()` or `wavelength.rain("🍕", 24)`. Some are
-keyboard or touch sequences, some are magic clues the whole room reacts
-to, some only turn up on certain dates. Every one of them respects the
-**Reduce effects** setting.
+There are a few, and every one of them works on a phone. Tap the QR code
+five times in five seconds (in the lounge or during a game) for a cheat
+sheet that lists every egg with the instructions for the device you are
+holding (gestures on a phone, keys on a desktop); the sheet also opens the
+jukebox (every sound the game can make, playable by tap) and has a button
+that switches every egg off again. On a desktop, open the browser console
+and type `wavelength`: it prints the same list and returns an API that
+fires them by hand, for example `wavelength.disco()` or
+`wavelength.rain("🍕", 24)`.
+
+Roughly: some are gestures (Konami as swipes, a drawn circle for disco, a
+two-finger twist for a barrel roll, a flick up on the title for a coin),
+some are holds (the tagline, the mute button, the game code, your own
+avatar pill), some are taps (the title, your avatar, the mute button, the
+QR code), some are magic clues the whole room reacts to (the first time
+the psychic says one it goes to the room and the clue box clears; saying
+it again makes it the actual clue), some are moments in play (a flat-out
+flick, a dead-centre dial, three bullseyes, a flagpole lock on the timer)
+and some only turn up on certain dates (Halloween week, the US and
+Canadian Thanksgiving weekends, the winter holidays, New Year's, St
+Patrick's Day and April 1st). Every one of them respects the **Reduce
+effects** setting.
 
 If a phone sleeps or the tab is backgrounded, the player keeps their seat:
 the client reconnects as soon as the page wakes, and the room only marks a

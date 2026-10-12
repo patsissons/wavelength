@@ -1,11 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { seasonFor, tagline } from "../src/lib/eggs/seasons";
 import {
   dragDial,
   flickWheelHard,
   hostGame,
   joinGame,
   playerRow,
-  psychicTurn,
+  reachClue,
   startTeamsGame,
 } from "./helpers";
 
@@ -24,8 +25,47 @@ test("five taps on the QR code open the cheat sheet for this device", async ({
   await expect(sheet).toContainText(`on ${phone}`);
   await expect(sheet).toContainText("swipe ↑ ↑ ↓ ↓");
   await expect(sheet).not.toContainText("B A on a keyboard");
+  // The jukebox and the off switch are reachable from the sheet.
+  await host.page.getByTestId("egg-jukebox-open").click();
+  const jukebox = host.page.getByTestId("egg-jukebox");
+  await expect(jukebox).toBeVisible();
+  await expect(jukebox).toContainText("fanfare");
+  await host.page.getByTestId("juke-fanfare").click();
+  await host.page.keyboard.press("Escape");
+  await expect(jukebox).toHaveCount(0);
+  await host.page.evaluate(() => window.wavelength!.crt());
+  await expect(host.page.locator("html")).toHaveAttribute("data-egg-crt", "");
+  await host.page.getByTestId("egg-reset").click();
+  await expect(host.page.locator("html")).not.toHaveAttribute("data-egg-crt");
   await host.page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
+
+  // Press and hold the game code: down the warp pipe.
+  const code = host.page.getByTestId("game-code");
+  const codeBox = (await code.boundingBox())!;
+  await host.page.mouse.move(
+    codeBox.x + codeBox.width / 2,
+    codeBox.y + codeBox.height / 2,
+  );
+  await host.page.mouse.down();
+  await host.page.waitForTimeout(1200);
+  await host.page.mouse.up();
+  await expect(host.page.getByTestId("egg-chip")).toContainText("Warp Zone");
+
+  // Your own pill: five taps rain your avatar, a hold adopts it as a pet.
+  const self = host.page.getByTestId("self");
+  for (let i = 0; i < 5; i++) await self.click();
+  await expect(
+    host.page
+      .locator("[data-testid=effect-burst][data-effect=egg-avatar]")
+      .first(),
+  ).toBeAttached();
+  const pill = (await self.boundingBox())!;
+  await host.page.mouse.move(pill.x + 12, pill.y + pill.height / 2);
+  await host.page.mouse.down();
+  await host.page.waitForTimeout(1200);
+  await host.page.mouse.up();
+  await expect(host.page.getByTestId("egg-pet")).toHaveText("🐈");
   await host.context.close();
 });
 
@@ -63,10 +103,30 @@ test("the console menu lists the eggs and the API fires them", async ({
   await expect(page.locator("html")).not.toHaveAttribute("data-egg-crt");
   await expect(page.getByTestId("egg-pet")).toHaveCount(0);
 
+  // ↑ hits the title from below: a coin, and the count on the corner.
+  await page.keyboard.press("ArrowUp");
+  await expect(page.getByTestId("egg-coin")).toBeAttached();
+  await expect(page.getByTestId("egg-coins")).toHaveText("🪙 ×1");
+  await page.evaluate(() => window.wavelength!.reset());
+  await expect(page.getByTestId("egg-coins")).toHaveCount(0);
+
+  // Press and hold the tagline: scanlines. A plain tap is nothing.
+  const line = page.getByTestId("tagline");
+  await line.click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-egg-crt");
+  const box = (await line.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(1700);
+  await page.mouse.up();
+  await expect(page.locator("html")).toHaveAttribute("data-egg-crt", "");
+  await page.evaluate(() => window.wavelength!.reset());
+
   // Seven quick taps on the title: the wave, and a quip for a tagline.
   const title = page.getByRole("heading", { name: "Wavelength" });
+  // Whatever the calendar says today (the seasons have their own test).
   await expect(page.getByTestId("tagline")).toHaveText(
-    "Read your friends' minds.",
+    tagline(seasonFor(new Date())),
   );
   for (let i = 0; i < 7; i++) await title.click();
   await expect(title).toHaveAttribute("data-egg-wave", "true");
@@ -155,20 +215,52 @@ test("disco mode dresses the lounge and swaps the record", async ({
   await host.context.close();
 });
 
-test("a magic clue reaches every screen in the room", async ({ browser }) => {
+test("a magic clue reaches every screen and leaves the clue box free", async ({
+  browser,
+}) => {
   const game = await startTeamsGame(browser);
   const { host, bob, cid } = game;
-  await psychicTurn(host.page, "Marco!");
+  await reachClue(host.page);
+  await host.page.getByTestId("clue-input").fill("Marco!");
+  await host.page.getByTestId("submit-clue").click();
   for (const { page } of [host, bob, cid]) {
-    await expect(page.getByTestId("clue")).toHaveAttribute(
-      "data-egg-clue",
-      "marco",
-    );
     await expect(page.getByTestId("egg-chip")).toHaveText("POLO!");
     await expect(
       page.locator("[data-testid=effect-burst][data-effect=egg-marco]").first(),
     ).toBeAttached();
   }
+  // The egg was not the clue: the psychic still owes one.
+  await expect(host.page.getByTestId("clue-input")).toHaveValue("");
+  await expect(host.page.getByTestId("clue")).toHaveCount(0);
+  await expect(host.page.getByTestId("panel")).toContainText("Give a clue");
+  await expect(host.page.getByText("Say it again")).toBeVisible();
+
+  // The same word again means it.
+  await host.page.getByTestId("clue-input").fill("Marco!");
+  await host.page.getByTestId("submit-clue").click();
+  for (const { page } of [host, bob, cid]) {
+    await expect(page.getByTestId("clue")).toHaveAttribute(
+      "data-egg-clue",
+      "marco",
+    );
+  }
+  const tally = await host.page.evaluate(() => {
+    const s = window.__gameStore!.getState();
+    return s.game!.effectTally[s.you!.playerId];
+  });
+  expect(tally).toEqual({ "clue:marco": 1 });
+
+  // Press and hold mute: the jukebox, and no mute toggle or fidget.
+  const mute = bob.page.getByTestId("mute-toggle");
+  const box = (await mute.boundingBox())!;
+  await bob.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await bob.page.mouse.down();
+  await bob.page.waitForTimeout(800);
+  await bob.page.mouse.up();
+  await expect(bob.page.getByTestId("egg-jukebox")).toBeVisible();
+  await expect(mute).not.toHaveAttribute("data-fidget");
+  await bob.page.keyboard.press("Escape");
+  await expect(bob.page.getByTestId("egg-jukebox")).toHaveCount(0);
 
   // Ten taps on mute in five seconds: the button has had enough.
   for (let i = 0; i < 10; i++)
@@ -233,15 +325,30 @@ test("a season dresses the home screen and the lounge, never the round", async (
   await expect(host.page.getByTestId("tagline")).toContainText(
     "Results may vary",
   );
+  await host.page.evaluate(() => window.wavelength!.season("thanksgiving"));
+  await expect(host.page.getByTestId("egg-ambient")).toHaveAttribute(
+    "data-season",
+    "thanksgiving",
+  );
+  await expect(host.page.getByTestId("tagline")).toContainText("gravy");
+  await host.page.evaluate(() => window.wavelength!.season("stpatricks"));
+  await expect(host.page.getByTestId("tagline")).toContainText("Sláinte");
   expect(
     await host.page.evaluate(() => window.wavelength!.season("summer")),
   ).toContain("seasons:");
   await host.page.evaluate(() => window.wavelength!.season(null));
-  await expect(host.page.locator("html")).not.toHaveAttribute(
-    "data-egg-season",
-  );
-  await expect(host.page.getByTestId("tagline")).toHaveText(
-    "Read your friends' minds.",
-  );
+  // Back to whatever the calendar says today.
+  const today = seasonFor(new Date());
+  if (today === null) {
+    await expect(host.page.locator("html")).not.toHaveAttribute(
+      "data-egg-season",
+    );
+  } else {
+    await expect(host.page.locator("html")).toHaveAttribute(
+      "data-egg-season",
+      today,
+    );
+  }
+  await expect(host.page.getByTestId("tagline")).toHaveText(tagline(today));
   await game.close();
 });

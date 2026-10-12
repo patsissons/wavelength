@@ -12,6 +12,7 @@
     "e2e",
     "scripts",
     "shared/game/geometry.ts",
+    "src/lib/eggs/seasons.ts",
     "eslint.config.js"
   ]
 }

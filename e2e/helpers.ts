@@ -102,6 +102,16 @@ async function setGuessSeconds(page: Page, seconds: number) {
 
 /** Drive the psychic from drawing through to the clue. */
 export async function psychicTurn(page: Page, clue: string) {
+  await reachClue(page);
+  await page.getByTestId("clue-input").fill(clue);
+  await page.getByTestId("submit-clue").click();
+  await expect(page.getByTestId("clue")).toContainText(clue);
+  // Giving the clue covers the wheel again.
+  await expect(page.getByTestId("shroud")).not.toHaveAttribute("data-open");
+}
+
+/** Draw, pick a side and spin: the psychic is ready to type a clue. */
+export async function reachClue(page: Page) {
   await page.getByTestId("draw-card").click();
   await page.getByTestId("flip-card").click();
   await page.getByTestId("pick-side-1").click();
@@ -112,11 +122,6 @@ export async function psychicTurn(page: Page, clue: string) {
   // The spin lands with the wedge in view (the shroud is already open).
   await expect(page.getByTestId("wedge-4")).toBeVisible();
   await expect(page.getByTestId("peek-toggle")).toBeEnabled();
-  await page.getByTestId("clue-input").fill(clue);
-  await page.getByTestId("submit-clue").click();
-  await expect(page.getByTestId("clue")).toContainText(clue);
-  // Giving the clue covers the wheel again.
-  await expect(page.getByTestId("shroud")).not.toHaveAttribute("data-open");
 }
 
 /** A tap on the open wheel spins it with a random flick. */

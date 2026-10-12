@@ -6,7 +6,7 @@ test("effects reach every player, respect roles and are rate limited", async ({
 }) => {
   const game = await startTeamsGame(browser);
   const { host, bob, cid } = game;
-  await psychicTurn(host.page, "Banana");
+  await psychicTurn(host.page, "Mango");
 
   // Role-specific sets: the psychic has a drum roll, guessers have panic.
   await expect(host.page.getByTestId("effect-drumroll")).toBeVisible();
@@ -42,11 +42,12 @@ test("effects reach every player, respect roles and are rate limited", async ({
   }
 
   // Cid pokes Bob by tapping his name: Bob's screen reacts, everyone sees it.
-  await expect(
-    cid.page.locator(
-      "[data-testid=presence-player][data-player-name=Cid] [data-testid=poke]",
-    ),
-  ).toBeDisabled();
+  // His own pill is not a poke (it is an easter egg, see eggs.spec.ts).
+  const ownPill = cid.page.locator(
+    "[data-testid=presence-player][data-player-name=Cid]",
+  );
+  await expect(ownPill.locator("[data-testid=poke]")).toHaveCount(0);
+  await expect(ownPill.locator("[data-testid=self]")).toBeEnabled();
   await cid.page
     .locator(
       "[data-testid=presence-player][data-player-name=Bob] [data-testid=poke]",

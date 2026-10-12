@@ -4,61 +4,73 @@ import { toast } from "sonner";
 import { effectsFor } from "@shared/effects/catalog";
 import type { Role } from "@shared/game/selectors";
 import { Button } from "@/components/ui/button";
+import { Jukebox } from "@/components/eggs/jukebox";
 import { audio } from "@/lib/audio";
 import { TapCounter } from "@/lib/eggs/charm";
+import { useLongPress } from "@/lib/eggs/press";
 import { usePrefs } from "@/lib/prefs";
 import { useCommand } from "@/lib/use-game-connection";
 import { cn } from "@/lib/utils";
 
 const COOLDOWN_MS = 1000;
 
-/** Mute / "tap for sound" button; lives in the round toolbar. */
+/**
+ * Mute / "tap for sound" button; lives in the round toolbar. A press and
+ * hold opens the jukebox instead of toggling.
+ */
 export function MuteToggle() {
   const muted = usePrefs((s) => s.muted);
   const unlocked = usePrefs((s) => s.soundUnlocked);
   const setMuted = usePrefs((s) => s.setMuted);
   const taps = useRef(new TapCounter(10, 5000));
   const [fidget, setFidget] = useState(false);
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="relative"
-      aria-label={
-        muted ? "Unmute sounds" : unlocked ? "Mute sounds" : "Tap for sound"
+  const [jukebox, setJukebox] = useState(false);
+  const press = useLongPress(600, () => setJukebox(true), {
+    onTap: () => {
+      // The document-level gesture listener in lib/audio.ts unlocks on
+      // this tap too; the dot just tells the player sound is not on yet.
+      setMuted(!muted);
+      if (muted) void audio.unlock();
+      if (taps.current.push(Date.now())) {
+        // Ten taps in five seconds: the button has had enough.
+        toast("🙉 Okay, okay.");
+        setFidget(true);
+        setTimeout(() => setFidget(false), 3000);
       }
-      title={!muted && !unlocked ? "Tap to enable sound" : undefined}
-      aria-pressed={muted}
-      onClick={() => {
-        // The document-level gesture listener in lib/audio.ts unlocks on
-        // this tap too; the dot just tells the player sound is not on yet.
-        setMuted(!muted);
-        if (muted) void audio.unlock();
-        if (taps.current.push(Date.now())) {
-          // Ten taps in five seconds: the button has had enough.
-          toast("🙉 Okay, okay.");
-          setFidget(true);
-          setTimeout(() => setFidget(false), 3000);
+    },
+  });
+  return (
+    <>
+      <Jukebox open={jukebox} onOpenChange={setJukebox} />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="relative select-none [-webkit-touch-callout:none]"
+        aria-label={
+          muted ? "Unmute sounds" : unlocked ? "Mute sounds" : "Tap for sound"
         }
-      }}
-      data-testid="mute-toggle"
-      data-unlocked={unlocked || undefined}
-      data-fidget={fidget || undefined}
-    >
-      {fidget ? (
-        <span className="text-lg">🙉</span>
-      ) : muted ? (
-        <VolumeX />
-      ) : (
-        <Volume2 />
-      )}
-      {!muted && !unlocked && (
-        <span
-          className="absolute top-1 right-1 size-2 rounded-full bg-primary"
-          aria-hidden
-        />
-      )}
-    </Button>
+        title={!muted && !unlocked ? "Tap to enable sound" : undefined}
+        aria-pressed={muted}
+        {...press}
+        data-testid="mute-toggle"
+        data-unlocked={unlocked || undefined}
+        data-fidget={fidget || undefined}
+      >
+        {fidget ? (
+          <span className="text-lg">🙉</span>
+        ) : muted ? (
+          <VolumeX />
+        ) : (
+          <Volume2 />
+        )}
+        {!muted && !unlocked && (
+          <span
+            className="absolute top-1 right-1 size-2 rounded-full bg-primary"
+            aria-hidden
+          />
+        )}
+      </Button>
+    </>
   );
 }
 

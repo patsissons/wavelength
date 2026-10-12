@@ -2,12 +2,18 @@ import confetti from "canvas-confetti";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { burst } from "@/components/effects/burst";
-import { celebrationBus } from "@/lib/effect-bus";
+import { celebrationBus, effectBus } from "@/lib/effect-bus";
 import { eggBus } from "@/lib/eggs/bus";
-import { fireClueEgg, matchClue } from "@/lib/eggs/clues";
-import { celebrateHatTrick, hatTrick } from "@/lib/eggs/round";
-import { useSeason } from "@/lib/eggs/seasons";
+import { clueEggOfEffect, fireClueEgg } from "@/lib/eggs/clues";
+import { allDialsLocked } from "@shared/game/selectors";
+import {
+  celebrateHatTrick,
+  flagpole,
+  hatTrick,
+  lastLockAt,
+} from "@/lib/eggs/round";
 import { useEggs } from "@/lib/eggs/store";
+import { useSeason } from "@/lib/eggs/use-season";
 import { installTriggers } from "@/lib/eggs/triggers";
 import { Ambient } from "./ambient";
 import { usePrefs } from "@/lib/prefs";
@@ -85,16 +91,39 @@ export function EggsLayer() {
     });
   }, []);
 
+  // The flagpole: the last dial locks with the timer on a 1, 3 or 6.
+  useEffect(() => {
+    const game = useGameStore.getState().game;
+    let locked = game ? allDialsLocked(game) : false;
+    return useGameStore.subscribe((state) => {
+      const now = state.game ? allDialsLocked(state.game) : false;
+      const flipped = now && !locked;
+      locked = now;
+      if (!flipped || !state.game) return;
+      const n = flagpole(
+        state.game.round?.guessDeadline ?? null,
+        lastLockAt(state.game),
+      );
+      if (n > 0) fireworks(usePrefs.getState().reduceEffects, `🎆 ×${n}`, n);
+    });
+  }, []);
+
   useEffect(() => {
     return celebrationBus.subscribe((c) => {
-      if (c.kind === "clue") {
-        const egg = matchClue(c.clue);
-        if (egg) fireClueEgg(egg);
-      } else if (c.kind === "gameover" && season === "newyear") {
-        fireworks(usePrefs.getState().reduceEffects);
+      if (c.kind === "gameover" && season === "newyear") {
+        fireworks(usePrefs.getState().reduceEffects, "🎆 Happy New Year!");
       }
     });
   }, [season]);
+
+  // Magic clues arrive as hidden effects, the sender's screen included.
+  useEffect(() => {
+    return effectBus.subscribe((effect) => {
+      if (effect.kind !== "effect") return;
+      const egg = clueEggOfEffect(effect.effectId);
+      if (egg) fireClueEgg(egg);
+    });
+  }, []);
 
   useEffect(() => {
     return eggBus.subscribe((event) => {
@@ -113,14 +142,19 @@ export function EggsLayer() {
         case "chip":
           setChip({ id: event.id, text: event.text, key: Date.now() });
           return;
-        case "konami":
-          return;
+        case "effect":
+          return; // RoomEggs' business
+        case "coin":
+          return; // the home screen's business
         case "hot": {
           const html = document.documentElement;
           html.setAttribute("data-egg-hot", "");
           setTimeout(() => html.removeAttribute("data-egg-hot"), 1500);
           return;
         }
+        case "mode":
+          timedAttribute(`data-egg-${event.attr}`, event.ms);
+          return;
         case "roll":
           if (reduce) {
             setChip({
@@ -219,26 +253,45 @@ function Pet({ glyph }: { glyph: string }) {
   );
 }
 
-/** New Year at game over: three seconds of fireworks from the bottom corners. */
-function fireworks(reduce: boolean) {
-  eggBus.emit({ kind: "chip", id: "newyear", text: "🎆 Happy New Year!" });
+/**
+ * Volleys of fireworks from the bottom corners, 350 ms apart (nine of
+ * them is about three seconds: New Year at game over).
+ */
+function fireworks(reduce: boolean, text: string, volleys = 9) {
+  eggBus.emit({ kind: "chip", id: "fireworks", text });
   if (reduce) return;
-  const end = Date.now() + 3000;
-  const tick = () => {
-    for (const x of [0.1, 0.9]) {
-      void confetti({
-        particleCount: 40,
-        angle: x < 0.5 ? 60 : 120,
-        spread: 70,
-        startVelocity: 60,
-        origin: { x, y: 1 },
-        zIndex: 60,
-        disableForReducedMotion: true,
-      });
-    }
-    if (Date.now() < end) setTimeout(tick, 350);
-  };
-  tick();
+  for (let i = 0; i < volleys; i++) {
+    setTimeout(() => {
+      for (const x of [0.1, 0.9]) {
+        void confetti({
+          particleCount: 40,
+          angle: x < 0.5 ? 60 : 120,
+          spread: 70,
+          startVelocity: 60,
+          origin: { x, y: 1 },
+          zIndex: 60,
+          disableForReducedMotion: true,
+        });
+      }
+    }, i * 350);
+  }
+}
+
+const timed = new Map<string, ReturnType<typeof setTimeout>>();
+
+/** Sets an attribute on <html> for a while; a repeat extends it. */
+function timedAttribute(name: string, ms: number) {
+  const html = document.documentElement;
+  html.setAttribute(name, "");
+  const pending = timed.get(name);
+  if (pending !== undefined) clearTimeout(pending);
+  timed.set(
+    name,
+    setTimeout(() => {
+      timed.delete(name);
+      html.removeAttribute(name);
+    }, ms),
+  );
 }
 
 function barrelRoll() {

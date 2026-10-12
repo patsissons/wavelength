@@ -5,6 +5,7 @@ import { TEAM_NAMES } from "@shared/game/types";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { Button } from "@/components/ui/button";
 import { selectIsHost, useGameStore } from "@/lib/store";
+import { useSelfPill } from "@/lib/eggs/avatar-eggs";
 import { useCommand } from "@/lib/use-game-connection";
 import { usePoke } from "@/lib/use-poke";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,8 @@ export function PlayerList() {
   const players = playersInOrder(game);
   const teams = game.settings.mode === "teams";
   const poke = usePoke();
+  // Your own pill is an egg instead of a poke (see lib/eggs/avatar-eggs).
+  const selfPill = useSelfPill(game.players[you.playerId] ?? { name: "?" });
 
   const column = (team: TeamId | null) => (
     <ul
@@ -39,13 +42,15 @@ export function PlayerList() {
           >
             <button
               type="button"
-              className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default"
-              onClick={() => poke?.(p.id)}
-              disabled={!poke || p.id === you.playerId}
+              className="flex min-w-0 flex-1 items-center gap-2 text-left select-none disabled:cursor-default [-webkit-touch-callout:none]"
+              {...(p.id === you.playerId
+                ? selfPill
+                : { onClick: () => poke?.(p.id) })}
+              disabled={p.id !== you.playerId && !poke}
               title={
                 poke && p.id !== you.playerId ? `Poke ${p.name}` : undefined
               }
-              data-testid="poke"
+              data-testid={p.id === you.playerId ? "self" : "poke"}
             >
               <PlayerAvatar player={p} size="sm" />
               <span

@@ -15,7 +15,7 @@ test("teammates share a dial: live moves, accepts reset on move, lock when all a
   });
   const { host, bob, cid } = game;
   const eve = game.extras[0]!;
-  await psychicTurn(host.page, "Banana");
+  await psychicTurn(host.page, "Mango");
 
   await expect(cid.page.getByTestId("accept-dial")).toBeVisible();
   await expect(eve.page.getByTestId("accept-dial")).toBeVisible();

@@ -3,7 +3,9 @@ import type { GameState } from "@shared/game/types";
 import { Button } from "@/components/ui/button";
 import { spinsRemaining } from "@shared/game/selectors";
 import { useCommand } from "@/lib/use-game-connection";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+import { MagicGate, castMagicClue, clueIcon } from "@/lib/eggs/clues";
 import { WedgeStrip } from "@/components/board/wedge-strip";
 import { useGameStore } from "@/lib/store";
 import { CardFlip, CardPile } from "./card-pile";
@@ -20,6 +22,7 @@ export function PsychicPanel({
   const send = useCommand();
   const target = useGameStore((s) => s.you?.target ?? null);
   const [busy, setBusy] = useState(false);
+  const magic = useRef(new MagicGate());
   const round = game.round!;
   const run = async (command: Parameters<typeof send>[0]) => {
     setBusy(true);
@@ -75,7 +78,20 @@ export function PsychicPanel({
           />
           <ClueInput
             disabled={!spinDone || busy}
-            onSubmit={(clue) => run({ type: "clue.submit", clue })}
+            onSubmit={(clue) => {
+              // A magic word goes to the room as an egg and leaves the
+              // box free; the same word again is the real clue.
+              const egg = magic.current.take(clue);
+              if (!egg) {
+                void run({ type: "clue.submit", clue });
+                return true;
+              }
+              castMagicClue(egg, game.settings.effects);
+              toast(
+                `${clueIcon(egg)} Sent to the room. Say it again to make it your clue.`,
+              );
+              return false;
+            }}
           />
           <ShroudButton
             open={round.shroudOpen}

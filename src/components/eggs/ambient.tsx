@@ -1,13 +1,31 @@
 import { useMemo } from "react";
-import type { Season } from "@/lib/eggs/store";
+import type { Season } from "@/lib/eggs/seasons";
 import { usePrefs } from "@/lib/prefs";
 
 const FLAKES = 14;
 
+interface Dressing {
+  /** The one still glyph shown under "Reduce effects". */
+  still: string;
+  /** Glyphs that fall like snow, cycled across the flakes. */
+  fall?: { glyphs: ReadonlyArray<string>; className?: string };
+  /** Glyphs that drift across the screen like ghosts. */
+  drift?: ReadonlyArray<string>;
+}
+
+const DRESSING: Record<Exclude<Season, "fools">, Dressing> = {
+  winter: { still: "❄️", fall: { glyphs: ["❄"], className: "text-white/80" } },
+  newyear: { still: "❄️", fall: { glyphs: ["❄"], className: "text-white/80" } },
+  halloween: { still: "🎃", drift: ["👻", "🦇", "🎃"] },
+  thanksgiving: { still: "🦃", fall: { glyphs: ["🍂", "🍁"] }, drift: ["🦃"] },
+  stpatricks: { still: "☘️", drift: ["☘️", "🍀", "🌈"] },
+};
+
 /**
- * Seasonal background life: snow for the winter holidays, drifting ghosts
- * for Halloween. Pure CSS animation; under "Reduce effects" a single
- * still glyph sits in the corner instead.
+ * Seasonal background life: snow for the winter holidays, leaves and a
+ * turkey for Thanksgiving, drifting ghosts for Halloween, shamrocks for
+ * St Patrick's. Pure CSS animation; under "Reduce effects" a single still
+ * glyph sits in the corner instead.
  */
 export function Ambient({ season }: { season: Season }) {
   const reduce = usePrefs((s) => s.reduceEffects);
@@ -22,7 +40,7 @@ export function Ambient({ season }: { season: Season }) {
     [],
   );
   if (season === "fools") return null;
-  const glyph = season === "halloween" ? "🎃" : "❄️";
+  const dressing = DRESSING[season];
   if (reduce) {
     return (
       <span
@@ -30,31 +48,8 @@ export function Ambient({ season }: { season: Season }) {
         data-testid="egg-ambient"
         data-season={season}
       >
-        {glyph}
+        {dressing.still}
       </span>
-    );
-  }
-  if (season === "halloween") {
-    return (
-      <div
-        className="absolute inset-0"
-        data-testid="egg-ambient"
-        data-season={season}
-      >
-        {["👻", "🦇", "🎃"].map((g, i) => (
-          <span
-            key={g}
-            className="egg-ghost absolute text-3xl"
-            style={{
-              top: `${12 + i * 14}%`,
-              animationDelay: `${-i * 7}s`,
-              animationDuration: `${22 + i * 6}s`,
-            }}
-          >
-            {g}
-          </span>
-        ))}
-      </div>
     );
   }
   return (
@@ -63,18 +58,32 @@ export function Ambient({ season }: { season: Season }) {
       data-testid="egg-ambient"
       data-season={season}
     >
-      {flakes.map((f, i) => (
+      {dressing.fall &&
+        flakes.map((f, i) => (
+          <span
+            key={`fall-${i}`}
+            className={`egg-snow absolute -top-6 ${dressing.fall!.className ?? ""}`}
+            style={{
+              left: f.left,
+              animationDelay: f.delay,
+              animationDuration: f.duration,
+              fontSize: f.size,
+            }}
+          >
+            {dressing.fall!.glyphs[i % dressing.fall!.glyphs.length]}
+          </span>
+        ))}
+      {dressing.drift?.map((g, i) => (
         <span
-          key={i}
-          className="egg-snow absolute -top-6 text-white/80"
+          key={`drift-${g}`}
+          className="egg-ghost absolute text-3xl"
           style={{
-            left: f.left,
-            animationDelay: f.delay,
-            animationDuration: f.duration,
-            fontSize: f.size,
+            top: `${12 + i * 14}%`,
+            animationDelay: `${-i * 7}s`,
+            animationDuration: `${22 + i * 6}s`,
           }}
         >
-          ❄
+          {g}
         </span>
       ))}
     </div>

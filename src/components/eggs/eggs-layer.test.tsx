@@ -1,6 +1,10 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { celebrationBus } from "@/lib/effect-bus";
+
+// jsdom has no canvas: the fireworks are counted, not drawn.
+const { confetti } = vi.hoisted(() => ({ confetti: vi.fn() }));
+vi.mock("canvas-confetti", () => ({ default: confetti }));
+import { celebrationBus, effectBus } from "@/lib/effect-bus";
 import { eggBus } from "@/lib/eggs/bus";
 import { useEggs } from "@/lib/eggs/store";
 import { usePrefs } from "@/lib/prefs";
@@ -21,6 +25,8 @@ function EggsLayer() {
 describe("EggsLayer", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    // A plain June day: the calendar must not dress anything here.
+    vi.setSystemTime(new Date("2026-06-15T12:00:00"));
     useEggs.getState().reset();
     usePrefs.getState().setReduceEffects(false);
     // jsdom has no Web Animations API.
@@ -63,6 +69,49 @@ describe("EggsLayer", () => {
     });
     expect(document.querySelectorAll("[data-effect=egg-x]")).toHaveLength(3);
     expect(screen.getByTestId("egg-chip")).toHaveTextContent("rolled");
+  });
+
+  it("fires a magic clue when its hidden effect arrives", () => {
+    render(<EggsLayer />);
+    act(() => {
+      effectBus.emit({
+        kind: "effect",
+        effectId: "clue:marco",
+        from: "p1",
+        nonce: "n1",
+      });
+    });
+    expect(screen.getByTestId("egg-chip")).toHaveTextContent("POLO!");
+    expect(
+      document.querySelectorAll("[data-effect=egg-marco]").length,
+    ).toBeGreaterThan(0);
+    act(() => {
+      effectBus.emit({
+        kind: "effect",
+        effectId: "applause",
+        from: "p1",
+        nonce: "n2",
+      });
+    });
+    expect(document.querySelectorAll("[data-effect=applause]")).toHaveLength(0);
+  });
+
+  it("holds a power-up attribute on <html> for a while, extending on repeat", () => {
+    render(<EggsLayer />);
+    act(() => {
+      eggBus.emit({ kind: "mode", attr: "super", ms: 1000 });
+    });
+    expect(document.documentElement.hasAttribute("data-egg-super")).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(700);
+      eggBus.emit({ kind: "mode", attr: "super", ms: 1000 });
+      vi.advanceTimersByTime(700);
+    });
+    expect(document.documentElement.hasAttribute("data-egg-super")).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(document.documentElement.hasAttribute("data-egg-super")).toBe(false);
   });
 
   it("glows the wheel after a hot flick and rises the smoke", () => {
@@ -136,6 +185,78 @@ describe("EggsLayer", () => {
     expect(document.querySelectorAll("[data-effect=egg-hattrick]").length).toBe(
       16,
     );
+    useGameStore.getState().reset();
+  });
+
+  it("lets off fireworks when the last dial locks on a flagpole number", () => {
+    const game = createGame({
+      code: "BCDF",
+      hostId: "p1",
+      hostName: "Ann",
+      hostTokenHash: "h",
+      now: 0,
+    }).game;
+    const dial = {
+      id: "shared",
+      owners: ["p1"],
+      position: 0.5,
+      movedBy: null,
+      accepts: [],
+      locked: false,
+    };
+    const round = {
+      index: 0,
+      psychicId: "p1",
+      psychicTeam: null,
+      card: null,
+      side: null,
+      spectrum: null,
+      spin: null,
+      spins: 1,
+      shroudOpen: false,
+      peeks: 0,
+      clue: "x",
+      guessDeadline: 20_000,
+      dials: { shared: dial },
+      votes: {},
+      target: null,
+      result: null,
+      log: [],
+      catchUp: false,
+      startedAt: 0,
+    };
+    useGameStore.getState().reset();
+    render(<EggsLayer />);
+    const snapshot = (locked: boolean, at: number) =>
+      useGameStore.getState().receive({
+        type: "snapshot",
+        state: {
+          ...game,
+          phase: "guessing",
+          round: {
+            ...round,
+            dials: { shared: { ...dial, locked } },
+            log: locked ? [{ t: "lock", at, dialId: "shared" }] : [],
+          },
+        } as never,
+        you: { playerId: "p1", target: null },
+      });
+    act(() => snapshot(false, 0));
+    confetti.mockClear();
+    act(() => snapshot(true, 17_200)); // 2.8 s left reads 3
+    expect(screen.getByTestId("egg-chip")).toHaveTextContent("🎆 ×3");
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(confetti).toHaveBeenCalledTimes(6); // three volleys, two corners
+    // Already locked: no repeat. Unlock, then lock on a 4: nothing.
+    act(() => snapshot(true, 17_200));
+    act(() => snapshot(false, 0));
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    act(() => snapshot(true, 16_500));
+    expect(screen.queryByTestId("egg-chip")).toBeNull();
     useGameStore.getState().reset();
   });
 

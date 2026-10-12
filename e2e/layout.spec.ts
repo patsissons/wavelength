@@ -44,7 +44,7 @@ test("screens keep an edge margin and the toolbar stays inside the viewport", as
   expect(mute.x).toBeGreaterThanOrEqual(16);
 
   // Still true once the round is in full swing.
-  await psychicTurn(host.page, "Banana");
+  await psychicTurn(host.page, "Mango");
   await expectPageFits(host.page);
   // The player strip and the effects tray scroll sideways only; a bare
   // overflow-x would let iOS rubber-band them up and down.

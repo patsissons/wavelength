@@ -139,16 +139,32 @@ Commit in small, modular units (one logical change per commit).
   `src/lib/eggs/` (registry = the console menu, the single list of what
   exists; triggers; session-scoped modes in `sessionStorage`) and render
   through the global `EggsLayer`. No egg reads `you.target` or anything
-  derived from it. Magic clues react to the public `clue.submitted` event
-  so every client reacts identically without a new message; the one
-  room-wide egg (Konami) is a `hidden` catalog effect sent through the
-  normal `effect.send` command, so it stays validated and rate-limited and
-  needs no protocol bump. Every egg collapses under "Reduce effects"
+  derived from it. Room-wide eggs (Konami, the magic clues) are `hidden`
+  catalog effects sent through the normal `effect.send` command, so they
+  stay validated and rate-limited and need no protocol bump. A magic clue
+  is intercepted in `PsychicPanel` (`MagicGate` in `lib/eggs/clues.ts`):
+  the first time it goes to the room as the psychic-only `clue:<id>`
+  effect and the clue box clears; the same word again is submitted as the
+  real clue. `EggsLayer` fires clue eggs from the `effect` ephemeral (the
+  room echoes it to the sender); `RoomEggs` fires them locally only when
+  the room refused the effect. Gesture maths (swipes, the drawn circle, the
+  two-finger twist) is pure in `lib/eggs/sequences.ts`; `installTriggers`
+  owns the document listeners, including one non-passive `touchmove` that
+  calls `preventDefault()` only while a two-finger pair is tracked, so
+  iOS does not pinch-zoom mid-twist. Gestures stay off the round (the
+  wheel and dial own touches there). Press-and-hold triggers share
+  `useLongPress` (`lib/eggs/press.ts`), which swallows the click a hold
+  leaves behind. Every egg collapses under "Reduce effects"
   (`<html data-egg-reduce>`). Add an entry to `EGGS` for anything new,
   with a `touch` wording when the phone instructions differ and
-  `consoleOnly` when there is nothing to do by hand; the QR-code cheat
-  sheet (`components/eggs/cheatsheet.tsx`) renders the list per platform
-  (`lib/eggs/platform.ts`).
+  `consoleOnly` when there is nothing to do by hand (nothing is, today:
+  every egg has a phone trigger, and `api` marks the ones the console can
+  also fire); the QR-code cheat sheet (`components/eggs/cheatsheet.tsx`)
+  renders the list per platform (`lib/eggs/platform.ts`) and hosts the
+  jukebox and the off switch. Seasons are pure data in
+  `lib/eggs/seasons.ts` (the one `SEASONS` list; `use-season.ts` reads
+  the override). The e2e suite asks that module what today is, so the
+  tagline assertions hold on a holiday.
 
 ## Gotchas
 

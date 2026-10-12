@@ -49,6 +49,31 @@ export interface EffectDef {
  * Everything a player can fire at the room. The psychic's set never carries
  * information about the target (no warmer/colder) — it is for drama only.
  */
+/**
+ * Magic clues (src/lib/eggs/clues.ts) travel as hidden psychic-only
+ * effects: the psychic "says" the word to the room without spending the
+ * clue. No burst or sound here: the eggs layer renders them its own way.
+ */
+export const CLUE_EFFECT_PREFIX = "clue:";
+
+const CLUE_EFFECTS: ReadonlyArray<EffectDef> = (
+  [
+    ["banana", "Banana", "🍌"],
+    ["marco", "Marco", "🏊"],
+    ["42", "Forty-two", "🐬"],
+    ["abracadabra", "Abracadabra", "🪄"],
+    ["disco", "Disco", "🪩"],
+    ["barrelroll", "Barrel roll", "🛩️"],
+    ["meta", "Very meta", "🎯"],
+  ] as const
+).map(([id, label, icon]) => ({
+  id: `${CLUE_EFFECT_PREFIX}${id}`,
+  label,
+  icon,
+  roles: ["psychic"],
+  hidden: true,
+}));
+
 export const EFFECTS: ReadonlyArray<EffectDef> = [
   // psychic
   {
@@ -256,6 +281,7 @@ export const EFFECTS: ReadonlyArray<EffectDef> = [
     sound: "konami",
     haptic: [30, 30, 30, 30, 90],
   },
+  ...CLUE_EFFECTS,
 ];
 
 const BY_ID = new Map(EFFECTS.map((e) => [e.id, e]));

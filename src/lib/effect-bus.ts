@@ -29,8 +29,6 @@ export type Celebration =
   | { kind: "score"; points: 2 | 3 | 4 }
   | { kind: "newround" }
   | { kind: "gameover" }
-  /** The clue was given; the eggs layer checks it for magic words. */
-  | { kind: "clue"; clue: string }
   /** The dial timer ran out and every dial locked where it was. */
   | { kind: "timeup" };
 

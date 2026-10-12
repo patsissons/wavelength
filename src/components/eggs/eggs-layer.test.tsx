@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { celebrationBus } from "@/lib/effect-bus";
+import { celebrationBus, effectBus } from "@/lib/effect-bus";
 import { eggBus } from "@/lib/eggs/bus";
 import { useEggs } from "@/lib/eggs/store";
 import { usePrefs } from "@/lib/prefs";
@@ -65,6 +65,31 @@ describe("EggsLayer", () => {
     });
     expect(document.querySelectorAll("[data-effect=egg-x]")).toHaveLength(3);
     expect(screen.getByTestId("egg-chip")).toHaveTextContent("rolled");
+  });
+
+  it("fires a magic clue when its hidden effect arrives", () => {
+    render(<EggsLayer />);
+    act(() => {
+      effectBus.emit({
+        kind: "effect",
+        effectId: "clue:marco",
+        from: "p1",
+        nonce: "n1",
+      });
+    });
+    expect(screen.getByTestId("egg-chip")).toHaveTextContent("POLO!");
+    expect(
+      document.querySelectorAll("[data-effect=egg-marco]").length,
+    ).toBeGreaterThan(0);
+    act(() => {
+      effectBus.emit({
+        kind: "effect",
+        effectId: "applause",
+        from: "p1",
+        nonce: "n2",
+      });
+    });
+    expect(document.querySelectorAll("[data-effect=applause]")).toHaveLength(0);
   });
 
   it("glows the wheel after a hot flick and rises the smoke", () => {

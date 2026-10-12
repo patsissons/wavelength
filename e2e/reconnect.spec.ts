@@ -86,7 +86,7 @@ test("an away psychic is flagged and the host can skip the round; an away guesse
   const game = await startTeamsGame(browser, ["Eve"]);
   const { host, bob, cid } = game;
   const eve = game.extras[0]!;
-  await psychicTurn(host.page, "Banana");
+  await psychicTurn(host.page, "Mango");
 
   // Eve (a left-team guesser) vanishes mid-guess; Cid alone can lock.
   await eve.page.close();

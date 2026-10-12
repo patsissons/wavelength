@@ -67,6 +67,26 @@ describe("effects catalog", () => {
     expect(canSendEffect(game, "p1", "konami")).toBe(true);
   });
 
+  it("carries magic clues as hidden psychic-only effects", () => {
+    const banana = effectById("clue:banana");
+    expect(banana?.hidden).toBe(true);
+    expect(banana?.roles).toEqual(["psychic"]);
+    expect(banana?.icon).toBe("🍌");
+    expect(banana?.burst).toBeUndefined();
+    expect(banana?.sound).toBeUndefined();
+    for (const role of ["psychic", "guesser", "spectator"] as const) {
+      expect(effectsFor(role).map((e) => e.id)).not.toContain("clue:banana");
+    }
+    const { game } = createGame({
+      code: "BCDF",
+      hostId: "p1",
+      hostName: "Ann",
+      hostTokenHash: "h",
+      now: 0,
+    });
+    expect(canSendEffect(game, "p1", "clue:banana")).toBe(false); // no round
+  });
+
   it("authorises by role, existence and the effects setting", () => {
     const { game } = createGame({
       code: "BCDF",

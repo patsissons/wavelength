@@ -8,8 +8,19 @@ const audio = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/audio", () => ({ audio }));
 
+import { CLUE_EFFECT_PREFIX, EFFECTS } from "@shared/effects/catalog";
 import { eggBus, type EggEvent } from "./bus";
-import { MAGIC_CLUES, fireClueEgg, matchClue } from "./clues";
+import {
+  CLUE_EGGS,
+  MAGIC_CLUES,
+  MagicGate,
+  castMagicClue,
+  clueEffectId,
+  clueEggOfEffect,
+  clueIcon,
+  fireClueEgg,
+  matchClue,
+} from "./clues";
 import { useEggs } from "./store";
 
 describe("magic clues", () => {
@@ -32,6 +43,7 @@ describe("magic clues", () => {
     expect(matchClue("Banana")?.id).toBe("banana");
     expect(matchClue('  "marco!" ')?.id).toBe("marco");
     expect(matchClue("Do  a Barrel   Roll")?.id).toBe("barrelroll");
+    expect(matchClue("do-a-barrel-roll")?.id).toBe("barrelroll");
     expect(matchClue("42")?.subtitle).toBe("Don't panic.");
     expect(matchClue("abracadabra")?.shimmer).toBe(true);
     expect(matchClue("WAVELENGTH")?.id).toBe("meta");
@@ -40,6 +52,37 @@ describe("magic clues", () => {
     expect(matchClue("")).toBeNull();
     expect(matchClue(null)).toBeNull();
     expect(MAGIC_CLUES).toHaveLength(7);
+  });
+
+  it("has a hidden catalog effect for every egg, and only those", () => {
+    const ids = CLUE_EGGS.map((egg) => clueEffectId(egg)).sort();
+    const catalog = EFFECTS.filter((e) => e.id.startsWith(CLUE_EFFECT_PREFIX))
+      .map((e) => e.id)
+      .sort();
+    expect(ids).toEqual(catalog);
+    expect(clueEggOfEffect("clue:marco")?.id).toBe("marco");
+    expect(clueEggOfEffect("clue:nope")).toBeNull();
+    expect(clueEggOfEffect("applause")).toBeNull();
+    expect(clueIcon(matchClue("banana")!)).toBe("🍌");
+  });
+
+  it("gates a magic word: the egg first, the real clue when said again", () => {
+    const gate = new MagicGate();
+    expect(gate.take("Banana")?.id).toBe("banana");
+    expect(gate.take("banana!")).toBeNull(); // the same word: send it
+    expect(gate.take("banana")?.id).toBe("banana"); // and it is magic again
+    expect(gate.take("marco")?.id).toBe("marco"); // a different word is new
+    expect(gate.take("a real clue")).toBeNull();
+    expect(gate.take("marco")?.id).toBe("marco"); // a real clue reset it
+  });
+
+  it("casts to the room when effects are on, locally when they are off", () => {
+    castMagicClue(matchClue("banana")!, true);
+    expect(seen).toEqual([{ kind: "effect", effectId: "clue:banana" }]);
+    expect(audio.play).not.toHaveBeenCalled();
+    castMagicClue(matchClue("banana")!, false);
+    expect(seen.at(-1)).toMatchObject({ kind: "rain", id: "banana" });
+    expect(audio.play).toHaveBeenCalledWith("squeak");
   });
 
   it("rains, chips, rolls and sounds per clue", () => {

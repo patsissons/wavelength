@@ -219,14 +219,6 @@ describe("store.receive", () => {
     });
     expect(seen).toHaveBeenLastCalledWith({ kind: "lock" });
 
-    // The clue is announced so the eggs layer can check it for magic words.
-    s.receive({
-      type: "event",
-      version: 2,
-      event: { type: "clue.submitted", clue: "Banana", at: 2, deadline: null },
-    });
-    expect(seen).toHaveBeenLastCalledWith({ kind: "clue", clue: "Banana" });
-
     // A host force-lock (nobody accepted) is not a celebration.
     s.receive({
       type: "snapshot",
@@ -244,7 +236,7 @@ describe("store.receive", () => {
       version: 1,
       event: { type: "dial.locked", dialId: "shared", at: 1 },
     });
-    expect(seen).toHaveBeenCalledTimes(2);
+    expect(seen).toHaveBeenCalledTimes(1);
 
     const result: RoundResult = {
       roundIndex: 0,

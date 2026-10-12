@@ -2,9 +2,9 @@ import confetti from "canvas-confetti";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { burst } from "@/components/effects/burst";
-import { celebrationBus } from "@/lib/effect-bus";
+import { celebrationBus, effectBus } from "@/lib/effect-bus";
 import { eggBus } from "@/lib/eggs/bus";
-import { fireClueEgg, matchClue } from "@/lib/eggs/clues";
+import { clueEggOfEffect, fireClueEgg } from "@/lib/eggs/clues";
 import { celebrateHatTrick, hatTrick } from "@/lib/eggs/round";
 import { useEggs } from "@/lib/eggs/store";
 import { useSeason } from "@/lib/eggs/use-season";
@@ -87,14 +87,20 @@ export function EggsLayer() {
 
   useEffect(() => {
     return celebrationBus.subscribe((c) => {
-      if (c.kind === "clue") {
-        const egg = matchClue(c.clue);
-        if (egg) fireClueEgg(egg);
-      } else if (c.kind === "gameover" && season === "newyear") {
+      if (c.kind === "gameover" && season === "newyear") {
         fireworks(usePrefs.getState().reduceEffects);
       }
     });
   }, [season]);
+
+  // Magic clues arrive as hidden effects, the sender's screen included.
+  useEffect(() => {
+    return effectBus.subscribe((effect) => {
+      if (effect.kind !== "effect") return;
+      const egg = clueEggOfEffect(effect.effectId);
+      if (egg) fireClueEgg(egg);
+    });
+  }, []);
 
   useEffect(() => {
     return eggBus.subscribe((event) => {

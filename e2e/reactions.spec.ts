@@ -7,7 +7,7 @@ test("players flick emoji at each other in the post-round arena", async ({
   const game = await startModeGame(browser, "coop", 1, ["Bob", "Cid"]);
   const { host } = game;
   const [bob, cid] = game.guests as [typeof host, typeof host];
-  await psychicTurn(host.page, "Banana");
+  await psychicTurn(host.page, "Mango");
   await bob.page.getByTestId("accept-dial").click();
   await cid.page.getByTestId("accept-dial").click();
   await expect(host.page.getByTestId("reveal")).toBeVisible();

@@ -7,7 +7,7 @@ test("the dial timer counts down for everyone and locks the dials where they are
   const game = await startModeGame(browser, "ffa", 1, ["Bob", "Cid"], 15);
   const { host } = game;
   const [bob, cid] = game.guests as [typeof host, typeof host];
-  await psychicTurn(host.page, "Banana");
+  await psychicTurn(host.page, "Mango");
 
   // Every screen shows the countdown once the clue is given.
   for (const { page } of [host, bob, cid]) {

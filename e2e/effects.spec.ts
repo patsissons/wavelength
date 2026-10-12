@@ -6,7 +6,7 @@ test("effects reach every player, respect roles and are rate limited", async ({
 }) => {
   const game = await startTeamsGame(browser);
   const { host, bob, cid } = game;
-  await psychicTurn(host.page, "Banana");
+  await psychicTurn(host.page, "Mango");
 
   // Role-specific sets: the psychic has a drum roll, guessers have panic.
   await expect(host.page.getByTestId("effect-drumroll")).toBeVisible();

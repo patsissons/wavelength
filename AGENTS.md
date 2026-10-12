@@ -139,11 +139,15 @@ Commit in small, modular units (one logical change per commit).
   `src/lib/eggs/` (registry = the console menu, the single list of what
   exists; triggers; session-scoped modes in `sessionStorage`) and render
   through the global `EggsLayer`. No egg reads `you.target` or anything
-  derived from it. Magic clues react to the public `clue.submitted` event
-  so every client reacts identically without a new message; the one
-  room-wide egg (Konami) is a `hidden` catalog effect sent through the
-  normal `effect.send` command, so it stays validated and rate-limited and
-  needs no protocol bump. Every egg collapses under "Reduce effects"
+  derived from it. Room-wide eggs (Konami, the magic clues) are `hidden`
+  catalog effects sent through the normal `effect.send` command, so they
+  stay validated and rate-limited and need no protocol bump. A magic clue
+  is intercepted in `PsychicPanel` (`MagicGate` in `lib/eggs/clues.ts`):
+  the first time it goes to the room as the psychic-only `clue:<id>`
+  effect and the clue box clears; the same word again is submitted as the
+  real clue. `EggsLayer` fires clue eggs from the `effect` ephemeral (the
+  room echoes it to the sender); `RoomEggs` fires them locally only when
+  the room refused the effect. Every egg collapses under "Reduce effects"
   (`<html data-egg-reduce>`). Add an entry to `EGGS` for anything new,
   with a `touch` wording when the phone instructions differ and
   `consoleOnly` when there is nothing to do by hand; the QR-code cheat

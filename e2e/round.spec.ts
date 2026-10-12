@@ -135,7 +135,7 @@ test("the psychic draws, spins (and re-spins), covers the wheel and gives a clue
 
 test("helper drives a full psychic turn", async ({ browser }) => {
   const game = await startTeamsGame(browser);
-  await psychicTurn(game.host.page, "Banana");
-  await expect(game.bob.page.getByTestId("clue")).toContainText("Banana");
+  await psychicTurn(game.host.page, "Mango");
+  await expect(game.bob.page.getByTestId("clue")).toContainText("Mango");
   await game.close();
 });

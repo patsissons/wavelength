@@ -191,8 +191,6 @@ function celebrate(
     celebrationBus.emit({ kind: "newround" });
   } else if (event.type === "game.over") {
     celebrationBus.emit({ kind: "gameover" });
-  } else if (event.type === "clue.submitted") {
-    celebrationBus.emit({ kind: "clue", clue: event.clue });
   } else if (event.type === "guess.expired") {
     celebrationBus.emit({ kind: "timeup" });
   } else if (event.type === "round.revealed" && playerId) {

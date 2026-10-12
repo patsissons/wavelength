@@ -6,7 +6,7 @@ import {
   hostGame,
   joinGame,
   playerRow,
-  psychicTurn,
+  reachClue,
   startTeamsGame,
 } from "./helpers";
 
@@ -157,20 +157,40 @@ test("disco mode dresses the lounge and swaps the record", async ({
   await host.context.close();
 });
 
-test("a magic clue reaches every screen in the room", async ({ browser }) => {
+test("a magic clue reaches every screen and leaves the clue box free", async ({
+  browser,
+}) => {
   const game = await startTeamsGame(browser);
   const { host, bob, cid } = game;
-  await psychicTurn(host.page, "Marco!");
+  await reachClue(host.page);
+  await host.page.getByTestId("clue-input").fill("Marco!");
+  await host.page.getByTestId("submit-clue").click();
   for (const { page } of [host, bob, cid]) {
-    await expect(page.getByTestId("clue")).toHaveAttribute(
-      "data-egg-clue",
-      "marco",
-    );
     await expect(page.getByTestId("egg-chip")).toHaveText("POLO!");
     await expect(
       page.locator("[data-testid=effect-burst][data-effect=egg-marco]").first(),
     ).toBeAttached();
   }
+  // The egg was not the clue: the psychic still owes one.
+  await expect(host.page.getByTestId("clue-input")).toHaveValue("");
+  await expect(host.page.getByTestId("clue")).toHaveCount(0);
+  await expect(host.page.getByTestId("panel")).toContainText("Give a clue");
+  await expect(host.page.getByText("Say it again")).toBeVisible();
+
+  // The same word again means it.
+  await host.page.getByTestId("clue-input").fill("Marco!");
+  await host.page.getByTestId("submit-clue").click();
+  for (const { page } of [host, bob, cid]) {
+    await expect(page.getByTestId("clue")).toHaveAttribute(
+      "data-egg-clue",
+      "marco",
+    );
+  }
+  const tally = await host.page.evaluate(() => {
+    const s = window.__gameStore!.getState();
+    return s.game!.effectTally[s.you!.playerId];
+  });
+  expect(tally).toEqual({ "clue:marco": 1 });
 
   // Ten taps on mute in five seconds: the button has had enough.
   for (let i = 0; i < 10; i++)
